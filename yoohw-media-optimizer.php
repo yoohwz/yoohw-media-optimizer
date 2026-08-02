@@ -1,9 +1,11 @@
 <?php
 /**
  * Plugin Name: YoOhw Media Optimizer
+ * Plugin URI: https://yoohw.com/product/media-optimizer/
  * Description: Optimizes WordPress media with modern sidecars, optional backed-up original compression, resize controls, and restore tools.
  * Version: 1.0.1
  * Author: YoOhw Studio
+ * Author URI: https://yoohw.com/
  * Text Domain: yoohw-media-optimizer
  * Requires at least: 6.4
  * Requires PHP: 7.4
