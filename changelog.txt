@@ -1,0 +1,11 @@
+= 1.0.1 =
+* Prevent repeated lossy original-file optimization with source and option fingerprints.
+* Use cache-safe picture markup with original JPEG/PNG fallbacks for HTML delivery.
+* Store new backups outside the document root and migrate tracked legacy backups.
+* Add queue locking, safer cleanup paths, bounded cached reports, corrected restore batching, AVIF CLI totals, localized admin progress text, and regression checks.
+
+= 1.0.0 =
+* Initial public release on WordPress.org.
+* Add local WebP and AVIF sidecar generation for WordPress media uploads.
+* Add optional HTML delivery with AVIF first, WebP second, and JPEG/PNG fallback.
+* Add Delivery Assistant, Overview dashboard, Media Library Savings column, original-file optimization with backups, restore tools, cleanup tools, queue processing, and WP-CLI helpers.
