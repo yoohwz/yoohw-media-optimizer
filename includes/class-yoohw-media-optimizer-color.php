@@ -15,9 +15,11 @@ class YoOhw_Media_Optimizer_Color {
 
 	/** Inspect JPEG/PNG without decoding pixels or loading the complete image. */
 	public static function inspect( $path ) {
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen -- Read-only bounded media stream; WP_Filesystem has no bounded stream/seek API.
 		$stream = @fopen( $path, 'rb' );
 		if ( ! $stream ) { return self::error(); }
 		try {
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fread -- Read-only bounded media stream; WP_Filesystem has no bounded stream/seek API.
 			$signature = fread( $stream, 8 );
 			rewind( $stream );
 			if ( "\x89PNG\r\n\x1a\n" === $signature ) {
@@ -27,6 +29,7 @@ class YoOhw_Media_Optimizer_Color {
 				return self::jpeg( $stream );
 			}
 			return self::error();
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- Read-only bounded media stream; WP_Filesystem has no bounded stream/seek API.
 		} finally { fclose( $stream ); }
 	}
 
@@ -34,17 +37,21 @@ class YoOhw_Media_Optimizer_Color {
 		fseek( $stream, 2 );
 		$parts = array(); $total = 0; $bytes = 0; $channels = 0; $private = false;
 		for ( $i = 0; $i < self::MAX_HEADERS; ++$i ) {
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fread -- Read-only bounded media stream; WP_Filesystem has no bounded stream/seek API.
 			if ( "\xff" !== fread( $stream, 1 ) ) { return self::error(); }
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fread -- Read-only bounded media stream; WP_Filesystem has no bounded stream/seek API.
 			do { $marker = fread( $stream, 1 ); } while ( "\xff" === $marker && ++$bytes < self::MAX_ICC_BYTES * 8 );
 			if ( '' === $marker ) { return self::error(); }
 			$marker = ord( $marker );
 			if ( 0xda === $marker ) { break; }
 			if ( in_array( $marker, array( 0x00, 0xd8, 0xd9 ), true ) || ( $marker >= 0xd0 && $marker <= 0xd7 ) ) { return self::error(); }
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fread -- Read-only bounded media stream; WP_Filesystem has no bounded stream/seek API.
 			$length = fread( $stream, 2 );
 			if ( 2 !== strlen( $length ) ) { return self::error(); }
 			$length = unpack( 'n', $length )[1] - 2;
 			$bytes += $length + 4;
 			if ( $length < 0 || $bytes > self::MAX_ICC_BYTES * 8 ) { return self::error(); }
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fread -- Read-only bounded media stream; WP_Filesystem has no bounded stream/seek API.
 			$data = $length ? fread( $stream, $length ) : '';
 			if ( strlen( $data ) !== $length ) { return self::error(); }
 			if ( 0xe2 === $marker && 0 === strpos( $data, 'ICC_PROFILE' ) ) {
@@ -73,6 +80,7 @@ class YoOhw_Media_Optimizer_Color {
 		fseek( $stream, 8 ); $icc = ''; $seen = array(); $private = false; $color = -1; $idat = false;
 		$size = fstat( $stream )['size'];
 		for ( $i = 0; $i < self::MAX_HEADERS; ++$i ) {
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fread -- Read-only bounded media stream; WP_Filesystem has no bounded stream/seek API.
 			$head = fread( $stream, 8 );
 			if ( 8 !== strlen( $head ) ) { return self::error(); }
 			$length = self::uint( substr( $head, 0, 4 ) ); $type = substr( $head, 4 );
@@ -81,7 +89,9 @@ class YoOhw_Media_Optimizer_Color {
 			if ( $relevant ) {
 				if ( isset( $seen[$type] ) || $length > self::MAX_ICC_BYTES || $idat ) { return self::error(); }
 				$seen[$type] = true;
+				// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fread -- Read-only bounded media stream; WP_Filesystem has no bounded stream/seek API.
 				$data = $length ? fread( $stream, $length ) : '';
+				// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fread -- Read-only bounded media stream; WP_Filesystem has no bounded stream/seek API.
 				$crc = fread( $stream, 4 );
 				if ( strlen( $data ) !== $length || $crc !== hash( 'crc32b', $type . $data, true ) ) { return self::error(); }
 				if ( 'IHDR' === $type ) {
@@ -144,19 +154,23 @@ class YoOhw_Media_Optimizer_Color {
 	}
 
 	private static function webp( $path ) {
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen -- Read-only bounded media stream; WP_Filesystem has no bounded stream/seek API.
 		$stream = @fopen( $path, 'rb' );
 		if ( ! $stream ) { return self::error(); }
 		try {
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fread -- Read-only bounded media stream; WP_Filesystem has no bounded stream/seek API.
 			$head = fread( $stream, 12 ); $size = fstat( $stream )['size'];
 			if ( 12 !== strlen( $head ) || 'RIFF' !== substr( $head, 0, 4 ) || 'WEBP' !== substr( $head, 8, 4 ) || unpack( 'V', substr( $head, 4, 4 ) )[1] + 8 !== $size ) { return self::error(); }
 			$icc = ''; $private = false; $seen = false;
 			for ( $i = 0; $i < self::MAX_HEADERS && ftell( $stream ) < $size; ++$i ) {
+				// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fread -- Read-only bounded media stream; WP_Filesystem has no bounded stream/seek API.
 				$head = fread( $stream, 8 );
 				if ( strlen( $head ) !== 8 ) { return self::error(); }
 				$type = substr( $head, 0, 4 ); $length = unpack( 'V', substr( $head, 4 ) )[1];
 				if ( $length + ( $length % 2 ) > $size - ftell( $stream ) ) { return self::error(); }
 				if ( 'ICCP' === $type ) {
 					if ( $seen || $length > self::MAX_ICC_BYTES ) { return self::error(); }
+					// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fread -- Read-only bounded media stream; WP_Filesystem has no bounded stream/seek API.
 					$seen = true; $icc = $length ? fread( $stream, $length ) : '';
 					if ( ! self::profile( $icc ) ) { return self::error(); }
 				} else { fseek( $stream, $length, SEEK_CUR ); }
@@ -164,6 +178,7 @@ class YoOhw_Media_Optimizer_Color {
 				if ( in_array( $type, array( 'EXIF', 'XMP ' ), true ) ) { $private = true; }
 			}
 			return ftell( $stream ) === $size ? array( 'icc' => $icc, 'private' => $private ) : self::error();
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- Read-only bounded media stream; WP_Filesystem has no bounded stream/seek API.
 		} finally { fclose( $stream ); }
 	}
 
