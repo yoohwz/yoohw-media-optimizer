@@ -229,7 +229,9 @@ class YoOhw_Media_Optimizer {
 					'pictureUnavailable' => __( 'No fresh sidecar is available for this format', 'yoohw-media-optimizer' ),
 					'enabled'         => __( 'Enabled', 'yoohw-media-optimizer' ),
 					'generateOnly'    => __( 'Generate only', 'yoohw-media-optimizer' ),
+					/* translators: 1: processed attachments, 2: total attachments. */
 					'processedOf'     => __( 'Processed %1$s of %2$s attachments', 'yoohw-media-optimizer' ),
+					/* translators: 1: attachments processed in this batch, 2: total processed attachments, 3: total attachments. */
 					'processedBatch'  => __( 'Processed %1$s attachment(s). Total %2$s / %3$s.', 'yoohw-media-optimizer' ),
 					'secondsShort'    => _x( 's', 'seconds abbreviation', 'yoohw-media-optimizer' ),
 					'minutesShort'    => _x( 'm', 'minutes abbreviation', 'yoohw-media-optimizer' ),
@@ -2119,12 +2121,14 @@ Header append Vary Accept env=REDIRECT_accept
 			2 => array( 'pipe', 'w' ),
 		);
 		$pipes       = array();
+		// phpcs:ignore Generic.PHP.ForbiddenFunctions.Found -- Optional local encoder uses argv with shell bypass; WordPress has no process API.
 		$process     = proc_open( array_values( $command ), $descriptors, $pipes, null, null, array( 'bypass_shell' => true ) );
 
 		if ( ! is_resource( $process ) ) {
 			return new WP_Error( 'yoohw_mo_binary_start_failed', __( 'Could not start external optimizer.', 'yoohw-media-optimizer' ) );
 		}
 
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- Process pipe; WP_Filesystem cannot close these handles.
 		fclose( $pipes[0] );
 		stream_set_blocking( $pipes[1], false );
 		stream_set_blocking( $pipes[2], false );
@@ -2146,7 +2150,9 @@ Header append Vary Accept env=REDIRECT_accept
 
 			if ( microtime( true ) - $start > $timeout ) {
 				proc_terminate( $process );
+				// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- Process pipe; WP_Filesystem cannot close these handles.
 				fclose( $pipes[1] );
+				// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- Process pipe; WP_Filesystem cannot close these handles.
 				fclose( $pipes[2] );
 				proc_close( $process );
 
@@ -2156,7 +2162,9 @@ Header append Vary Accept env=REDIRECT_accept
 			usleep( 100000 );
 		}
 
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- Process pipe; WP_Filesystem cannot close these handles.
 		fclose( $pipes[1] );
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- Process pipe; WP_Filesystem cannot close these handles.
 		fclose( $pipes[2] );
 
 		$close_code = proc_close( $process );

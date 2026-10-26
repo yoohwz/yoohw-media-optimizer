@@ -4,5 +4,7 @@
 /.gitignore
 /.distignore
 /README.md
+/AGENTS.md
 /tests
+/bin
 *.zip
