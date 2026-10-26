@@ -21,6 +21,17 @@ incomplete modern identity, new image sizes, missing sources, restore, and
 independent original/sidecar failures. These checks do not certify concurrency, crash-safe
 replacement, filesystem fault recovery, or the full image-engine matrix.
 
+`lossless-jpeg-tests.php` is invoked by the same entry point. It checks a JPEG
+with EXIF orientation and a large APP segment, comparing file and decoded RGB
+hashes when lossless fallback is unavailable. It covers metadata policies,
+force/repeat, controlled binary success/no gain/partial failure, temporary-file
+cleanup, existing backups/savings, and the permitted resize path. Temporary
+encoder fixtures use an isolated PATH within this CLI process and are removed
+afterward. A real `jpegtran` check runs when installed in a standard search
+directory; otherwise the output explicitly records `NOT RUN`. Controlled encoder
+fixtures do not certify the real encoders. Decoded RGB equality after metadata
+stripping does not certify unchanged EXIF display orientation.
+
 ## GitHub Actions
 
 `Media Optimizer CI` runs on pull requests, pushes to `main`, and manual dispatch.
@@ -37,7 +48,8 @@ Each regression environment uses a fresh WordPress install, MySQL 8.0, and
 WP-CLI 2.12.0, with GD required before the existing script runs. Thus its image
 optimization/backup assertions cannot silently skip because GD is absent.
 This suite is not PHPUnit, PHPCS, PHPCompatibility, a browser suite, or a full
-image-engine matrix. It does not cover Imagick or external encoder binaries.
+image-engine matrix. It does not certify Imagick or the full external encoder
+matrix; the optional real `jpegtran` check is limited to this lossless fixture.
 
 Plugin Check scans a staged payload built with `.distignore`. Errors fail CI;
 warnings remain visible and non-blocking (`strict: false`). Only the

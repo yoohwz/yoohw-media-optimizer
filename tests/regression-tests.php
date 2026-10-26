@@ -385,6 +385,9 @@ try {
 		$assert( 'existing' === $jpeg_resumed['files'][0]['original_status'], 'Legacy JPEG with non-default quality was reprocessed after a sidecar pass.' );
 		$assert( $jpeg_optimized_hash === hash_file( 'sha256', $jpeg_source ), 'The legacy JPEG was recompressed.' );
 		$assert( $jpeg_original_hash === hash_file( 'sha256', $jpeg_backup ), 'The legacy JPEG backup was replaced.' );
+
+		$lossless_jpeg_checks = require __DIR__ . '/lossless-jpeg-tests.php';
+		$lossless_jpeg_checks( $optimizer, $invoke, $assert, $test_dir, $runtime_options );
 	}
 
 } catch ( Throwable $error ) {

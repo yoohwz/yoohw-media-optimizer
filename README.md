@@ -61,6 +61,10 @@ Not by default. It generates WebP or AVIF sidecars while leaving JPEG and PNG or
 
 Yes, as an opt-in feature. A backup is required before an original physical file is replaced.
 
+= How does lossless JPEG optimization work? =
+
+Without resizing, lossless JPEG optimization uses optional `jpegoptim` or `jpegtran`. If no smaller lossless output is available, the original is kept unchanged, including its metadata. Force retries do not enable lossy JPEG fallback. Resizing remains allowed in this mode and may re-encode the image, with a backup retained before replacement.
+
 = Does it serve AVIF and WebP automatically? =
 
 Only after HTML delivery is enabled. The plugin then prefers an available AVIF, falls back to WebP, and finally uses the original image.
