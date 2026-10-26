@@ -195,13 +195,13 @@ try {
 				$profile_image = new Imagick( $path );
 				$assert( $icc === $profile_image->getImageProfile( 'icc' ), 'Decoder did not recognize embedded valid ICC bytes.' );
 				$profile_image->clear();
-				if ( Imagick::queryFormats( 'AVIF' ) ) {
+				if ( Imagick::queryFormats( 'AVIF' ) && $optimizer->avif_editor_supported() ) {
 					$avif = $run( $id, array( 'generate_avif_sidecars' => 1 ) );
 					$assert( $editor_name === $avif['files'][0]['avif_engine'], 'Imagick oriented AVIF fell back to another engine.' );
 					$check_display( $path . '.avif', $orientation, $orientation >= 5 ? 64 : 96, $orientation >= 5 ? 96 : 64 );
 				} else {
 					$assert( ! $required, 'Required Imagick AVIF support unavailable.' );
-					echo "Imagick AVIF: NOT RUN — format unavailable.\n";
+					echo "Imagick AVIF: NOT RUN — WordPress editor AVIF support unavailable.\n";
 				}
 			}
 		}
@@ -283,7 +283,7 @@ try {
 		foreach ( array( 6, 2 ) as $orientation ) {
 			list( $id, $path ) = $attach( 'native-oriented-' . $orientation . '.jpg', $jpeg( $orientation ), 'image/jpeg' );
 			$hash = hash_file( 'sha256', $path );
-			$avif_capable = class_exists( 'Imagick' ) && Imagick::queryFormats( 'AVIF' );
+			$avif_capable = class_exists( 'Imagick' ) && Imagick::queryFormats( 'AVIF' ) && $optimizer->avif_editor_supported();
 			$result = $run( $id, array( 'use_external_binaries' => 1, 'generate_avif_sidecars' => $avif_capable ? 1 : 0 ) );
 			$assert( $native_editor === $result['files'][0]['webp_engine'], 'Oriented JPEG used an external encoder without normalization.' );
 			$check_display( $path . '.webp', $orientation, $orientation >= 5 ? 64 : 96, $orientation >= 5 ? 96 : 64 );
@@ -292,7 +292,7 @@ try {
 				$check_display( $path . '.avif', $orientation, $orientation >= 5 ? 64 : 96, $orientation >= 5 ? 96 : 64 );
 			} else {
 				$assert( ! $required, 'Required oriented native AVIF editor unavailable.' );
-				echo "Oriented AVIF: NOT RUN — capable editor unavailable.\n";
+				echo "Oriented AVIF: NOT RUN — WordPress editor AVIF support unavailable.\n";
 			}
 			$assert( $hash === hash_file( 'sha256', $path ), 'Native oriented sidecars changed source.' );
 		}
@@ -383,7 +383,7 @@ try {
 		list( $id, $path ) = $attach( 'partial.png', $valid, 'image/png' );
 		$result = $run( $id, array( 'use_external_binaries' => 1 ) );
 		$assert( is_file( $dir . '/called' ) && 'gd' === $result['files'][0]['webp_engine'], 'Partial encoder probe did not run and fall back to GD.' );
-		$assert( array() === glob( $dir . '/.*.yoohw-mo-*' ), 'Encoder error left unpublished partial output.' );
+		$assert( array() === glob( $dir . '/.*.yoohw-mo-*' ) && array() === glob( $dir . '/*.tmp-*' ), 'Encoder error left unpublished partial output.' );
 		$check_alpha( $path, $path . '.webp', false );
 		$stage = $dir . '/owned-partial.webp';
 		$failed = $invoke( 'save_webp_file_with_cwebp', array( $path, $stage, 90 ) );
@@ -409,7 +409,7 @@ try {
 		$result = $run( $id, array( 'optimize_originals' => 1 ) );
 		$assert( 'failed' === $result['files'][0]['original_status'] && 'failed' === $result['files'][0]['status'], 'Editor partial save did not report failures.' );
 		$assert( $hash === hash_file( 'sha256', $path ) && 'old webp' === file_get_contents( $path . '.webp' ) && 'retain me' === file_get_contents( $sentinel ), 'Editor error changed source/old sidecar/unowned error path.' );
-		$assert( array() === glob( $dir . '/.*.yoohw-mo-*' ), 'Editor save error retained caller-owned partial stage.' );
+		$assert( array() === glob( $dir . '/.*.yoohw-mo-*' ) && array() === glob( $dir . '/*.tmp-*' ), 'Editor save error retained caller-owned partial stage.' );
 	}
 	echo 'Image quality ' . $mode . ': PASS — ' . $count . " assertions.\n";
 } catch ( Throwable $error ) {

@@ -85,7 +85,11 @@ pixels, then checks the public lossless path retains that display metadata. Nati
 oriented sources still require the capable normalizing WordPress editor. Forcing
 `wp_image_editors` alone does not select Imagick for neutral WebP: direct GD is
 explicitly asserted there. AVIF uses GD decoding when available, otherwise real
-Imagick decoding converted to PNG for the same pixel oracle.
+Imagick decoding converted to PNG for the same pixel oracle. Native codec support and
+WordPress editor support are checked separately: WordPress 6.4 may lack the
+AVIF editor API even when Imagick advertises the codec, so that optional editor
+case reports `NOT RUN` while external AVIF remains independently testable.
+The required native profile still fails when its editor capability is missing.
 
 Failure probes include invalid headers, a PNG with valid IHDR/dimensions but an
 undecodable IDAT body, and native-decoder rejection (GD and available Imagick).
