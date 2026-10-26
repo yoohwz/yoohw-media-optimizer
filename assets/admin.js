@@ -52,6 +52,7 @@
 		}
 
 		var startButton = form.querySelector('[data-yoohw-mo-start]');
+		var canStart = !startButton || !startButton.disabled;
 		var stopButton = form.querySelector('[data-yoohw-mo-stop]');
 		var progress = form.querySelector('[data-yoohw-mo-progress]');
 		var progressTitle = form.querySelector('[data-yoohw-mo-progress-title]');
@@ -415,7 +416,7 @@
 			}
 
 			if (startButton) {
-				startButton.disabled = nextRunning;
+				startButton.disabled = nextRunning || !canStart;
 				setButtonContent(startButton, nextRunning ? 'dashicons-update' : 'dashicons-controls-play', nextRunning ? config.strings.runningButton : (startNew ? config.strings.start : config.strings.resume));
 			}
 
