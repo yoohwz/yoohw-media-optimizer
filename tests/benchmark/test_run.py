@@ -208,6 +208,12 @@ class HarnessTests(unittest.TestCase):
             self.assertNotEqual(result["returncode"], 0)
             self.assertFalse((self.directory / "cli").exists())
 
+    def test_optional_icc_control_changes_only_metadata_flag(self):
+        baseline = RUN.encode_args("webp_baseline82", {"cwebp": "cwebp"}, "source", "normalized", "preserved", "target")
+        control = RUN.encode_args("webp_icc82", {"cwebp": "cwebp"}, "source", "normalized", "preserved", "target")
+        self.assertEqual([arg for arg in control if arg not in ("-metadata", "icc")], baseline)
+        self.assertNotIn("webp_icc82", RUN.PROFILES)
+
 
 if __name__ == "__main__":
     unittest.main()

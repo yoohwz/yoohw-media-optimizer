@@ -32,6 +32,7 @@ PROFILES = (
     "webp_lossless_srgb", "avif_baseline82", "avif_444_82_srgb",
     "avif_420_82_srgb", "avif_444_70_srgb",
 )
+OPTIONAL_PROFILES = ("webp_icc82",)
 
 
 def digest(path):
@@ -189,6 +190,8 @@ def encode_args(profile, tools, source, normalized, preserved, target):
         return [tools["cwebp"], "-quiet", "-q", "82", source, "-o", target]
     if profile == "avif_baseline82":
         return [tools["avifenc"], "-q", "82", source, target]
+    if profile == "webp_icc82":
+        return [tools["cwebp"], "-quiet", "-q", "82", "-metadata", "icc", source, "-o", target]
     if profile.startswith("webp_"):
         args = [tools["cwebp"], "-quiet", "-metadata", "icc"]
         if "lossless" in profile:
@@ -237,7 +240,7 @@ def aggregate(rows):
                           "baseline": baseline["profile"], "bytes_ratio": row["bytes"] / baseline["bytes"],
                           "score_delta": row["ssimulacra2_worst"] - baseline["ssimulacra2_worst"],
                           "encode_time_ratio": row["encode_wall_seconds"] / baseline["encode_wall_seconds"] if row.get("encode_wall_seconds") is not None and baseline.get("encode_wall_seconds") else None,
-                          "same_quality_number": "_82_" in row["profile"] or "sharp82" in row["profile"]})
+                          "same_quality_number": "_82_" in row["profile"] or "sharp82" in row["profile"] or row["profile"] == "webp_icc82"})
     paired_summary = []
     for group, profile in sorted({(row["group"], row["profile"]) for row in pairs}):
         entries = [row for row in pairs if row["group"] == group and row["profile"] == profile]
@@ -333,6 +336,9 @@ def benchmark(manifest, output, profiles, timeout, tools, plugin_baseline=None):
                        "source_orientation": orientation}
                 unhandled_orientation = not plugin_data and "baseline" in profile and orientation in range(2, 9)
                 report["rows"].append(row)
+                if profile == "webp_icc82" and orientation in range(2, 9):
+                    row.update(status="not_applicable", error="metadata-only control bounded to neutral orientation")
+                    continue
                 if profile == "webp_lossless_srgb" and not ("A" in reference.getbands() or entry["group"] in ("graphics", "text", "screenshot", "screenshots", "alpha", "transparent")):
                     row.update(status="not_applicable", error="lossless profile bounded to graphics/alpha")
                     continue
@@ -410,7 +416,7 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("manifest", type=Path)
     parser.add_argument("output", type=Path)
-    parser.add_argument("--profiles", nargs="+", choices=PROFILES, default=list(PROFILES))
+    parser.add_argument("--profiles", nargs="+", choices=PROFILES + OPTIONAL_PROFILES, default=list(PROFILES))
     parser.add_argument("--timeout", type=float, default=120)
     parser.add_argument("--plugin-baseline", type=Path, help="score actual plugin outputs from plugin-baseline.php JSON; replaces baseline profile encode step")
     for tool in ("cwebp", "avifenc", "ssimulacra2"):
