@@ -386,6 +386,9 @@ try {
 		$assert( $jpeg_optimized_hash === hash_file( 'sha256', $jpeg_source ), 'The legacy JPEG was recompressed.' );
 		$assert( $jpeg_original_hash === hash_file( 'sha256', $jpeg_backup ), 'The legacy JPEG backup was replaced.' );
 
+		$backup_restore_checks = require __DIR__ . '/backup-restore-tests.php';
+		$backup_restore_checks( $optimizer, $invoke, $assert, $test_dir, $runtime_options );
+
 		$lossless_jpeg_checks = require __DIR__ . '/lossless-jpeg-tests.php';
 		$lossless_jpeg_checks( $optimizer, $invoke, $assert, $test_dir, $runtime_options );
 	}
