@@ -124,13 +124,13 @@ $privacy = static function( $path ) use ( $assert ) {
 	$assert( false === strpos( file_get_contents( $path ), 'GPS fixture metadata' ) && false === strpos( file_get_contents( $path ), 'GPS latitude' ), 'Remove policy retained private metadata payload.' );
 	$image->clear();
 };
-$safe_failure = static function( $name, $bytes ) use ( $assert, $attach, $invoke, $run ) {
+$safe_failure = static function( $name, $bytes, $changes = array() ) use ( $assert, $attach, $invoke, $run ) {
 	list( $id, $path ) = $attach( $name, $bytes );
 	$backup = $invoke( 'backup_file', array( $path ) );
 	$assert( ! is_wp_error( $backup ), 'Could not seed recovery data.' );
 	$backup_hash = hash_file( 'sha256', $backup['path'] );
 	file_put_contents( $path . '.webp', 'old webp' ); file_put_contents( $path . '.avif', 'old avif' );
-	$result = $run( $id, array( 'optimize_originals' => 1, 'generate_avif_sidecars' => 1 ) );
+	$result = $run( $id, array_merge( array( 'optimize_originals' => 1, 'generate_avif_sidecars' => 1 ), $changes ) );
 	$file = $result['files'][0];
 	$assert( 'failed' === $file['original_status'] && 'failed' === $file['status'] && in_array( $file['avif_status'], array( 'failed', 'unsupported' ), true ), 'Unsafe ICC reported success: ' . $name . wp_json_encode( $result ) );
 	$assert( 0 === $result['summary']['original_optimized'] && 0 === $result['summary']['created'] && 0 === $result['summary']['avif_created'] && 1 === $result['summary']['original_failed'] && 1 === $result['summary']['failed'], 'ICC failure counters untruthful.' );
@@ -139,7 +139,7 @@ $safe_failure = static function( $name, $bytes ) use ( $assert, $attach, $invoke
 
 try {
 	wp_mkdir_p( $dir );
-	$editor = 'gd' === $mode || 'tool-flags' === $mode ? 'WP_Image_Editor_GD' : 'WP_Image_Editor_Imagick';
+	$editor = in_array( $mode, array( 'gd', 'tool-flags', 'native-strip' ), true ) ? 'WP_Image_Editor_GD' : 'WP_Image_Editor_Imagick';
 	$filter( 'wp_image_editors', static function() use ( $editor ) { return array( $editor ); } );
 	if ( 'native' !== $mode ) { putenv( 'PATH=' . $dir ); }
 	if ( in_array( $mode, array( 'imagick', 'native' ), true ) && ! class_exists( 'Imagick' ) ) {
@@ -285,6 +285,15 @@ try {
 			$assert( YoOhw_MO_Color_Stripping_Editor::$saves > 0, 'Stripping editor never reached candidate verification.' );
 		} else { echo "ICC stripped-editor/CMYK: NOT RUN — Imagick unavailable.\n"; }
 		$assert( array() === glob( $dir . '/.*.yoohw-mo-*' ) && array() === glob( $dir . '/*.tmp-*' ), 'ICC rejection leaked owned temporary output.' );
+	} elseif ( 'native-strip' === $mode ) {
+		// Fresh binary cache: a successful encoder which loses ICC must never publish.
+		$untagged = imagecreatefromstring( $fixture( 'jpeg', '' ) );
+		imagewebp( $untagged, $dir . '/stripped.webp', 90 ); imagedestroy( $untagged );
+		file_put_contents( $dir . '/cwebp', "#!/bin/sh\nfor argument in \"\$@\"; do destination=\$argument; done\n/bin/cp \"\${0%/*}/stripped.webp\" \"\$destination\"\nprintf called > \"\${0%/*}/called\"\n" );
+		chmod( $dir . '/cwebp', 0700 );
+		$safe_failure( 'native-stripped.jpg', $fixture( 'jpeg', $profiles['display_p3'] ), array( 'use_external_binaries' => 1 ) );
+		$assert( is_file( $dir . '/called' ), 'Stripped native output probe never executed.' );
+		$assert( array() === glob( $dir . '/.*.yoohw-mo-*' ) && array() === glob( $dir . '/*.tmp-*' ), 'Native ICC rejection leaked owned stages.' );
 	} elseif ( 'tool-flags' === $mode ) {
 		// Controlled executables inspect argument policy, not real encoder fidelity.
 		foreach ( array( 'jpegoptim', 'jpegtran', 'djpeg', 'cjpeg', 'pngquant', 'oxipng', 'optipng' ) as $tool ) {
