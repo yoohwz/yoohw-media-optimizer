@@ -391,6 +391,9 @@ try {
 
 		$lossless_jpeg_checks = require __DIR__ . '/lossless-jpeg-tests.php';
 		$lossless_jpeg_checks( $optimizer, $invoke, $assert, $test_dir, $runtime_options );
+
+		$queue_checks = require __DIR__ . '/queue-tests.php';
+		$queue_checks( $optimizer, $invoke, $assert );
 	}
 
 } catch ( Throwable $error ) {
