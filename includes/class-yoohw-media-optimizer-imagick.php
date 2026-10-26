@@ -13,8 +13,9 @@ class YoOhw_Media_Optimizer_Imagick extends WP_Image_Editor_Imagick {
 				return new WP_Error( 'yoohw_mo_color_editor', __( 'The image editor cannot retain the source color profile safely.', 'yoohw-media-optimizer' ) );
 			}
 			if ( $remove_private ) {
-				// Suppress PNG text/profile duplicates and generated private metadata at the writer.
-				$this->image->setOption( 'png:exclude-chunks', 'tEXt,zTXt,iTXt,eXIf,EXIF,date,time' );
+				// Some PNG writers require tEXt support to write iCCP. Source properties
+				// are removed below; the output verifier still rejects every text chunk.
+				$this->image->setOption( 'png:exclude-chunks', 'zTXt,iTXt,eXIf,EXIF,date,time' );
 				foreach ( $profiles as $name => $value ) {
 					if ( ! in_array( strtolower( $name ), array( 'icc', 'icm' ), true ) ) { $this->image->removeImageProfile( $name ); }
 				}
