@@ -99,3 +99,90 @@ parity and larger independent product/photo corpora need separate evidence.
 Rebuild hashes are reproducible in the recorded environment. Different Pillow,
 LittleCMS, JPEG/PNG or font versions may produce different byte hashes; record
 that environment instead of changing pinned master hashes to hide drift.
+
+## Run the experiments
+
+Create a development virtual environment with Python 3.12 and install
+`python3 -m pip install -r tests/benchmark/requirements.txt`. Supply `cwebp`,
+`avifenc` (with the `-q` interface), and `ssimulacra2` on PATH. No binary is bundled
+with the plugin. Native executable hashes, versions, actual commands, Pillow and
+LittleCMS versions are captured in `results.json`.
+
+```sh
+python3 tests/benchmark/test_run.py
+python3 tests/benchmark/run.py /tmp/yoohw-benchmark-round1/manifest.json \
+  /tmp/yoohw-benchmark-external
+python3 tests/benchmark/run.py /tmp/yoohw-benchmark-round1/policy-probes.json \
+  /tmp/yoohw-benchmark-policy --profiles webp_baseline82
+```
+
+Every output directory must be new. The runner verifies source hashes before
+and after processing, never removes an existing directory, and reports encoding,
+decoding and metric failures. Expected invalid-profile/CMYK preflight rejection
+is recorded separately from successful images. Reports include JSON, CSV and a
+local HTML gallery with reference/candidate PNGs for full-size inspection.
+
+The default eight profiles compare the existing external commands at quality 82
+with combined candidate configurations: WebP sharp YUV/method 6 with either ICC
+preservation or sRGB conversion, WebP lossless for graphics/alpha, and AVIF
+speed 6/jobs 1 with 4:2:0 or 4:4:4 at quality 82 plus 4:4:4 at quality 70.
+They are experiments, not production defaults. A combined profile comparison
+cannot attribute an improvement to one flag. Equal quality numbers do not imply
+equal fidelity across codecs. Lossless describes encoded pixel preservation,
+not reversal of a preceding gamut conversion.
+
+Each reference is decoded from the saved source, oriented, and transformed to
+sRGB with Pillow/LittleCMS. Untagged RGB requires the manifest's explicit sRGB
+assumption; unprofiled CMYK and malformed ICC are rejected. Candidate output is
+also interpreted through its ICC, or explicitly assumed sRGB if untagged. The
+runner then scores opaque black and white composites separately and records the
+lower SSIMULACRA2 score plus alpha-channel error. This SDR sRGB comparison does
+not measure retained out-of-sRGB gamut, HDR, or calibrated display appearance.
+The generated corpus references are a reproducibility cross-check; the runner
+computes its own reference from the input. Both use LittleCMS, so this is not
+independent color-engine certification.
+
+Raw command baselines do not implement the plugin's EXIF editor routing.
+Non-neutral EXIF inputs are excluded from command-baseline quality comparisons.
+Use the separate actual-plugin probe below to check that boundary.
+
+## Actual plugin encoder-path probe
+
+Run only on an appropriate local/disposable WordPress installation with this
+plugin active and its runtime class byte-identical to the checkout. This invokes
+the private sidecar-save seam at quality 82; it does **not** exercise attachment
+transactions, backups, tracking, queue, delivery, or the larger-output skip rule.
+It never calls attachment optimization or persists option changes. External
+encoders are enabled only through a request-local option filter. WordPress
+bootstrap still executes the test site's active plugins, so use a test site.
+
+```sh
+php tests/benchmark/plugin-baseline.php /path/to/disposable-wordpress \
+  /tmp/yoohw-benchmark-round1/manifest.json /tmp/yoohw-benchmark-plugin
+python3 tests/benchmark/run.py /tmp/yoohw-benchmark-round1/manifest.json \
+  /tmp/yoohw-benchmark-plugin-scored \
+  --profiles webp_baseline82 avif_baseline82 \
+  --plugin-baseline /tmp/yoohw-benchmark-plugin/plugin-baseline.json
+```
+
+Probe output must be outside both the corpus and WordPress trees and must not
+exist. Engine identity, output/source hashes, errors and seam wall time are
+recorded. The scoring runner checks output hashes; missing/failed baseline rows
+are failures. PHP seam peak RSS is unavailable and remains null.
+
+## Interpreting costs and results
+
+This is one encode per image/profile, with correlated derivatives and no timing
+confidence interval or independent holdout. Encode time and peak RSS describe
+the encoder subprocess; shared Python source decoding, ICC normalization and
+intermediate PNG writes are **not** included in those encoder costs. Decoder
+time includes a fresh Python process, Pillow decode, ICC/EXIF normalization and
+PNG serialization, rather than a browser's pure decoder cost. Peak RSS uses
+per-child `wait4` with platform-specific unit conversion. AVIF candidates pin
+one job while the baseline retains encoder defaults; time ratios reflect those
+different configurations, not an isolated algorithm comparison.
+
+Choose follow-up experiments from paired rows and worst cases, then inspect
+text, edges, gradients and alpha at display size and 1:1. The gallery is labeled;
+agent inspection is not a blinded human panel. Do not infer a universal score
+threshold, production savings percentage or production-ready color policy.

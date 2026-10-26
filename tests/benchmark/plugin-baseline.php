@@ -69,7 +69,7 @@ try {
 			$method->setAccessible( true );
 			$start = microtime( true );
 			$saved = $method->invoke( $optimizer, $source, $destination, 82 );
-			$row   = array( 'id' => $id, 'codec' => $codec, 'seconds' => microtime( true ) - $start );
+			$row   = array( 'id' => $id, 'codec' => $codec, 'source_sha256' => $entry['sha256'], 'seconds' => microtime( true ) - $start );
 			if ( is_wp_error( $saved ) ) {
 				$row['error'] = $saved->get_error_code() . ': ' . $saved->get_error_message();
 			} else {
@@ -84,7 +84,7 @@ try {
 			}
 		}
 	}
-	$result = array( 'php' => PHP_VERSION, 'plugin_sha256' => hash_file( 'sha256', $expected ), 'source_hashes_unchanged' => true, 'images' => $rows );
+	$result = array( 'php' => PHP_VERSION, 'manifest_sha256' => hash_file( 'sha256', $manifest ), 'plugin_sha256' => hash_file( 'sha256', $expected ), 'source_hashes_unchanged' => true, 'images' => $rows );
 	file_put_contents( $output . '/plugin-baseline.json', json_encode( $result, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES ) . "\n" );
 	fwrite( STDOUT, 'Recorded ' . count( $rows ) . " real plugin sidecar-save results.\n" );
 } catch ( Throwable $error ) {
