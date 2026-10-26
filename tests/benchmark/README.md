@@ -5,6 +5,8 @@ modify uploads, or publish a release. Generated media and reports belong outside
 Git and outside a site's upload directory. The runner's measurements describe a
 small PoC, not a universal quality or encoder ranking.
 
+See [the measured round-1 report](RESULTS.md) for findings, per-case data and limitations.
+
 ## Build the 64-case corpus
 
 Requires Python 3.12, Pillow 12.3.0, NumPy 2.3.5 and LittleCMS (Pillow's bundled
@@ -114,6 +116,8 @@ python3 tests/benchmark/run.py /tmp/yoohw-benchmark-round1/manifest.json \
   /tmp/yoohw-benchmark-external
 python3 tests/benchmark/run.py /tmp/yoohw-benchmark-round1/policy-probes.json \
   /tmp/yoohw-benchmark-policy --profiles webp_baseline82
+python3 tests/benchmark/run.py /tmp/yoohw-benchmark-round1/manifest.json \
+  /tmp/yoohw-benchmark-icc-control --profiles webp_icc82
 ```
 
 Every output directory must be new. The runner verifies source hashes before
@@ -130,6 +134,11 @@ They are experiments, not production defaults. A combined profile comparison
 cannot attribute an improvement to one flag. Equal quality numbers do not imply
 equal fidelity across codecs. Lossless describes encoded pixel preservation,
 not reversal of a preceding gamut conversion.
+
+The optional `webp_icc82` control adds only `-metadata icc` to the baseline
+command and skips non-neutral EXIF sources. It isolates profile copying from
+method/sharp-YUV changes; profile overhead and perceptual score can be compared
+to the corresponding neutral baseline rows.
 
 Each reference is decoded from the saved source, oriented, and transformed to
 sRGB with Pillow/LittleCMS. Untagged RGB requires the manifest's explicit sRGB
@@ -167,8 +176,9 @@ python3 tests/benchmark/run.py /tmp/yoohw-benchmark-round1/manifest.json \
 
 Probe output must be outside both the corpus and WordPress trees and must not
 exist. Engine identity, output/source hashes, errors and seam wall time are
-recorded. The scoring runner checks output hashes; missing/failed baseline rows
-are failures. PHP seam peak RSS is unavailable and remains null.
+recorded. The scoring runner checks the manifest hash and each source/output
+hash; stale, missing or failed baseline rows are failures. PHP seam peak RSS is
+unavailable and remains null.
 
 ## Interpreting costs and results
 

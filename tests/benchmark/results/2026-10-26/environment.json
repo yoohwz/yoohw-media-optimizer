@@ -1,0 +1,121 @@
+{
+  "date": "2026-10-26",
+  "machine": {
+    "cpu": "Apple M1",
+    "logical_cpus": 8,
+    "ram_bytes": 8589934592,
+    "os": "macOS-27.0.1-arm64-arm-64bit"
+  },
+  "runtime_class_sha256": "e71e25e3d7cd504c84c3d5b9adf94c5f0433192f0d7b9cc54b28fa52ac35b798",
+  "php": "8.4.21",
+  "corpus_environment": {
+    "python": "3.12.14",
+    "pillow": "12.3.0",
+    "numpy": "2.3.5",
+    "littlecms": "2.19"
+  },
+  "corpus_builder_sha256": "c49d2b29a4c4ea8b17408b0590285011744416c13d35dad8b034280b7fce8bcf",
+  "sources_sha256": "20e2386c4a7e4c482d1226c9e354d853e20e01ebfecd184c0c08a20affdad239",
+  "measurement_runs": {
+    "external": {
+      "report_sha256": "4daf15e70e031b4caae5b136566d704ab83e450d53eb55d5baca2b3c5206d12b",
+      "csv_sha256": "b4b51cbb18f34c8c3aa4f79f974729add7c1e77f82d2a263d882778cfd9b3256",
+      "runner_sha256": "87c3a35b6f468373f95a8489f86589164dda23652574c9b95052a78e2757b65e",
+      "manifest_sha256": "62cdac33bb4303745ef2f787bef6fc4f760f3d44a9178eaa2e40c8796c3a6c69",
+      "execution_ok": true,
+      "source_hashes_unchanged": true
+    },
+    "actual": {
+      "report_sha256": "c4506f8404d0a08444eb777e8d1a68cd788b833dc752513cfeaaa16c92af2e18",
+      "csv_sha256": "87e8a3e3e651474ac0dca5dab04da559191a4b71ad5b3aa1c7e445fdebc8ff13",
+      "runner_sha256": "87c3a35b6f468373f95a8489f86589164dda23652574c9b95052a78e2757b65e",
+      "manifest_sha256": "62cdac33bb4303745ef2f787bef6fc4f760f3d44a9178eaa2e40c8796c3a6c69",
+      "execution_ok": true,
+      "source_hashes_unchanged": true
+    },
+    "icc": {
+      "report_sha256": "d921f2c76252bac92597d5605eebf992823f08a59726560d75cf846f789e9fcc",
+      "csv_sha256": "83e79b835c05fcf83e59a2b4d0b8103fae4cabc497aad39527e49a8b0e6db372",
+      "runner_sha256": "87c3a35b6f468373f95a8489f86589164dda23652574c9b95052a78e2757b65e",
+      "manifest_sha256": "62cdac33bb4303745ef2f787bef6fc4f760f3d44a9178eaa2e40c8796c3a6c69",
+      "execution_ok": true,
+      "source_hashes_unchanged": true
+    },
+    "probes": {
+      "report_sha256": "deef5afcbfb710b82aa99885ad118995d6b474e958345fe3761650ff614dd1b1",
+      "csv_sha256": "f23af01d935e38d9bfc3ef487f285fca41163b0c853266863e50f0b81fd73cda",
+      "runner_sha256": "87c3a35b6f468373f95a8489f86589164dda23652574c9b95052a78e2757b65e",
+      "manifest_sha256": "e1dfc9231c995ff95086fb3657399767ab2d5667ffd954aa633b91cf3ecac0c1",
+      "execution_ok": true,
+      "source_hashes_unchanged": true
+    }
+  },
+  "tools": {
+    "cwebp": {
+      "binary_sha256": "b31070342821b6316c756e22a336a72bbde4a6e4f2a9cabb22ffd49a73cc89cf",
+      "version_output": "1.6.0\nlibsharpyuv: 0.4.2\n"
+    },
+    "avifenc": {
+      "binary_sha256": "f9cd38ec2804b56174344fd178ea919f9bff41ec7fc4a471f0ff9065b1b5d076",
+      "version_output": "Version: 1.4.2 (dav1d [dec]:1.5.4, aom [enc/dec]:3.15.1)\nlibyuv : unavailable\n\n"
+    },
+    "ssimulacra2": {
+      "binary_sha256": "94e8a021485570bfe0cfa454c9e70bbabbd6b2fdf3b3e884aa44b45fb662f195",
+      "version_output": "jpeg-xl 0.12.0; CLI help captured in raw report"
+    }
+  },
+  "neutral_plugin_command_byte_identity": {
+    "count": 124,
+    "all_identical": true
+  },
+  "visual_inspection": {
+    "kind": "unblinded agent inspection, SDR crops over white",
+    "image_sha256": "a730bab43ec89aae4d91690e77f044e363cc60bdf6e720a31ec3a7a1d01732fe",
+    "cases": [
+      "astronaut-2",
+      "graphics-0-1",
+      "graphics-2-1",
+      "alpha-0-1"
+    ],
+    "crop_boxes": [
+      [
+        180,
+        70,
+        436,
+        326
+      ],
+      [
+        0,
+        0,
+        256,
+        256
+      ],
+      [
+        0,
+        0,
+        256,
+        256
+      ],
+      [
+        65,
+        120,
+        321,
+        376
+      ]
+    ]
+  },
+  "limits": [
+    "Single pass; correlated derivatives; no independent product catalog or holdout.",
+    "SDR sRGB-normalized scores do not measure preserved wide gamut or HDR.",
+    "Encoder costs exclude shared source decoding, CMS normalization and intermediate PNG writes.",
+    "Decoder costs include fresh Python process, CMS and PNG write.",
+    "No valid CMYK ICC conversion, blind human panel, browser calibration or GD/Imagick candidate parity."
+  ],
+  "actual_plugin_environment": {
+    "wordpress": "7.1.3",
+    "php": "8.4.21",
+    "imagick": "ImageMagick 7.1.2-23 Q16-HDRI aarch64 6c51b2de5:20260516",
+    "gd": "bundled (2.1.0 compatible); WebP yes; AVIF no",
+    "scope": "local encoder-seam probe; declared WordPress 6.4/7.0 support boundaries are verified separately by CI"
+  }
+}
