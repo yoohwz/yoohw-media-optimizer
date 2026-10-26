@@ -3456,6 +3456,8 @@ Header append Vary Accept env=REDIRECT_accept
 	/** Select the normal WordPress editor with a narrow Imagick save adapter. */
 	private function color_image_editor( $source, $args = array() ) {
 		$filter = static function ( $editors ) {
+			if ( ! in_array( 'WP_Image_Editor_Imagick', $editors, true ) ) { return $editors; }
+			// WordPress loads its editor base classes before applying this filter.
 			require_once __DIR__ . '/class-yoohw-media-optimizer-imagick.php';
 			return array_map( static function ( $editor ) { return 'WP_Image_Editor_Imagick' === $editor ? 'YoOhw_Media_Optimizer_Imagick' : $editor; }, $editors );
 		};
