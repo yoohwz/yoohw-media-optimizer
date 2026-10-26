@@ -319,6 +319,27 @@ try {
 			imagedestroy( $after );
 			$check_display( $path, 1, 96, 64 );
 			$assert( $hash === hash_file( 'sha256', $invoke( 'backup_path_for', array( $path ) ) ), 'Real jpegtran backup lost source/profile.' );
+			// Preserve-all must keep non-neutral EXIF/ICC together with unchanged raw pixels.
+			list( $preserve_id, $preserve_path ) = $attach( 'native-preserved-orientation.jpg', $jpeg( 6 ), 'image/jpeg' );
+			$preserve_stage = $dir . '/native-preserved-output.jpg';
+			$preserved = $invoke( 'optimize_jpeg_with_jpegtran', array( $preserve_path, $preserve_stage, array( 'metadata_policy' => 'preserve_all' ) ) );
+			$assert( ! is_wp_error( $preserved ) && 'jpegtran' === $preserved['engine'], 'Real preserve-all jpegtran did not execute.' );
+			$metadata = exif_read_data( $preserve_stage );
+			$assert( 6 === (int) $metadata['Orientation'] && false !== strpos( file_get_contents( $preserve_stage ), $icc ), 'Preserve-all jpegtran dropped display orientation or ICC.' );
+			$before = $decode( $preserve_path );
+			$after = $decode( $preserve_stage );
+			$equal = imagesx( $before ) === imagesx( $after ) && imagesy( $before ) === imagesy( $after );
+			for ( $y = 0; $equal && $y < 64; ++$y ) {
+				for ( $x = 0; $x < 96; ++$x ) {
+					if ( imagecolorat( $before, $x, $y ) !== imagecolorat( $after, $x, $y ) ) { $equal = false; break; }
+				}
+			}
+			$assert( $equal, 'Preserve-all jpegtran changed raw pixels under retained orientation.' );
+			imagedestroy( $before );
+			imagedestroy( $after );
+			$preserve_public = $run( $preserve_id, array( 'use_external_binaries' => 1, 'optimize_originals' => 1, 'compression_mode' => 'lossless', 'metadata_policy' => 'preserve_all', 'generate_webp_sidecars' => 0 ) );
+			$metadata = exif_read_data( $preserve_path );
+			$assert( in_array( $preserve_public['files'][0]['original_status'], array( 'optimized', 'no_change' ), true ) && 6 === (int) $metadata['Orientation'] && false !== strpos( file_get_contents( $preserve_path ), $icc ), 'Public preserve-all lossless path lost display metadata.' );
 			echo "jpegtran: PASS — real selected engine, exact RGB and backup.\n";
 		} else {
 			echo "jpegtran: NOT RUN — binary unavailable.\n";

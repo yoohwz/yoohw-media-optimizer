@@ -79,7 +79,9 @@ output metadata-preservation policy is asserted.
 Neutral JPEG/palette/RGBA native checks require the actual reported `cwebp` or
 `avifenc` engine, decode its real output, and verify MIME, dimensions,
 colors/alpha and unchanged source hashes. A neutral real `jpegtran` path asserts
-selected engine, exact decoded RGB and recovery hash. Native encoders enabled on
+selected engine, exact decoded RGB and recovery hash. A preserve-all real jpegtran
+case keeps non-neutral Orientation=6 and exact ICC bytes with unchanged raw
+pixels, then checks the public lossless path retains that display metadata. Native encoders enabled on
 oriented sources still require the capable normalizing WordPress editor. Forcing
 `wp_image_editors` alone does not select Imagick for neutral WebP: direct GD is
 explicitly asserted there. AVIF uses GD decoding when available, otherwise real
