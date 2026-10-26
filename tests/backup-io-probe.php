@@ -30,6 +30,10 @@ class WP_Error { public $code; public function __construct( $code, $message ) { 
 class WP_Filesystem_Base {}
 class WP_Filesystem_Direct extends WP_Filesystem_Base {
 	public function __construct( $args ) {}
+	public function chmod( $path, $mode ) {
+		global $probe_mode;
+		return 'chmod-fail' !== $probe_mode && chmod( $path, $mode );
+	}
 	public function copy( $source, $destination, $overwrite = false ) {
 		global $probe_mode, $probe_root, $probe_id;
 		$fault = str_replace( 'legacy-', '', $probe_mode );

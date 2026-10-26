@@ -173,6 +173,12 @@ return static function( $optimizer, $invoke, $assert, $test_dir, $runtime_option
 		clearstatcache( true, $source );
 		$assert( 1 === $restored['restored'] && 0 === $restored['failed'] && $original_hash === hash_file( 'sha256', $source ), 'Safe restore did not recover the original snapshot.' );
 		$assert( 0640 === ( fileperms( $source ) & 0777 ), 'Restore changed original permission bits.' );
+		chmod( $source, 0000 );
+		$zero_mode = $optimizer->restore_attachment( $attachment_id );
+		clearstatcache( true, $source );
+		$zero_bits = fileperms( $source ) & 0777;
+		chmod( $source, 0640 );
+		$assert( 0 === $zero_mode['restored'] && 1 === $zero_mode['failed'] && 0 === $zero_bits && $original_hash === hash_file( 'sha256', $source ), 'An inaccessible original was replaced or had permissions broadened.' );
 		unlink( $source );
 		$missing = $optimizer->restore_attachment( $attachment_id );
 		$assert( 1 === $missing['restored'] && $original_hash === hash_file( 'sha256', $source ), 'A missing original could not be restored.' );
@@ -253,7 +259,7 @@ return static function( $optimizer, $invoke, $assert, $test_dir, $runtime_option
 			$assert( is_array( $data ), 'Filesystem probe failed: ' . $error . $output );
 			return $data;
 		};
-		foreach ( array( 'partial', 'corrupt', 'rename-fail' ) as $mode ) {
+		foreach ( array( 'partial', 'corrupt', 'chmod-fail', 'rename-fail' ) as $mode ) {
 			$data = $finish( $spawn( $mode ) );
 			$assert( ! $data['success'] && $current_hash === hash_file( 'sha256', $io . '/public/uploads/current.png' ), 'A failed copy/verification/publish changed the current original.' );
 			if ( 'rename-fail' !== $mode ) {

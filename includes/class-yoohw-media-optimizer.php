@@ -4628,7 +4628,8 @@ Header append Vary Accept env=REDIRECT_accept
 			return '';
 		}
 		clearstatcache( true, $stage );
-		if ( filesize( $stage ) !== $size || ! hash_equals( $hash, $this->file_hash( $stage ) ) || ! @chmod( $stage, $mode ) ) {
+		$filesystem = new WP_Filesystem_Direct( array() );
+		if ( filesize( $stage ) !== $size || ! hash_equals( $hash, $this->file_hash( $stage ) ) || ! $mode || ! $filesystem->chmod( $stage, $mode ) ) {
 			wp_delete_file( $stage );
 			return '';
 		}
@@ -4645,6 +4646,7 @@ Header append Vary Accept env=REDIRECT_accept
 		if ( ! $stage ) {
 			return false;
 		}
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.rename_rename -- WP_Filesystem::move pre-deletes the original; atomic commit must preserve it on failure.
 		$committed = $this->relative_upload_path_for_storage( $destination ) && function_exists( 'rename' ) && @rename( $stage, $destination );
 		if ( ! $committed ) {
 			wp_delete_file( $stage );
