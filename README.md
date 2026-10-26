@@ -67,7 +67,7 @@ Without resizing, lossless JPEG optimization uses optional `jpegoptim` or `jpegt
 
 = What storage is required for backup and restore? =
 
-New backups remain outside the document root in the current site's backup directory. The local backup filesystem must support hard links, and original replacement requires safe rename within the upload directory. If safe publication is unavailable, the operation fails without overwriting the current original. Independent WordPress installations must use separate backup roots, including when configuring a custom backup directory.
+New backups remain outside the document root in the current site's backup directory. Backup roots must not overlap the WordPress directory or uploads, including uploads configured outside WordPress. The local backup filesystem must support hard links, and original replacement requires safe rename within the upload directory. If safe publication is unavailable, the operation fails without overwriting the current original. Independent WordPress installations must use separate backup roots, including when configuring a custom backup directory.
 
 = How are restore paths protected? =
 

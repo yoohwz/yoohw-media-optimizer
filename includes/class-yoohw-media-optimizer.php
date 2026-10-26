@@ -4559,8 +4559,15 @@ Header append Vary Accept env=REDIRECT_accept
 		$root = apply_filters( 'yoohw_media_optimizer_backup_dir', $default );
 		$canonical = $this->canonical_directory( $root );
 		$webroot = $this->canonical_directory( ABSPATH );
-		if ( ! $canonical || ! $webroot || 0 === strpos( trailingslashit( $canonical ), trailingslashit( $webroot ) ) || 0 === strpos( trailingslashit( $webroot ), trailingslashit( $canonical ) ) ) {
+		$uploads = wp_get_upload_dir();
+		$upload_root = $this->canonical_directory( $uploads['basedir'] );
+		if ( ! $canonical || ! $webroot || ! $upload_root ) {
 			return '';
+		}
+		foreach ( array( $webroot, $upload_root ) as $boundary ) {
+			if ( 0 === strpos( trailingslashit( $canonical ), trailingslashit( $boundary ) ) || 0 === strpos( trailingslashit( $boundary ), trailingslashit( $canonical ) ) ) {
+				return '';
+			}
 		}
 		return $this->contained_path( trailingslashit( wp_normalize_path( $root ) ) . 'site-' . get_current_blog_id(), $root );
 	}

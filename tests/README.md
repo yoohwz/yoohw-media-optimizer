@@ -33,7 +33,8 @@ fixtures do not certify the real encoders. Decoded RGB equality after metadata
 stripping does not certify unchanged EXIF display orientation.
 
 `backup-restore-tests.php` checks source/target containment, trusted uploads-root
-aliases versus descendant symlinks, private-root/site aliases, read-only backup
+aliases versus descendant symlinks, private-root/site aliases and canonical
+overlap with external uploads (including root aliases), read-only backup
 lookup, source-bound references, verified legacy migration/conflicts, existing
 backup immutability, safe missing targets/parents, permission bits, unreadable or
 empty backups, mixed restore results, and failed sidecar cleanup. Per-blog path

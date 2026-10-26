@@ -59,6 +59,43 @@ return static function( $optimizer, $invoke, $assert, $test_dir, $runtime_option
 		$assert( symlink( $fixture . '/outside', $private_root . '/site-' . get_current_blog_id() ), 'Could not create the site alias fixture.' );
 		$assert( '' === $invoke( 'backup_base_dir' ), 'A site backup directory alias was accepted.' );
 		unlink( $private_root . '/site-' . get_current_blog_id() );
+		$overlap_uploads = $private_root . '/site-' . get_current_blog_id();
+		wp_mkdir_p( $overlap_uploads );
+		$overlap_file = $overlap_uploads . '/overlap.png';
+		copy( $source, $overlap_file );
+		$overlap_hash = hash_file( 'sha256', $overlap_file );
+		$upload_alias = static function( $values ) use ( $overlap_uploads ) {
+			$values['basedir'] = $overlap_uploads;
+			return $values;
+		};
+		add_filter( 'upload_dir', $upload_alias );
+		$assert( '' === $invoke( 'backup_base_dir' ) && is_wp_error( $invoke( 'backup_file', array( $overlap_file ) ) ), 'External uploads were accepted as their own private backup namespace.' );
+		$overlap_result = $invoke( 'optimize_original_file', array( $overlap_file, $runtime_options, true ) );
+		$assert( 'failed' === $overlap_result['status'], 'Original optimization bypassed overlapping backup storage.' );
+		$assert( $overlap_hash === hash_file( 'sha256', $overlap_file ), 'Rejecting overlapping storage changed the original.' );
+		remove_filter( 'upload_dir', $upload_alias );
+		$alias_uploads = $fixture . '/overlap-upload-alias';
+		$assert( symlink( $overlap_uploads, $alias_uploads ), 'Could not create an overlapping uploads alias.' );
+		$upload_alias = static function( $values ) use ( $alias_uploads ) {
+			$values['basedir'] = $alias_uploads;
+			return $values;
+		};
+		add_filter( 'upload_dir', $upload_alias );
+		$assert( '' === $invoke( 'backup_base_dir' ) && is_wp_error( $invoke( 'backup_file', array( $alias_uploads . '/overlap.png' ) ) ), 'An uploads alias bypassed the backup namespace overlap guard.' );
+		remove_filter( 'upload_dir', $upload_alias );
+		$upload_alias = null;
+		$aliased_private_root = $fixture . '/private-root-alias';
+		$assert( symlink( $private_root, $aliased_private_root ), 'Could not create an overlapping backup-root alias.' );
+		$private_root = $aliased_private_root;
+		$upload_alias = static function( $values ) use ( $overlap_uploads ) {
+			$values['basedir'] = $overlap_uploads;
+			return $values;
+		};
+		add_filter( 'upload_dir', $upload_alias );
+		$assert( '' === $invoke( 'backup_base_dir' ), 'A private-root alias bypassed uploads overlap checks.' );
+		remove_filter( 'upload_dir', $upload_alias );
+		$upload_alias = null;
+		$private_root = $normal_root;
 		$original_blog_id = $GLOBALS['blog_id'];
 		$first_site = $invoke( 'backup_base_dir' );
 		try {
