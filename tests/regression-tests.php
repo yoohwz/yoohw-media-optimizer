@@ -33,7 +33,9 @@ $gd_editors = static function() {
 
 $invoke = static function( $method, array $arguments = array() ) use ( $optimizer, $reflection ) {
 	$ref = $reflection->getMethod( $method );
-	$ref->setAccessible( true );
+	if ( PHP_VERSION_ID < 80100 ) {
+		$ref->setAccessible( true );
+	}
 
 	return $ref->invokeArgs( $optimizer, $arguments );
 };

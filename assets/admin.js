@@ -70,7 +70,12 @@
 		var running = false;
 		var stopRequested = false;
 		var limit = Math.max(1, Math.min(50, getNumber(config.batchSize, 8)));
-		var offset = 0;
+		var runField = form.querySelector('[name="run_id"]');
+		var startField = form.querySelector('[name="start"]');
+		var runId = runField ? runField.value : '';
+		var startNew = !startField || startField.value === '1';
+		var sessionProcessed = 0;
+		var serverNote = '';
 		var totalFound = 0;
 		var processedTotal = 0;
 		var displayedPercent = 0;
@@ -302,7 +307,7 @@
 			}
 
 			var elapsed = (Date.now() - startTime) / 1000;
-			var rate = elapsed > 0 ? processedTotal / elapsed : 0;
+			var rate = elapsed > 0 ? Math.max(0, processedTotal - sessionProcessed) / elapsed : 0;
 			var remaining = totalFound > processedTotal ? totalFound - processedTotal : 0;
 
 			setText(elapsedNode, formatDuration(elapsed));
@@ -386,7 +391,7 @@
 				failed: 0
 			};
 			totalFound = 0;
-			processedTotal = offset;
+			processedTotal = 0;
 			displayedPercent = 0;
 			targetPercent = 0;
 			startTime = Date.now();
@@ -404,10 +409,14 @@
 
 		function setRunningState(nextRunning) {
 			running = nextRunning;
+			var forceField = form.querySelector('[name="force"]');
+			if (forceField) {
+				forceField.disabled = nextRunning || !startNew;
+			}
 
 			if (startButton) {
 				startButton.disabled = nextRunning;
-				setButtonContent(startButton, nextRunning ? 'dashicons-update' : 'dashicons-controls-play', nextRunning ? config.strings.runningButton : config.strings.start);
+				setButtonContent(startButton, nextRunning ? 'dashicons-update' : 'dashicons-controls-play', nextRunning ? config.strings.runningButton : (startNew ? config.strings.start : config.strings.resume));
 			}
 
 			setHidden(stopButton, !nextRunning);
@@ -430,9 +439,10 @@
 			data.append('action', 'yoohw_mo_optimize_batch');
 			data.append('nonce', config.nonce);
 			data.append('limit', String(limit));
-			data.append('offset', String(offset));
+			data.append('run_id', runId);
+			data.append('start', startNew ? '1' : '0');
 
-			if (forceField && forceField.checked) {
+			if (startNew && forceField && forceField.checked) {
 				data.append('force', '1');
 			}
 
@@ -441,10 +451,6 @@
 				credentials: 'same-origin',
 				body: data
 			}).then(function(response) {
-				if (!response.ok) {
-					throw new Error(response.status + ' ' + response.statusText);
-				}
-
 				return response.json();
 			}).then(function(response) {
 				if (!response || !response.success) {
@@ -455,40 +461,50 @@
 			});
 		}
 
-		function updateOffsetField(value) {
-			var offsetField = form.querySelector('[name="offset"]');
-
-			if (offsetField) {
-				offsetField.value = String(value);
+		function updateRunFields() {
+			if (runField) {
+				runField.value = runId;
+			}
+			if (startField) {
+				startField.value = startNew ? '1' : '0';
 			}
 		}
 
 		function finishRun(title, note, state) {
 			setProgress('complete' === state ? 100 : targetPercent, title);
-			setText(progressNote, note);
+			setText(progressNote, note + (serverNote ? ' ' + serverNote : ''));
 			setProgressState(state);
 			setRunningState(false);
 
 			if ('complete' === state) {
-				updateOffsetField(0);
-				offset = 0;
+				startNew = true;
+				updateRunFields();
+				setRunningState(false);
 			}
 		}
 
-		function handleBatch(data) {
-			totalFound = data.found || totalFound;
-			processedTotal = data.processedTotal || processedTotal;
-			totals.processed += data.processed || 0;
-			totals.created += data.created || 0;
-			totals.existing += data.existing || 0;
-			totals.skipped += data.skipped || 0;
-			totals.originalOptimized += data.originalOptimized || 0;
-			totals.originalSkipped += data.originalSkipped || 0;
-			totals.failed += data.failed || 0;
-			totals.failed += data.originalFailed || 0;
-			offset = data.nextOffset || offset;
-			updateOffsetField(offset);
+		function applyProgress(data) {
+			serverNote = data.note || '';
+			totalFound = getNumber(data.found, 0);
+			processedTotal = getNumber(data.processedTotal, 0);
+			totals.processed = processedTotal;
+			totals.created = getNumber(data.created, 0);
+			totals.existing = getNumber(data.existing, 0);
+			totals.skipped = getNumber(data.skipped, 0);
+			totals.originalOptimized = getNumber(data.originalOptimized, 0);
+			totals.originalSkipped = getNumber(data.originalSkipped, 0);
+			totals.failed = getNumber(data.failed, 0) + getNumber(data.originalFailed, 0);
+			var forceField = form.querySelector('[name="force"]');
+			if (forceField) {
+				forceField.checked = !!data.force;
+			}
+			runId = data.runId || '';
+			startNew = !data.hasMore;
+			updateRunFields();
+		}
 
+		function handleBatch(data) {
+			applyProgress(data);
 			setStats();
 			updateTiming();
 			setProgress(data.percent || 0, data.hasMore ? config.strings.running : config.strings.finishing);
@@ -499,9 +515,9 @@
 					config.strings.empty
 			);
 
-			if ((data.processed || 0) > 0) {
+			if ((data.batchProcessed || 0) > 0) {
 				addLog(formatTemplate(config.strings.processedBatch, [
-					formatNumber(data.processed || 0),
+					formatNumber(data.batchProcessed || 0),
 					formatNumber(processedTotal),
 					formatNumber(totalFound)
 				]));
@@ -547,8 +563,6 @@
 		}
 
 		form.addEventListener('submit', function(event) {
-			var offsetField = form.querySelector('[name="offset"]');
-
 			event.preventDefault();
 
 			if (running) {
@@ -556,21 +570,37 @@
 			}
 
 			limit = Math.max(1, Math.min(50, getNumber(config.batchSize, 8)));
-			offset = Math.max(0, getNumber(offsetField ? offsetField.value : '', 0));
 			stopRequested = false;
 
 			setHidden(progress, false);
-			resetState();
-			setProgress(2, config.strings.starting);
+			if (startNew) {
+				resetState();
+			}
+			sessionProcessed = processedTotal;
+			startTime = Date.now();
+			setProgress(targetPercent, config.strings.starting);
 			setText(progressNote, config.strings.starting);
 			setRunningState(true);
 			runNextBatch();
 		});
 
+		if (config.queueProgress && config.queueProgress.runId) {
+			applyProgress(config.queueProgress);
+			setStats();
+			if (config.queueProgress.hasMore) {
+				setHidden(progress, false);
+				setProgress(config.queueProgress.percent, config.strings.paused);
+				setText(progressNote, config.strings.paused + (serverNote ? ' ' + serverNote : ''));
+				setText(currentNode, formatTemplate(config.strings.processedOf, [formatNumber(processedTotal), formatNumber(totalFound)]));
+				setProgressState('paused');
+			}
+		}
+		setRunningState(false);
+
 		if (stopButton) {
 			stopButton.addEventListener('click', function() {
 				stopRequested = true;
-				setText(progressNote, config.strings.paused);
+				setText(progressNote, config.strings.paused + (serverNote ? ' ' + serverNote : ''));
 				setText(currentNode, config.strings.paused);
 				setHidden(stopButton, true);
 			});
