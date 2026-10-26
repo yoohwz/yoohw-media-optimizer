@@ -152,8 +152,8 @@ class HarnessTests(unittest.TestCase):
         good = self.directory / "actual.webp"
         Image.open(self.source).save(good, lossless=True)
         bridge = self.directory / "plugin-baseline.json"
-        bridge.write_text(json.dumps({"source_hashes_unchanged": True, "php": "test", "images": [
-            {"id": "alpha", "codec": "webp", "path": good.name, "seconds": .02, "sha256": RUN.digest(good), "engine": "test engine"}]}))
+        bridge.write_text(json.dumps({"manifest_sha256": RUN.digest(self.manifest), "source_hashes_unchanged": True, "php": "test", "images": [
+            {"id": "alpha", "codec": "webp", "source_sha256": self.entry["sha256"], "path": good.name, "seconds": .02, "sha256": RUN.digest(good), "engine": "test engine"}]}))
         tool = self.executable("fixed-score", "print('100')")
         output = self.directory / "actual-output"
         self.assertEqual(RUN.benchmark(self.manifest, output, ["webp_baseline82"], 5, dict.fromkeys(("cwebp", "avifenc", "ssimulacra2"), tool), bridge), 0)
@@ -168,6 +168,22 @@ class HarnessTests(unittest.TestCase):
         data["images"][0]["sha256"] = "0" * 64
         bridge.write_text(json.dumps(data))
         self.assertEqual(RUN.benchmark(self.manifest, self.directory / "bad-actual-output", ["webp_baseline82"], 5, dict.fromkeys(("cwebp", "avifenc", "ssimulacra2"), tool), bridge), 1)
+
+    def test_stale_plugin_baseline_manifest_or_source_is_rejected_before_output(self):
+        data = {"manifest_sha256": RUN.digest(self.manifest), "source_hashes_unchanged": True, "images": [
+            {"id": "alpha", "codec": "webp", "source_sha256": self.entry["sha256"]}]}
+        bridge = self.directory / "stale-plugin-baseline.json"
+        for kind in ("manifest", "source"):
+            invalid = json.loads(json.dumps(data))
+            if kind == "manifest":
+                invalid["manifest_sha256"] = "0" * 64
+            else:
+                invalid["images"][0]["source_sha256"] = "0" * 64
+            bridge.write_text(json.dumps(invalid))
+            output = self.directory / (kind + "-output")
+            with self.assertRaisesRegex(ValueError, "hash mismatch"):
+                RUN.benchmark(self.manifest, output, ["webp_baseline82"], 5, {}, bridge)
+            self.assertFalse(output.exists())
 
     def test_child_peak_rss_units_and_timeout(self):
         process = RUN.run_process([sys.executable, "-c", "data=bytearray(32*1024*1024)"], 5)

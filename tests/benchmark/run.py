@@ -282,10 +282,15 @@ def benchmark(manifest, output, profiles, timeout, tools, plugin_baseline=None):
     plugin_data, plugin_rows = None, {}
     if plugin_baseline:
         plugin_data = json.loads(plugin_baseline.read_text())
+        if plugin_data.get("manifest_sha256") != digest(manifest):
+            raise ValueError("plugin baseline manifest hash mismatch")
         if plugin_data.get("source_hashes_unchanged") is not True:
             raise ValueError("plugin baseline must prove unchanged source hashes")
+        source_hashes = {entry["id"]: entry["sha256"] for entry in images}
         for row in plugin_data.get("images", []):
             key = (row.get("id"), row.get("codec"))
+            if row.get("codec") not in ("webp", "avif") or row.get("id") not in source_hashes or row.get("source_sha256") != source_hashes[row["id"]]:
+                raise ValueError("plugin baseline source hash mismatch or invalid row identity")
             if key in plugin_rows:
                 raise ValueError("duplicate plugin baseline row")
             plugin_rows[key] = row
@@ -294,6 +299,7 @@ def benchmark(manifest, output, profiles, timeout, tools, plugin_baseline=None):
         raise ValueError("output directory overlaps sources")
     output.mkdir(parents=True, exist_ok=False)
     report = {"schema_version": 1, "manifest": str(manifest.resolve()), "manifest_sha256": digest(manifest),
+              "runner_sha256": digest(Path(__file__).resolve()),
               "python": sys.version, "platform": sys.platform, "pillow": pillow_version,
               "lcms": ImageCms.core.littlecms_version, "profiles": profiles, "timeout_seconds": timeout,
               "baseline_label": "actual plugin seam outputs; see plugin_baseline provenance" if plugin_data else "command-equivalent external baseline; not a PHP/WordPress engine run",
@@ -384,7 +390,7 @@ def benchmark(manifest, output, profiles, timeout, tools, plugin_baseline=None):
                         row.update(metric_score(tools["ssimulacra2"], reference, candidate, row_directory, timeout))
                     row.update(status="ok", decoded=str(decoded.relative_to(output)))
                     if unhandled_orientation:
-                        row.update(status="observed_orientation_limitation", error="raw command baseline does not normalize EXIF; same dimensions do not prove displayed identity")
+                        row.update(status="observed_orientation_limitation", error="raw external command uses a different orientation path from the plugin; same dimensions do not prove displayed identity; excluded from baseline comparison")
                 except Exception as error:
                     row["error"] = str(error)
                     failed = True
