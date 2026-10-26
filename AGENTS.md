@@ -253,7 +253,8 @@ A green CI run proves only the checks CI actually executes; it does not replace 
 ## Repository validation and CI
 
 - Keep the PR body current with goal, scope, risk lane, changes, validation, runtime evidence/limitations, and release boundary.
-- The repository currently has no GitHub Actions workflows, Composer/PHPCS/PHPUnit configuration, Node test suite, CI classifier, or aggregate `CI Gate`. Do not claim that Thumbnail Manager's CI jobs exist here or copy its matrix, release scripts, baselines, or publisher without adapting and validating their dependencies.
+- `.github/workflows/ci.yml` implements CI, `regression.yml` is the reusable disposable WordPress runner, and `compatibility-canary.yml` checks WordPress nightly weekly or on manual dispatch. `tests/README.md` describes actual coverage. No workflow publishes, tags, or deploys.
+- There is no Composer/PHPCS/PHPUnit configuration or Node test suite. Do not claim syntax/regression checks provide those checks or copy unrelated tooling from Thumbnail Manager without adapting its dependencies.
 - Read the plugin header and `readme.txt` for the declared WordPress/PHP support boundaries. Do not change version or compatibility declarations merely to make tooling pass.
 - Existing integration entry point, from a disposable/local WordPress site's root:
 
@@ -265,9 +266,12 @@ A green CI run proves only the checks CI actually executes; it does not replace 
 - For documentation/governance changes, validate repository references, scope, diff hygiene, and exclusion of development instructions from release packaging. Runtime tests are unnecessary unless runtime code changes.
 - For PHP changes, lint the changed PHP files and run the regression entry point plus targeted checks required by the affected behavior. Syntax checks alone do not establish media safety. For JavaScript changes, run `node --check assets/admin.js` and exercise the affected admin flow.
 - Record each required check as `PASS`, `FAIL`, or `NOT RUN — reason`. If required safety evidence cannot be obtained, the task remains unfinished; do not claim merge readiness.
-- Until automated CI is configured, PR handoffs explicitly state `CI: NOT RUN — no GitHub Actions configured` and identify the exact head and applicable local evidence. This is a tooling limitation, not evidence of a passed CI gate. Do not invent an additional Human approval stage or block documentation-only work solely on absent CI.
-- When CI is explicitly in scope, follow the same Iteration/Final distinction as Thumbnail Manager: draft heads may run applicable representative checks; ready-for-review heads, `main` pushes, and manual dispatches run all applicable final checks. Document the actual supported matrix and job names in the same change.
-- A future aggregate `CI Gate` must fail closed: a required job that fails, is cancelled, or is skipped cannot count as merge-ready. Iteration-only results must not satisfy final branch protection. CI control-plane changes must validate the complete graph they define.
+- Draft PRs run repository/CI contracts, diff hygiene, PHP 7.4 syntax, JavaScript syntax, and one regression environment (declared Tested up to / PHP 8.4), emitting `Iteration Gate`.
+- Ready-for-review PRs, `main` pushes, and manual CI dispatches always run all checks: the four declared WordPress/PHP boundaries (minimum WP / PHP 7.4 and 8.2; Tested up to / PHP 7.4 and 8.4), repository contracts, syntax checks, and Plugin Check on the staged `.distignore` payload. There is no path classifier: this small plugin always runs the applicable graph, including on CI control-plane changes.
+- Before `READY_FOR_HUMAN_MERGE`, convert the PR to ready-for-review and wait for `CI Gate` on the exact head. Draft `Iteration Gate` results are not merge-ready. Branch protection should require `CI Gate`; do not change repository protection implicitly.
+- Plugin Check errors block CI. Warnings are reported but non-blocking (`strict: false`); no reviewed warning baseline is claimed. Only `outdated_tested_upto_header` is ignored. Do not add suppressions merely to make existing failures pass.
+- GD is required in the disposable regression runner so image-dependent assertions cannot silently skip. The current suite does not certify Imagick/external encoders, browser behavior, multisite, or every safety invariant; add targeted evidence when affected.
+- The aggregate `CI Gate` must fail closed: a required job that fails, is cancelled, or is skipped cannot count as merge-ready. Iteration-only results must not satisfy final branch protection. CI control-plane changes must validate the complete graph they define.
 - Cache only immutable dependency downloads keyed by lockfile/runtime identity; do not hide upstream drift with cached mutable WordPress sources or generated state. Do not bypass a failed required gate.
 - CI evidence applies only to the checked head. After a correction, repeat affected verification and all applicable final checks before a new handoff. Green automation never replaces required runtime evidence.
 
