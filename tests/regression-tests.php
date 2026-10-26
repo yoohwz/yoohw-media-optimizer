@@ -124,6 +124,8 @@ try {
 		add_filter( 'wp_image_editors', $gd_editors );
 		$lifecycle_source = $test_dir . '/tracking.png';
 		$image = imagecreatetruecolor( 256, 256 );
+		$color = imagecolorallocate( $image, 120, 30, 180 );
+		imagefilledrectangle( $image, 32, 32, 223, 223, $color );
 		imagepng( $image, $lifecycle_source, 0 );
 		imagedestroy( $image );
 		$created_paths = array_merge( $created_paths, array( $lifecycle_source, $lifecycle_source . '.webp', $lifecycle_source . '.avif' ) );
@@ -172,6 +174,9 @@ try {
 			$assert( $original_tracking['files'][0][ $key ] === ( $tracking['files'][0][ $key ] ?? null ), 'Sidecar-only processing lost original tracking: ' . $key );
 		}
 		$assert( 0 === $sidecar_only['summary']['original_optimized'], 'Sidecar-only processing reported a new original optimization.' );
+		$assert( 0 === $sidecar_only['summary']['original_skipped'] && 0 === $sidecar_only['summary']['original_failed'], 'Sidecar-only processing reported original operations.' );
+		$assert( ! isset( $sidecar_only['metadata'] ), 'Historical original success triggered attachment metadata refresh.' );
+		$assert( 'disabled' !== $tracking['files'][0]['status'], 'Sidecar-only processing did not update its sidecar outcome.' );
 		$assert( $optimized_hash === hash_file( 'sha256', $lifecycle_source ), 'Sidecar-only processing changed the original file.' );
 		$assert( $original_savings['original_saved_bytes'] === $optimizer->attachment_savings( $attachment_id )['original_saved_bytes'], 'Sidecar-only processing lost original savings.' );
 
@@ -181,6 +186,162 @@ try {
 		$assert( 'existing' === $resumed['files'][0]['original_status'], 'Re-enabling originals did not skip unchanged output.' );
 		$assert( $optimized_hash === hash_file( 'sha256', $lifecycle_source ), 'Re-enabling originals recompressed unchanged output.' );
 		$assert( $original_hash === hash_file( 'sha256', $attachment_backup ), 'Re-enabling originals replaced the recoverable backup.' );
+
+		// Changing settings while disabled must not make old output match new settings.
+		$lifecycle_options['optimize_originals'] = 0;
+		$lifecycle_options['max_width'] = 128;
+		update_option( YoOhw_Media_Optimizer::OPTION_KEY, $lifecycle_options );
+		$optimizer->optimize_attachment( $attachment_id );
+		$tracking = get_post_meta( $attachment_id, YoOhw_Media_Optimizer::META_KEY, true );
+		$assert( $original_tracking['files'][0]['original_options_fingerprint'] === $tracking['files'][0]['original_options_fingerprint'], 'Disabled processing relabeled the original options fingerprint.' );
+		$lifecycle_options['optimize_originals'] = 1;
+		update_option( YoOhw_Media_Optimizer::OPTION_KEY, $lifecycle_options );
+		$resized = $optimizer->optimize_attachment( $attachment_id );
+		$assert( 'optimized' === $resized['files'][0]['original_status'], 'Re-enabled originals ignored changed resize settings.' );
+		$assert( 128 === $invoke( 'image_dimensions', array( $lifecycle_source ) )['width'], 'Changed resize settings were not applied.' );
+
+		// Replace the source with another valid PNG while retaining its size and mtime.
+		$tracking = get_post_meta( $attachment_id, YoOhw_Media_Optimizer::META_KEY, true );
+		$old_size = filesize( $lifecycle_source );
+		$old_mtime = filemtime( $lifecycle_source );
+		$image = imagecreatetruecolor( 128, 128 );
+		ob_start();
+		imagepng( $image, null, 9 );
+		$replacement = ob_get_clean();
+		imagedestroy( $image );
+		$assert( strlen( $replacement ) <= $old_size, 'The replacement fixture cannot retain the previous size.' );
+		file_put_contents( $lifecycle_source, str_pad( $replacement, $old_size, "\0" ) );
+		touch( $lifecycle_source, $old_mtime );
+		clearstatcache( true, $lifecycle_source );
+		$assert( $old_size === filesize( $lifecycle_source ) && $old_mtime === filemtime( $lifecycle_source ), 'The replacement fixture changed size or mtime.' );
+		$lifecycle_options['optimize_originals'] = 0;
+		update_option( YoOhw_Media_Optimizer::OPTION_KEY, $lifecycle_options );
+		$optimizer->optimize_attachment( $attachment_id );
+		$changed_tracking = get_post_meta( $attachment_id, YoOhw_Media_Optimizer::META_KEY, true );
+		$assert( $tracking['files'][0]['optimized_hash'] === $changed_tracking['files'][0]['optimized_hash'], 'Disabled processing fabricated an identity for changed source content.' );
+		$assert( 0 === $optimizer->attachment_savings( $attachment_id )['original_saved_bytes'], 'Changed source retained stale original savings.' );
+		$assert( $old_size === $optimizer->attachment_savings( $attachment_id )['current_source_bytes'], 'Changed source size was not reported.' );
+		$lifecycle_options['optimize_originals'] = 1;
+		update_option( YoOhw_Media_Optimizer::OPTION_KEY, $lifecycle_options );
+		$changed = $optimizer->optimize_attachment( $attachment_id );
+		$assert( 'existing' !== $changed['files'][0]['original_status'] && 0 === $changed['summary']['original_failed'], 'Changed source was skipped or failed.' );
+		$forced = $optimizer->optimize_attachment( $attachment_id, true );
+		$assert( 'existing' !== $forced['files'][0]['original_status'] && 0 === $forced['summary']['original_failed'], 'Explicit force no longer processes the original.' );
+		$assert( $original_hash === hash_file( 'sha256', $attachment_backup ), 'Changed settings/source or force replaced the original backup.' );
+
+		// Legacy evidence must use the old original options, never the sidecar run's options.
+		$legacy = get_post_meta( $attachment_id, YoOhw_Media_Optimizer::META_KEY, true );
+		unset( $legacy['files'][0]['original_input_hash'], $legacy['files'][0]['optimized_hash'], $legacy['files'][0]['original_options_fingerprint'] );
+		update_post_meta( $attachment_id, YoOhw_Media_Optimizer::META_KEY, $legacy );
+		$lifecycle_options['optimize_originals'] = 0;
+		update_option( YoOhw_Media_Optimizer::OPTION_KEY, $lifecycle_options );
+		$optimizer->optimize_attachment( $attachment_id );
+		$lifecycle_options['optimize_originals'] = 1;
+		update_option( YoOhw_Media_Optimizer::OPTION_KEY, $lifecycle_options );
+		$legacy_unchanged = $optimizer->optimize_attachment( $attachment_id );
+		$assert( 'existing' === $legacy_unchanged['files'][0]['original_status'], 'Verified legacy tracking did not skip unchanged output after a sidecar pass.' );
+		update_post_meta( $attachment_id, YoOhw_Media_Optimizer::META_KEY, $legacy );
+		$lifecycle_options['optimize_originals'] = 0;
+		$lifecycle_options['max_width'] = 64;
+		update_option( YoOhw_Media_Optimizer::OPTION_KEY, $lifecycle_options );
+		$optimizer->optimize_attachment( $attachment_id );
+		$legacy_preserved = get_post_meta( $attachment_id, YoOhw_Media_Optimizer::META_KEY, true );
+		$assert( hash_file( 'sha256', $lifecycle_source ) === $legacy_preserved['files'][0]['optimized_hash'], 'Verified legacy output identity was not preserved.' );
+		$assert( $invoke( 'original_options_fingerprint', array( $legacy['options'] ) ) === $legacy_preserved['files'][0]['original_options_fingerprint'], 'Legacy identity used unexecuted sidecar settings.' );
+		$assert( ! isset( $legacy_preserved['files'][0]['original_input_hash'] ), 'Legacy preservation invented an original input hash.' );
+		$lifecycle_options['optimize_originals'] = 1;
+		update_option( YoOhw_Media_Optimizer::OPTION_KEY, $lifecycle_options );
+		$legacy_changed = $optimizer->optimize_attachment( $attachment_id );
+		$assert( 'optimized' === $legacy_changed['files'][0]['original_status'], 'Legacy tracking masked changed settings.' );
+
+		// A new size has no original history, even when another source is tracked.
+		$new_source = $test_dir . '/tracking-new.png';
+		copy( $lifecycle_source, $new_source );
+		$created_paths = array_merge( $created_paths, array( $new_source, $new_source . '.webp', $new_source . '.avif' ) );
+		$metadata = wp_get_attachment_metadata( $attachment_id );
+		$metadata['sizes']['new'] = array( 'file' => wp_basename( $new_source ), 'width' => 64, 'height' => 64 );
+		update_post_meta( $attachment_id, '_wp_attachment_metadata', $metadata );
+		$lifecycle_options['optimize_originals'] = 0;
+		update_option( YoOhw_Media_Optimizer::OPTION_KEY, $lifecycle_options );
+		$optimizer->optimize_attachment( $attachment_id );
+		$with_new = get_post_meta( $attachment_id, YoOhw_Media_Optimizer::META_KEY, true );
+		$assert( 2 === count( $with_new['files'] ), 'The new image size was not processed.' );
+		$assert( '' === $with_new['files'][1]['backup_path'] && ! isset( $with_new['files'][1]['optimized_hash'] ), 'A new source borrowed original history.' );
+		$assert( 1 === $optimizer->attachment_status( $attachment_id )['backed_up'], 'The original backup disappeared or leaked into the new source.' );
+		unset( $metadata['sizes']['new'] );
+		update_post_meta( $attachment_id, '_wp_attachment_metadata', $metadata );
+
+		// Missing sources retain recovery identity, but cannot report stale success or savings.
+		$before_missing = get_post_meta( $attachment_id, YoOhw_Media_Optimizer::META_KEY, true );
+		$source_bytes = file_get_contents( $lifecycle_source );
+		unlink( $lifecycle_source );
+		$missing = $optimizer->optimize_attachment( $attachment_id );
+		$missing_tracking = get_post_meta( $attachment_id, YoOhw_Media_Optimizer::META_KEY, true );
+		$assert( 'failed' === $missing['files'][0]['status'], 'Missing source was not reported as failed.' );
+		$assert( $before_missing['files'][0]['backup_path'] === $missing_tracking['files'][0]['backup_path'] && $before_missing['files'][0]['optimized_hash'] === $missing_tracking['files'][0]['optimized_hash'], 'Missing source lost recovery identity.' );
+		$assert( 0 === $optimizer->attachment_savings( $attachment_id )['original_saved_bytes'] && 0 === $optimizer->attachment_status( $attachment_id )['original_optimized'], 'Missing source reported stale original savings or success.' );
+		file_put_contents( $lifecycle_source, $source_bytes );
+
+		$restored = $optimizer->restore_attachment( $attachment_id );
+		$assert( 1 === $restored['restored'] && 0 === $restored['failed'], 'The retained backup could not restore the source.' );
+		$optimizer->optimize_attachment( $attachment_id );
+		$restored_tracking = get_post_meta( $attachment_id, YoOhw_Media_Optimizer::META_KEY, true );
+		$assert( 'restored' === $restored_tracking['files'][0]['original_status'], 'Sidecar processing lost the restored state.' );
+		$assert( $original_hash === hash_file( 'sha256', $lifecycle_source ) && $original_hash === hash_file( 'sha256', $attachment_backup ), 'Sidecar processing changed the restored source or backup.' );
+
+		// A sidecar failure must not erase the independently successful original history.
+		$lifecycle_options['optimize_originals'] = 1;
+		update_option( YoOhw_Media_Optimizer::OPTION_KEY, $lifecycle_options );
+		$optimizer->optimize_attachment( $attachment_id );
+		$before_failure = get_post_meta( $attachment_id, YoOhw_Media_Optimizer::META_KEY, true );
+		$lifecycle_options['optimize_originals'] = 0;
+		update_option( YoOhw_Media_Optimizer::OPTION_KEY, $lifecycle_options );
+		$unavailable_editors = static function() {
+			return array();
+		};
+		add_filter( 'wp_image_editors', $unavailable_editors, 20 );
+		try {
+			$sidecar_failure = $optimizer->optimize_attachment( $attachment_id, true );
+		} finally {
+			remove_filter( 'wp_image_editors', $unavailable_editors, 20 );
+		}
+		$after_failure = get_post_meta( $attachment_id, YoOhw_Media_Optimizer::META_KEY, true );
+		$assert( 'failed' === $sidecar_failure['files'][0]['status'], 'The unavailable-editor fixture did not fail sidecar generation.' );
+		$assert( $before_failure['files'][0]['original_status'] === $after_failure['files'][0]['original_status'] && $before_failure['files'][0]['optimized_hash'] === $after_failure['files'][0]['optimized_hash'], 'Sidecar failure erased original history.' );
+
+		// Failed originals remain failed history; a sidecar pass cannot turn them into success.
+		$failed_original = $after_failure;
+		$failed_original['files'][0]['original_status'] = 'failed';
+		$failed_original['files'][0]['original_message'] = 'Regression original failure';
+		update_post_meta( $attachment_id, YoOhw_Media_Optimizer::META_KEY, $failed_original );
+		$optimizer->optimize_attachment( $attachment_id );
+		$failed_preserved = get_post_meta( $attachment_id, YoOhw_Media_Optimizer::META_KEY, true );
+		$assert( 'failed' === $failed_preserved['files'][0]['original_status'] && 'Regression original failure' === $failed_preserved['files'][0]['original_message'], 'Sidecar processing replaced failed original history with success.' );
+
+		// Incomplete modern identity cannot fall back to legacy matching.
+		$partial_identity = $before_failure;
+		unset( $partial_identity['files'][0]['optimized_hash'] );
+		update_post_meta( $attachment_id, YoOhw_Media_Optimizer::META_KEY, $partial_identity );
+		$lifecycle_options['optimize_originals'] = 1;
+		update_option( YoOhw_Media_Optimizer::OPTION_KEY, $lifecycle_options );
+		$partial_result = $optimizer->optimize_attachment( $attachment_id );
+		$assert( 'existing' !== $partial_result['files'][0]['original_status'], 'Incomplete modern identity incorrectly used legacy matching.' );
+
+		// Legacy custom quality is unverifiable; disabled processing must not invent identity.
+		$custom_legacy = get_post_meta( $attachment_id, YoOhw_Media_Optimizer::META_KEY, true );
+		$custom_legacy['options']['compression_mode'] = 'custom';
+		unset( $custom_legacy['files'][0]['original_input_hash'], $custom_legacy['files'][0]['optimized_hash'], $custom_legacy['files'][0]['original_options_fingerprint'] );
+		update_post_meta( $attachment_id, YoOhw_Media_Optimizer::META_KEY, $custom_legacy );
+		$lifecycle_options['optimize_originals'] = 0;
+		update_option( YoOhw_Media_Optimizer::OPTION_KEY, $lifecycle_options );
+		$optimizer->optimize_attachment( $attachment_id );
+		$custom_preserved = get_post_meta( $attachment_id, YoOhw_Media_Optimizer::META_KEY, true );
+		$assert( ! isset( $custom_preserved['files'][0]['optimized_hash'] ) && ! isset( $custom_preserved['files'][0]['original_options_fingerprint'] ), 'Unverifiable legacy custom tracking acquired a fabricated identity.' );
+		$assert( $custom_legacy['files'][0]['backup_path'] === $custom_preserved['files'][0]['backup_path'], 'Unverifiable legacy custom tracking lost its backup reference.' );
+		$lifecycle_options['optimize_originals'] = 1;
+		update_option( YoOhw_Media_Optimizer::OPTION_KEY, $lifecycle_options );
+		$custom_result = $optimizer->optimize_attachment( $attachment_id );
+		$assert( 'existing' !== $custom_result['files'][0]['original_status'], 'Unverifiable legacy custom tracking used new sidecar options to skip processing.' );
 	}
 
 } catch ( Throwable $error ) {
