@@ -25,6 +25,8 @@ $failure = '';
 $queue_lock = '';
 $attachment_id = 0;
 $attachment_backup = '';
+$jpeg_attachment_id = 0;
+$jpeg_backup = '';
 $gd_editors = static function() {
 	return array( 'WP_Image_Editor_GD' );
 };
@@ -225,6 +227,8 @@ try {
 		update_option( YoOhw_Media_Optimizer::OPTION_KEY, $lifecycle_options );
 		$changed = $optimizer->optimize_attachment( $attachment_id );
 		$assert( 'existing' !== $changed['files'][0]['original_status'] && 0 === $changed['summary']['original_failed'], 'Changed source was skipped or failed.' );
+		$lifecycle_options['jpeg_quality'] = 90;
+		update_option( YoOhw_Media_Optimizer::OPTION_KEY, $lifecycle_options );
 		$forced = $optimizer->optimize_attachment( $attachment_id, true );
 		$assert( 'existing' !== $forced['files'][0]['original_status'] && 0 === $forced['summary']['original_failed'], 'Explicit force no longer processes the original.' );
 		$assert( $original_hash === hash_file( 'sha256', $attachment_backup ), 'Changed settings/source or force replaced the original backup.' );
@@ -247,7 +251,8 @@ try {
 		$optimizer->optimize_attachment( $attachment_id );
 		$legacy_preserved = get_post_meta( $attachment_id, YoOhw_Media_Optimizer::META_KEY, true );
 		$assert( hash_file( 'sha256', $lifecycle_source ) === $legacy_preserved['files'][0]['optimized_hash'], 'Verified legacy output identity was not preserved.' );
-		$assert( $invoke( 'original_options_fingerprint', array( $legacy['options'] ) ) === $legacy_preserved['files'][0]['original_options_fingerprint'], 'Legacy identity used unexecuted sidecar settings.' );
+		$legacy_options = array_merge( $legacy['options'], array( 'jpeg_quality' => $lifecycle_options['jpeg_quality'] ) );
+		$assert( $invoke( 'original_options_fingerprint', array( $legacy_options ) ) === $legacy_preserved['files'][0]['original_options_fingerprint'], 'Legacy identity used unexecuted sidecar settings.' );
 		$assert( ! isset( $legacy_preserved['files'][0]['original_input_hash'] ), 'Legacy preservation invented an original input hash.' );
 		$lifecycle_options['optimize_originals'] = 1;
 		update_option( YoOhw_Media_Optimizer::OPTION_KEY, $lifecycle_options );
@@ -326,6 +331,11 @@ try {
 		update_option( YoOhw_Media_Optimizer::OPTION_KEY, $lifecycle_options );
 		$partial_result = $optimizer->optimize_attachment( $attachment_id );
 		$assert( 'existing' !== $partial_result['files'][0]['original_status'], 'Incomplete modern identity incorrectly used legacy matching.' );
+		$input_only = get_post_meta( $attachment_id, YoOhw_Media_Optimizer::META_KEY, true );
+		unset( $input_only['files'][0]['optimized_hash'], $input_only['files'][0]['original_options_fingerprint'] );
+		update_post_meta( $attachment_id, YoOhw_Media_Optimizer::META_KEY, $input_only );
+		$input_only_result = $optimizer->optimize_attachment( $attachment_id );
+		$assert( 'existing' !== $input_only_result['files'][0]['original_status'], 'Input-only modern identity incorrectly used legacy matching.' );
 
 		// Legacy custom quality is unverifiable; disabled processing must not invent identity.
 		$custom_legacy = get_post_meta( $attachment_id, YoOhw_Media_Optimizer::META_KEY, true );
@@ -342,17 +352,54 @@ try {
 		update_option( YoOhw_Media_Optimizer::OPTION_KEY, $lifecycle_options );
 		$custom_result = $optimizer->optimize_attachment( $attachment_id );
 		$assert( 'existing' !== $custom_result['files'][0]['original_status'], 'Unverifiable legacy custom tracking used new sidecar options to skip processing.' );
+
+		// Non-custom JPEG modes must preserve legacy matching with a non-default stored quality.
+		$jpeg_source = $test_dir . '/tracking.jpg';
+		$image = imagecreatetruecolor( 256, 256 );
+		for ( $row = 0; $row < 256; ++$row ) {
+			$color = imagecolorallocate( $image, $row, (int) ( $row / 2 ), 255 - $row );
+			imageline( $image, 0, $row, 255, $row, $color );
+		}
+		imagejpeg( $image, $jpeg_source, 100 );
+		imagedestroy( $image );
+		$created_paths = array_merge( $created_paths, array( $jpeg_source, $jpeg_source . '.webp', $jpeg_source . '.avif' ) );
+		$jpeg_backup = $invoke( 'backup_path_for', array( $jpeg_source ) );
+		$jpeg_attachment_id = wp_insert_attachment( array( 'post_title' => 'Legacy JPEG tracking regression', 'post_mime_type' => 'image/jpeg' ), $jpeg_source );
+		$assert( $jpeg_attachment_id > 0, 'Could not create the legacy JPEG attachment.' );
+		$jpeg_options = array_merge( $lifecycle_options, array( 'optimize_originals' => 1, 'generate_webp_sidecars' => 0, 'max_width' => 0, 'jpeg_quality' => 90 ) );
+		update_option( YoOhw_Media_Optimizer::OPTION_KEY, $jpeg_options );
+		$jpeg_original_hash = hash_file( 'sha256', $jpeg_source );
+		$jpeg_first = $optimizer->optimize_attachment( $jpeg_attachment_id );
+		$assert( 'optimized' === $jpeg_first['files'][0]['original_status'], 'The JPEG fixture was not optimized by GD.' );
+		$jpeg_optimized_hash = hash_file( 'sha256', $jpeg_source );
+		$jpeg_legacy = get_post_meta( $jpeg_attachment_id, YoOhw_Media_Optimizer::META_KEY, true );
+		unset( $jpeg_legacy['files'][0]['original_input_hash'], $jpeg_legacy['files'][0]['optimized_hash'], $jpeg_legacy['files'][0]['original_options_fingerprint'] );
+		update_post_meta( $jpeg_attachment_id, YoOhw_Media_Optimizer::META_KEY, $jpeg_legacy );
+		$jpeg_options['optimize_originals'] = 0;
+		$jpeg_options['generate_webp_sidecars'] = 1;
+		update_option( YoOhw_Media_Optimizer::OPTION_KEY, $jpeg_options );
+		$optimizer->optimize_attachment( $jpeg_attachment_id );
+		$jpeg_options['optimize_originals'] = 1;
+		update_option( YoOhw_Media_Optimizer::OPTION_KEY, $jpeg_options );
+		$jpeg_resumed = $optimizer->optimize_attachment( $jpeg_attachment_id );
+		$assert( 'existing' === $jpeg_resumed['files'][0]['original_status'], 'Legacy JPEG with non-default quality was reprocessed after a sidecar pass.' );
+		$assert( $jpeg_optimized_hash === hash_file( 'sha256', $jpeg_source ), 'The legacy JPEG was recompressed.' );
+		$assert( $jpeg_original_hash === hash_file( 'sha256', $jpeg_backup ), 'The legacy JPEG backup was replaced.' );
 	}
 
 } catch ( Throwable $error ) {
 	$failure = $error->getMessage();
 } finally {
 	remove_filter( 'wp_image_editors', $gd_editors );
-	if ( $attachment_id ) {
-		wp_delete_attachment( $attachment_id, true );
+	foreach ( array( $attachment_id, $jpeg_attachment_id ) as $test_attachment_id ) {
+		if ( $test_attachment_id ) {
+			wp_delete_attachment( $test_attachment_id, true );
+		}
 	}
-	if ( $attachment_backup && file_exists( $attachment_backup ) ) {
-		wp_delete_file( $attachment_backup );
+	foreach ( array( $attachment_backup, $jpeg_backup ) as $test_backup ) {
+		if ( $test_backup && file_exists( $test_backup ) ) {
+			wp_delete_file( $test_backup );
+		}
 	}
 	if ( $queue_lock ) {
 		$invoke( 'release_queue_lock', array( $queue_lock ) );

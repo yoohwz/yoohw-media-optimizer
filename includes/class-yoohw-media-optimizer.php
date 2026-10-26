@@ -3035,7 +3035,7 @@ Header append Vary Accept env=REDIRECT_accept
 					}
 				}
 
-				$current_hash = $path ? $this->file_hash( $path ) : '';
+				$current_hash    = $path ? $this->file_hash( $path ) : '';
 				$previous_status = sanitize_key( $previous['original_status'] ?? '' );
 
 				// Upgrade verifiable legacy evidence before this run replaces its option provenance.
@@ -3044,9 +3044,12 @@ Header append Vary Accept env=REDIRECT_accept
 					&& in_array( $previous_status, array( 'optimized', 'existing', 'no_change', 'skipped_larger' ), true )
 					&& $this->legacy_original_tracking_matches( $previous, $previous['_tracking_options'] ?? array(), $path )
 				) {
+					$legacy_options = $previous['_tracking_options'];
+					// Non-custom modes ignore this unstored value, but fingerprints include it.
+					$legacy_options['jpeg_quality'] = absint( $options['jpeg_quality'] ?? 82 );
 					$previous['optimized_hash'] = $current_hash;
 					$tracking['files'][ $index ]['optimized_hash'] = $current_hash;
-					$tracking['files'][ $index ]['original_options_fingerprint'] = $this->original_options_fingerprint( $previous['_tracking_options'] );
+					$tracking['files'][ $index ]['original_options_fingerprint'] = $this->original_options_fingerprint( $legacy_options );
 				}
 
 				$unchanged = $current_hash && ! empty( $previous['optimized_hash'] )
@@ -3848,7 +3851,7 @@ Header append Vary Accept env=REDIRECT_accept
 
 		if (
 			empty( $previous ) || 'custom' === $mode || empty( $tracked_options['optimize_originals'] ) || ! file_exists( $path )
-			|| ! empty( $previous['original_options_fingerprint'] ) || ! empty( $previous['optimized_hash'] )
+			|| ! empty( $previous['original_options_fingerprint'] ) || ! empty( $previous['optimized_hash'] ) || ! empty( $previous['original_input_hash'] )
 		) {
 			return false;
 		}

@@ -16,8 +16,9 @@ persisted tracking through `optimize_attachment()`: optimize originals, disable
 originals and process sidecars, then re-enable originals. They verify original
 and backup hashes, retained fingerprints and savings, current-run counters,
 changed settings, changed source content with identical size/mtime, explicit
-force, legacy identity, new image sizes, missing sources, restore, and independent
-original/sidecar failures. These checks do not certify concurrency, crash-safe
+force, legacy identity (including JPEG with a non-default stored quality),
+incomplete modern identity, new image sizes, missing sources, restore, and
+independent original/sidecar failures. These checks do not certify concurrency, crash-safe
 replacement, filesystem fault recovery, or the full image-engine matrix.
 
 ## GitHub Actions
