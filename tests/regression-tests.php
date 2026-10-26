@@ -23,6 +23,11 @@ $private_backup = '';
 $assertions = 0;
 $failure = '';
 $queue_lock = '';
+$attachment_id = 0;
+$attachment_backup = '';
+$gd_editors = static function() {
+	return array( 'WP_Image_Editor_GD' );
+};
 
 $invoke = static function( $method, array $arguments = array() ) use ( $optimizer, $reflection ) {
 	$ref = $reflection->getMethod( $method );
@@ -114,11 +119,80 @@ try {
 
 		$private_backup = $invoke( 'backup_path_for', array( $source ) );
 		$assert( 0 !== strpos( wp_normalize_path( $private_backup ), wp_normalize_path( trailingslashit( ABSPATH ) ) ), 'Private backup is still inside the WordPress document root.' );
+
+		// Exercise persisted tracking across real attachment operations, not just helper calls.
+		add_filter( 'wp_image_editors', $gd_editors );
+		$lifecycle_source = $test_dir . '/tracking.png';
+		$image = imagecreatetruecolor( 256, 256 );
+		imagepng( $image, $lifecycle_source, 0 );
+		imagedestroy( $image );
+		$created_paths = array_merge( $created_paths, array( $lifecycle_source, $lifecycle_source . '.webp', $lifecycle_source . '.avif' ) );
+		$attachment_backup = $invoke( 'backup_path_for', array( $lifecycle_source ) );
+		$attachment_id = wp_insert_attachment(
+			array(
+				'post_title'     => 'Optimizer tracking regression',
+				'post_mime_type' => 'image/png',
+			),
+			$lifecycle_source
+		);
+		$assert( $attachment_id > 0, 'Could not create the tracking test attachment.' );
+		update_post_meta(
+			$attachment_id,
+			'_wp_attachment_metadata',
+			array(
+				'file'   => $invoke( 'relative_upload_path', array( $lifecycle_source ) ),
+				'width'  => 256,
+				'height' => 256,
+				'sizes'  => array(),
+			)
+		);
+		$lifecycle_options = array_merge(
+			$runtime_options,
+			array(
+				'optimize_originals'     => 1,
+				'generate_webp_sidecars' => 0,
+				'generate_avif_sidecars' => 0,
+			)
+		);
+		update_option( YoOhw_Media_Optimizer::OPTION_KEY, $lifecycle_options );
+		$original_hash = hash_file( 'sha256', $lifecycle_source );
+		$optimized = $optimizer->optimize_attachment( $attachment_id );
+		$assert( 1 === $optimized['summary']['original_optimized'], 'The tracking fixture was not optimized by GD.' );
+		$optimized_hash = hash_file( 'sha256', $lifecycle_source );
+		$assert( $original_hash === hash_file( 'sha256', $attachment_backup ), 'The tracking fixture backup does not contain the original.' );
+		$original_tracking = get_post_meta( $attachment_id, YoOhw_Media_Optimizer::META_KEY, true );
+		$original_savings = $optimizer->attachment_savings( $attachment_id );
+
+		$lifecycle_options['optimize_originals'] = 0;
+		$lifecycle_options['generate_webp_sidecars'] = 1;
+		update_option( YoOhw_Media_Optimizer::OPTION_KEY, $lifecycle_options );
+		$sidecar_only = $optimizer->optimize_attachment( $attachment_id );
+		$tracking = get_post_meta( $attachment_id, YoOhw_Media_Optimizer::META_KEY, true );
+		foreach ( array( 'original_status', 'original_input_hash', 'optimized_hash', 'original_options_fingerprint', 'backup_path', 'original_size', 'saved_bytes', 'saved_percent', 'engine' ) as $key ) {
+			$assert( $original_tracking['files'][0][ $key ] === ( $tracking['files'][0][ $key ] ?? null ), 'Sidecar-only processing lost original tracking: ' . $key );
+		}
+		$assert( 0 === $sidecar_only['summary']['original_optimized'], 'Sidecar-only processing reported a new original optimization.' );
+		$assert( $optimized_hash === hash_file( 'sha256', $lifecycle_source ), 'Sidecar-only processing changed the original file.' );
+		$assert( $original_savings['original_saved_bytes'] === $optimizer->attachment_savings( $attachment_id )['original_saved_bytes'], 'Sidecar-only processing lost original savings.' );
+
+		$lifecycle_options['optimize_originals'] = 1;
+		update_option( YoOhw_Media_Optimizer::OPTION_KEY, $lifecycle_options );
+		$resumed = $optimizer->optimize_attachment( $attachment_id );
+		$assert( 'existing' === $resumed['files'][0]['original_status'], 'Re-enabling originals did not skip unchanged output.' );
+		$assert( $optimized_hash === hash_file( 'sha256', $lifecycle_source ), 'Re-enabling originals recompressed unchanged output.' );
+		$assert( $original_hash === hash_file( 'sha256', $attachment_backup ), 'Re-enabling originals replaced the recoverable backup.' );
 	}
 
 } catch ( Throwable $error ) {
 	$failure = $error->getMessage();
 } finally {
+	remove_filter( 'wp_image_editors', $gd_editors );
+	if ( $attachment_id ) {
+		wp_delete_attachment( $attachment_id, true );
+	}
+	if ( $attachment_backup && file_exists( $attachment_backup ) ) {
+		wp_delete_file( $attachment_backup );
+	}
 	if ( $queue_lock ) {
 		$invoke( 'release_queue_lock', array( $queue_lock ) );
 	}
