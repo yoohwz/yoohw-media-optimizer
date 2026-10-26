@@ -3674,13 +3674,13 @@ Header append Vary Accept env=REDIRECT_accept
 				return new WP_Error( 'yoohw_mo_gd_unavailable', __( 'GD JPEG support is unavailable.', 'yoohw-media-optimizer' ) );
 			}
 
-			$image = imagecreatefromjpeg( $source_path );
+			$image = @imagecreatefromjpeg( $source_path );
 		} elseif ( 'png' === $extension ) {
 			if ( ! function_exists( 'imagecreatefrompng' ) ) {
 				return new WP_Error( 'yoohw_mo_gd_unavailable', __( 'GD PNG support is unavailable.', 'yoohw-media-optimizer' ) );
 			}
 
-			$image = imagecreatefrompng( $source_path );
+			$image = @imagecreatefrompng( $source_path );
 
 			if ( $image && function_exists( 'imageistruecolor' ) && function_exists( 'imagepalettetotruecolor' ) && ! imageistruecolor( $image ) ) {
 				imagepalettetotruecolor( $image );

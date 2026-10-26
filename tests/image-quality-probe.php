@@ -48,7 +48,7 @@ $filter = static function( $hook, $callback ) use ( &$filters ) {
 	add_filter( $hook, $callback, 999, 3 );
 	$filters[] = array( $hook, $callback );
 };
-$options = array_merge( $original_options, array( 'optimize_originals' => 0, 'backup_originals' => 1, 'compression_mode' => 'balanced', 'metadata_policy' => 'remove', 'max_width' => 0, 'max_height' => 0, 'generate_webp_sidecars' => 1, 'generate_avif_sidecars' => 0, 'use_external_binaries' => 0, 'webp_quality' => 90, 'avif_quality' => 90 ) );
+$options = array_merge( $original_options, array( 'optimize_originals' => 0, 'backup_originals' => 1, 'compression_mode' => 'balanced', 'metadata_policy' => 'remove', 'max_width' => 0, 'max_height' => 0, 'generate_webp_sidecars' => 1, 'generate_avif_sidecars' => 0, 'use_external_binaries' => 0, 'quality' => 82 ) );
 $run = static function( $id, $changes = array(), $force = true ) use ( $optimizer, &$options ) {
 	$current = array_merge( $options, $changes );
 	update_option( YoOhw_Media_Optimizer::OPTION_KEY, $current );
