@@ -32,6 +32,25 @@ directory; otherwise the output explicitly records `NOT RUN`. Controlled encoder
 fixtures do not certify the real encoders. Decoded RGB equality after metadata
 stripping does not certify unchanged EXIF display orientation.
 
+`backup-restore-tests.php` checks source/target containment, trusted uploads-root
+aliases versus descendant symlinks, private-root/site aliases and canonical
+overlap with external uploads (including root aliases), read-only backup
+lookup, source-bound references, verified legacy migration/conflicts, existing
+backup immutability, safe missing targets/parents, permission bits, unreadable or
+empty backups, mixed restore results, and failed sidecar cleanup. Per-blog path
+namespaces are checked without claiming a complete multisite test suite.
+
+`backup-io-probe.php` runs only in child CLI processes. It invokes the actual
+plugin publishers with a small WordPress/filesystem-copy stub boundary to inject
+partial copies, checksum corruption and rename permission failure. Two child
+processes contend at an explicit publication barrier and verify exactly one
+backup publisher wins. A killed child leaves a partial stage before commit;
+the test verifies current original and backup hashes remain intact, then removes
+the fixture. These probes are not an atomic filesystem/database transaction,
+power-loss/fsync, hostile symlink-race or full WordPress crash-recovery test.
+Temporary cleanup is best-effort when permissions deny removal; killed workers
+may leave an unpublished stage. No production fault-injection hooks are added.
+
 ## GitHub Actions
 
 `Media Optimizer CI` runs on pull requests, pushes to `main`, and manual dispatch.

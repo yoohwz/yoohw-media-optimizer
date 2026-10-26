@@ -65,6 +65,14 @@ Yes, as an opt-in feature. A backup is required before an original physical file
 
 Without resizing, lossless JPEG optimization uses optional `jpegoptim` or `jpegtran`. If no smaller lossless output is available, the original is kept unchanged, including its metadata. Force retries do not enable lossy JPEG fallback. Resizing remains allowed in this mode and may re-encode the image, with a backup retained before replacement.
 
+= What storage is required for backup and restore? =
+
+New backups remain outside the document root in the current site's backup directory. Backup roots must not overlap the WordPress directory or uploads, including uploads configured outside WordPress. The local backup filesystem must support hard links, and original replacement requires safe rename within the upload directory. If safe publication is unavailable, the operation fails without overwriting the current original. Independent WordPress installations must use separate backup roots, including when configuring a custom backup directory.
+
+= How are restore paths protected? =
+
+Restore accepts only private or legacy backup references matching the source upload. The configured uploads root may be a symlink, but symlinks below uploads or a site's backup directory are rejected. Copies are verified before replacing an original; failed originals keep their sidecars and tracking. If an original is restored but sidecar cleanup fails, the result reports partial failure. This does not provide automatic recovery of database state after a process stops following file replacement.
+
 = Does it serve AVIF and WebP automatically? =
 
 Only after HTML delivery is enabled. The plugin then prefers an available AVIF, falls back to WebP, and finally uses the original image.

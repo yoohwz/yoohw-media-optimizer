@@ -2762,17 +2762,17 @@ Header append Vary Accept env=REDIRECT_accept
 			$source = $candidate['source'];
 			$backup = $candidate['backup'];
 
-			if ( ! $source || ! $backup || ! file_exists( $backup ) ) {
+			if ( ! $source || ! $this->relative_upload_path_for_storage( $source ) || ! $this->is_supported_source_path( $source ) || ! $this->readable_snapshot( $backup ) ) {
 				++$result['failed'];
 				continue;
 			}
 
-			wp_mkdir_p( dirname( $source ) );
-
-			if ( $this->copy_file( $backup, $source ) ) {
+			if ( $this->replace_original_file( $backup, $source ) ) {
 				++$result['restored'];
 				$restored_sources[ $source ] = true;
-				$this->delete_sidecars_for_path( $source );
+				if ( ! $this->delete_sidecars_for_path( $source ) ) {
+					++$result['failed'];
+				}
 			} else {
 				++$result['failed'];
 			}
@@ -2794,16 +2794,21 @@ Header append Vary Accept env=REDIRECT_accept
 
 						$current_size = file_exists( $source ) ? (int) filesize( $source ) : 0;
 
-						$tracked['files'][ $index ]['status']          = 'restored';
-						$tracked['files'][ $index ]['avif_status']     = 'restored';
+						foreach ( array( 'webp' => 'status', 'avif' => 'avif_status' ) as $format => $status_key ) {
+							$sidecar = $this->format_sidecar_path( $source, $format );
+							$remaining = file_exists( $sidecar ) || is_link( $sidecar );
+							$size = $remaining && $this->is_safe_sidecar_path( $sidecar ) && is_file( $sidecar ) ? (int) filesize( $sidecar ) : 0;
+							$tracked['files'][ $index ][ $status_key ] = $remaining ? 'failed' : 'restored';
+							$tracked['files'][ $index ][ $format . '_size' ] = $size;
+							if ( 'webp' === $format ) {
+								$tracked['files'][ $index ]['sidecar_size'] = $size;
+							}
+						}
 						$tracked['files'][ $index ]['original_status'] = 'restored';
 						$tracked['files'][ $index ]['source_size']     = $current_size;
 						$tracked['files'][ $index ]['optimized_size']  = $current_size;
 						$tracked['files'][ $index ]['saved_bytes']     = 0;
 						$tracked['files'][ $index ]['saved_percent']   = 0;
-						$tracked['files'][ $index ]['sidecar_size']    = 0;
-						$tracked['files'][ $index ]['webp_size']       = 0;
-						$tracked['files'][ $index ]['avif_size']       = 0;
 					}
 				}
 
@@ -2870,46 +2875,39 @@ Header append Vary Accept env=REDIRECT_accept
 	 * @return array
 	 */
 	private function restore_candidates( $attachment_id ) {
-		$tracked    = get_post_meta( $attachment_id, self::META_KEY, true );
+		$tracked = get_post_meta( $attachment_id, self::META_KEY, true );
 		$candidates = array();
-
 		if ( is_array( $tracked ) && ! empty( $tracked['files'] ) && is_array( $tracked['files'] ) ) {
 			foreach ( $tracked['files'] as $file ) {
 				if ( empty( $file['source'] ) || empty( $file['backup_path'] ) ) {
 					continue;
 				}
-
 				$source = $this->upload_relative_to_path( $file['source'] );
-				$backup = $this->backup_reference_to_path( $file['backup_path'] );
-
-				if ( $source && $backup ) {
-					$candidates[ $source ] = array(
-						'source' => $source,
-						'backup' => $backup,
-					);
-				}
+				$backup = $source ? $this->backup_reference_to_path( $file['backup_path'], $source ) : '';
+				// Retain invalid tracked candidates as failures, rather than silently discovering another backup.
+				$candidates[ wp_normalize_path( $file['source'] ) ] = array( 'source' => $source, 'backup' => $backup );
 			}
 		}
-
 		foreach ( $this->collect_attachment_files( $attachment_id ) as $file ) {
 			if ( empty( $file['path'] ) ) {
 				continue;
 			}
-
+			$key = $this->relative_upload_path( $file['path'] );
+			if ( isset( $candidates[ $key ] ) ) {
+				continue;
+			}
+			if ( ! $this->relative_upload_path_for_storage( $file['path'] ) ) {
+				$candidates[ $key ] = array( 'source' => $file['path'], 'backup' => '' );
+				continue;
+			}
 			$backup = $this->backup_path_for( $file['path'] );
-
 			if ( ! $backup || ! file_exists( $backup ) ) {
 				$backup = $this->legacy_backup_path_for( $file['path'] );
 			}
-
-			if ( $backup && file_exists( $backup ) ) {
-				$candidates[ $file['path'] ] = array(
-					'source' => $file['path'],
-					'backup' => $backup,
-				);
+			if ( $backup && ( file_exists( $backup ) || is_link( $backup ) ) ) {
+				$candidates[ $key ] = array( 'source' => $file['path'], 'backup' => $backup );
 			}
 		}
-
 		return array_values( $candidates );
 	}
 
@@ -3117,6 +3115,14 @@ Header append Vary Accept env=REDIRECT_accept
 			'avif_status'      => 'disabled',
 			'avif_message'     => '',
 		);
+
+		if ( $path && ! empty( $options['optimize_originals'] ) && ! $this->relative_upload_path_for_storage( $path ) ) {
+			$result['status'] = 'failed';
+			$result['original_status'] = 'failed';
+			$result['message'] = __( 'The original path is outside safe uploads storage or contains a symlink.', 'yoohw-media-optimizer' );
+			$result['original_message'] = $result['message'];
+			return $result;
+		}
 
 		if ( ! $path || ! file_exists( $path ) ) {
 			$result['message'] = __( 'Source file is missing.', 'yoohw-media-optimizer' );
@@ -3602,7 +3608,8 @@ Header append Vary Accept env=REDIRECT_accept
 	 * @return array
 	 */
 	private function optimize_original_file( $path, $options, $force, $previous = array() ) {
-		$source_size  = file_exists( $path ) ? (int) filesize( $path ) : 0;
+		$safe_source = $this->relative_upload_path_for_storage( $path );
+		$source_size  = $safe_source && is_file( $path ) ? (int) filesize( $path ) : 0;
 		$backup_path  = $this->backup_path_for( $path );
 
 		if ( $backup_path && ! file_exists( $backup_path ) ) {
@@ -3619,7 +3626,7 @@ Header append Vary Accept env=REDIRECT_accept
 
 		$backup_value = $backup_path && file_exists( $backup_path ) ? $this->backup_reference_for( $backup_path ) : '';
 		$options_fingerprint = $this->original_options_fingerprint( $options );
-		$input_hash    = $this->file_hash( $path );
+		$input_hash    = $safe_source ? $this->file_hash( $path ) : '';
 		$result       = array(
 			'status'         => 'no_change',
 			'message'        => '',
@@ -3643,6 +3650,12 @@ Header append Vary Accept env=REDIRECT_accept
 				$result['saved_bytes']    = $backup_size - $source_size;
 				$result['saved_percent']  = ( $result['saved_bytes'] / $backup_size ) * 100;
 			}
+		}
+
+		if ( ! $safe_source ) {
+			$result['status'] = 'failed';
+			$result['message'] = __( 'The original path is outside safe uploads storage or contains a symlink.', 'yoohw-media-optimizer' );
+			return $result;
 		}
 
 		if ( empty( $options['backup_originals'] ) ) {
@@ -3801,7 +3814,7 @@ Header append Vary Accept env=REDIRECT_accept
 			return $result;
 		}
 
-		if ( ! $this->move_file( $saved_path, $path ) ) {
+		if ( ! $this->replace_original_file( $saved_path, $path ) ) {
 			wp_delete_file( $saved_path );
 
 			$result['status']  = 'failed';
@@ -3809,6 +3822,7 @@ Header append Vary Accept env=REDIRECT_accept
 			return $result;
 		}
 
+		wp_delete_file( $saved_path );
 		clearstatcache( true, $path );
 
 		$result['status']         = 'optimized';
@@ -4417,204 +4431,227 @@ Header append Vary Accept env=REDIRECT_accept
 	}
 
 	/**
-	 * Back up a file under uploads/yoohw-media-backups.
+	 * Publish an immutable, verified backup outside the document root.
 	 *
 	 * @param string $path Source path.
 	 * @return array|WP_Error
 	 */
 	private function backup_file( $path ) {
 		$backup_path = $this->backup_path_for( $path );
-
-		if ( ! $backup_path ) {
-			return new WP_Error( 'yoohw_mo_backup_path', __( 'Could not resolve backup path for this upload.', 'yoohw-media-optimizer' ) );
-		}
-
-		if ( file_exists( $backup_path ) ) {
-			return array(
-				'path'     => $backup_path,
-				'relative' => $this->backup_reference_for( $backup_path ),
-				'created'  => false,
-			);
-		}
-
-		wp_mkdir_p( dirname( $backup_path ) );
-
 		$legacy_path = $this->legacy_backup_path_for( $path );
+		$uploads = wp_get_upload_dir();
+		$relative = $this->relative_upload_path_for_storage( $path );
+		$raw_legacy = trailingslashit( $uploads['basedir'] ) . self::BACKUP_DIR . '/' . $relative;
+		if ( $relative && ! $legacy_path && ( file_exists( $raw_legacy ) || is_link( $raw_legacy ) ) ) {
+			return new WP_Error( 'yoohw_mo_backup_legacy_path', __( 'The legacy backup path is unsafe. Recovery data was left unchanged.', 'yoohw-media-optimizer' ) );
+		}
+		$legacy = $legacy_path && ( file_exists( $legacy_path ) || is_link( $legacy_path ) );
+		$origin = $legacy ? $legacy_path : $path;
 
-		if ( $legacy_path && file_exists( $legacy_path ) ) {
-			if ( ! $this->copy_file( $legacy_path, $backup_path ) ) {
-				return new WP_Error( 'yoohw_mo_backup_migration_failed', __( 'Could not migrate the legacy public backup into private storage.', 'yoohw-media-optimizer' ) );
+		if ( ! $backup_path || ! $this->readable_snapshot( $origin ) ) {
+			return new WP_Error( 'yoohw_mo_backup_path', __( 'Could not safely resolve a readable backup source and private destination.', 'yoohw-media-optimizer' ) );
+		}
+
+		$created = false;
+		if ( ! file_exists( $backup_path ) && ! is_link( $backup_path ) ) {
+			if ( ! wp_mkdir_p( dirname( $backup_path ) ) || $backup_path !== $this->backup_path_for( $path ) ) {
+				return new WP_Error( 'yoohw_mo_backup_path', __( 'Could not safely create the private backup directory.', 'yoohw-media-optimizer' ) );
 			}
+			$stage = $this->stage_verified_copy( $origin, $backup_path, 0600 );
+			if ( ! $stage ) {
+				return new WP_Error( 'yoohw_mo_backup_failed', __( 'Could not create and verify the image backup.', 'yoohw-media-optimizer' ) );
+			}
+			// A hard link publishes a complete snapshot exclusively, without replacing another backup.
+			$created = $backup_path === $this->backup_path_for( $path ) && function_exists( 'link' ) && @link( $stage, $backup_path );
+			wp_delete_file( $stage );
+			if ( ! $created && ! file_exists( $backup_path ) ) {
+				return new WP_Error( 'yoohw_mo_backup_publish_failed', __( 'Could not safely publish the backup. The backup filesystem must support hard links.', 'yoohw-media-optimizer' ) );
+			}
+		}
 
+		if ( $backup_path !== $this->backup_path_for( $path ) || ! $this->readable_snapshot( $backup_path ) ) {
+			return new WP_Error( 'yoohw_mo_backup_invalid', __( 'The existing backup is not a safe readable snapshot; it was left unchanged.', 'yoohw-media-optimizer' ) );
+		}
+		if ( $legacy ) {
+			if ( ! hash_equals( $this->file_hash( $legacy_path ), $this->file_hash( $backup_path ) ) ) {
+				return new WP_Error( 'yoohw_mo_backup_migration_conflict', __( 'Private and legacy backups differ. Both recovery files were preserved.', 'yoohw-media-optimizer' ) );
+			}
 			wp_delete_file( $legacy_path );
-
-			return array(
-				'path'     => $backup_path,
-				'relative' => $this->backup_reference_for( $backup_path ),
-				'created'  => false,
-			);
+			if ( file_exists( $legacy_path ) ) {
+				return new WP_Error( 'yoohw_mo_backup_migration_failed', __( 'The verified private backup is safe, but the legacy copy could not be removed.', 'yoohw-media-optimizer' ) );
+			}
 		}
-
-		if ( ! $this->copy_file( $path, $backup_path ) ) {
-			return new WP_Error( 'yoohw_mo_backup_failed', __( 'Could not create image backup.', 'yoohw-media-optimizer' ) );
-		}
-
-		return array(
-			'path'     => $backup_path,
-			'relative' => $this->backup_reference_for( $backup_path ),
-			'created'  => true,
-		);
+		return array( 'path' => $backup_path, 'relative' => $this->backup_reference_for( $backup_path ), 'created' => $created && ! $legacy );
 	}
 
-	/**
-	 * Get the absolute backup path for an upload.
-	 *
-	 * @param string $path Source path.
-	 * @return string
-	 */
+	/** Resolve a backup destination in this site's private namespace. */
 	private function backup_path_for( $path ) {
 		$relative = $this->relative_upload_path_for_storage( $path );
-		$base_dir = $this->backup_base_dir();
-
-		if ( ! $relative || ! $base_dir ) {
-			return '';
-		}
-
-		return trailingslashit( $base_dir ) . $relative;
+		$base = $this->backup_base_dir();
+		return $relative && $base ? $this->contained_path( trailingslashit( $base ) . $relative, $base ) : '';
 	}
 
-	/**
-	 * Get the legacy public backup path for compatibility and migration.
-	 *
-	 * @param string $path Source path.
-	 * @return string
-	 */
+	/** Resolve a safely contained legacy backup without migrating it. */
 	private function legacy_backup_path_for( $path ) {
 		$relative = $this->relative_upload_path_for_storage( $path );
-
-		if ( ! $relative ) {
-			return '';
-		}
-
 		$uploads = wp_get_upload_dir();
-
-		return wp_normalize_path( trailingslashit( $uploads['basedir'] ) . self::BACKUP_DIR . '/' . $relative );
+		return $relative ? $this->contained_path( trailingslashit( $uploads['basedir'] ) . self::BACKUP_DIR . '/' . $relative, $uploads['basedir'] ) : '';
 	}
 
-	/**
-	 * Resolve a source path to a safe upload-relative path.
-	 *
-	 * @param string $path Source path.
-	 * @return string
-	 */
+	/** Return a safe source-relative path, excluding the legacy backup namespace. */
 	private function relative_upload_path_for_storage( $path ) {
-		if ( ! $path ) {
-			return '';
-		}
-
-		$uploads  = wp_get_upload_dir();
-		$basedir  = wp_normalize_path( trailingslashit( $uploads['basedir'] ) );
-		$path     = wp_normalize_path( $path );
-		$relative = '';
-
-		if ( 0 === strpos( $path, $basedir ) ) {
-			$relative = ltrim( substr( $path, strlen( $basedir ) ), '/' );
-		}
-
-		if ( ! $relative || 0 === strpos( $relative, self::BACKUP_DIR . '/' ) || false !== strpos( $relative, '../' ) ) {
-			return '';
-		}
-
-		return $relative;
+		$uploads = wp_get_upload_dir();
+		$safe = $this->contained_path( $path, $uploads['basedir'] );
+		$relative = $safe ? substr( $safe, strlen( trailingslashit( wp_normalize_path( $uploads['basedir'] ) ) ) ) : '';
+		return $relative && self::BACKUP_DIR !== $relative && 0 !== strpos( $relative, self::BACKUP_DIR . '/' ) ? $relative : '';
 	}
 
-	/**
-	 * Get the private backup root outside the WordPress document root.
-	 *
-	 * @return string
-	 */
-	private function backup_base_dir() {
-		$default = trailingslashit( dirname( untrailingslashit( ABSPATH ) ) ) . self::BACKUP_DIR;
-		$root    = apply_filters( 'yoohw_media_optimizer_backup_dir', $default );
-		$root    = wp_normalize_path( untrailingslashit( (string) $root ) );
-		$webroot = wp_normalize_path( trailingslashit( ABSPATH ) );
-
-		if ( ! $root || 0 === strpos( trailingslashit( $root ), $webroot ) ) {
+	/** Canonicalize a directory, including a missing suffix, without creating it. */
+	private function canonical_directory( $path ) {
+		if ( ! is_string( $path ) || false !== strpos( $path, "\0" ) ) {
 			return '';
 		}
-
-		return $root . '/site-' . get_current_blog_id();
-	}
-
-	/**
-	 * Store a private backup path as a portable tracking reference.
-	 *
-	 * @param string $path Backup path.
-	 * @return string
-	 */
-	private function backup_reference_for( $path ) {
-		$base_dir = $this->backup_base_dir();
-		$base     = $base_dir ? wp_normalize_path( trailingslashit( $base_dir ) ) : '';
-		$path     = wp_normalize_path( (string) $path );
-
-		if ( $base && 0 === strpos( $path, $base ) ) {
-			return 'private:' . ltrim( substr( $path, strlen( $base ) ), '/' );
+		$path = untrailingslashit( wp_normalize_path( $path ) );
+		if ( ! preg_match( '#^(?:[A-Za-z]:)?/#', $path ) || preg_match( '#(?:^|/)\.{1,2}(?:/|$)#', $path ) ) {
+			return '';
 		}
-
-		return $this->relative_upload_path( $path );
-	}
-
-	/**
-	 * Resolve a tracked backup reference, including legacy upload-relative values.
-	 *
-	 * @param string $reference Backup reference.
-	 * @return string
-	 */
-	private function backup_reference_to_path( $reference ) {
-		$reference = wp_normalize_path( (string) $reference );
-
-		if ( 0 === strpos( $reference, 'private:' ) ) {
-			$relative = ltrim( substr( $reference, 8 ), '/' );
-
-			if ( ! $relative || 0 === strpos( $relative, '../' ) || false !== strpos( $relative, '/../' ) ) {
+		$missing = array();
+		$cursor = $path;
+		while ( ! file_exists( $cursor ) && ! is_link( $cursor ) ) {
+			$parent = dirname( $cursor );
+			if ( $parent === $cursor ) {
 				return '';
 			}
-
-			$base = $this->backup_base_dir();
-
-			return $base ? wp_normalize_path( trailingslashit( $base ) . $relative ) : '';
+			array_unshift( $missing, wp_basename( $cursor ) );
+			$cursor = $parent;
 		}
+		$real = realpath( $cursor );
+		return $real && is_dir( $cursor ) ? untrailingslashit( wp_normalize_path( $real ) ) . ( $missing ? '/' . implode( '/', $missing ) : '' ) : '';
+	}
 
-		$legacy_prefix = self::BACKUP_DIR . '/';
-
-		if ( 0 === strpos( ltrim( $reference, '/' ), $legacy_prefix ) ) {
-			$source_relative = substr( ltrim( $reference, '/' ), strlen( $legacy_prefix ) );
-			$source_path     = $this->upload_relative_to_path( $source_relative );
-			$legacy_path     = $this->upload_relative_to_path( $reference );
-
-			if ( $source_path && $legacy_path ) {
-				$private_path = $this->backup_path_for( $source_path );
-
-				if ( $private_path ) {
-					if ( file_exists( $private_path ) ) {
-						return $private_path;
-					}
-
-					if ( ! file_exists( $legacy_path ) ) {
-						return '';
-					}
-
-					wp_mkdir_p( dirname( $private_path ) );
-
-					if ( file_exists( $private_path ) || $this->copy_file( $legacy_path, $private_path ) ) {
-						wp_delete_file( $legacy_path );
-						return $private_path;
-					}
-				}
+	/** Allow a trusted root alias, but reject every link or unsafe component below it. */
+	private function contained_path( $path, $root ) {
+		if ( ! is_string( $path ) || false !== strpos( $path, "\0" ) || ! $this->canonical_directory( $root ) ) {
+			return '';
+		}
+		$path = wp_normalize_path( $path );
+		$root = trailingslashit( wp_normalize_path( $root ) );
+		if ( 0 !== strpos( $path, $root ) ) {
+			return '';
+		}
+		$parts = explode( '/', substr( $path, strlen( $root ) ) );
+		$cursor = untrailingslashit( $root );
+		foreach ( $parts as $index => $part ) {
+			if ( '' === $part || '.' === $part || '..' === $part || false !== strpos( $part, ':' ) ) {
+				return '';
+			}
+			$cursor .= '/' . $part;
+			if ( is_link( $cursor ) || ( $index < count( $parts ) - 1 && file_exists( $cursor ) && ! is_dir( $cursor ) ) ) {
+				return '';
 			}
 		}
+		return $path;
+	}
 
-		return $this->upload_relative_to_path( $reference );
+	/** Resolve the existing per-blog namespace outside the canonical document root. */
+	private function backup_base_dir() {
+		$default = trailingslashit( dirname( untrailingslashit( ABSPATH ) ) ) . self::BACKUP_DIR;
+		$root = apply_filters( 'yoohw_media_optimizer_backup_dir', $default );
+		$canonical = $this->canonical_directory( $root );
+		$webroot = $this->canonical_directory( ABSPATH );
+		$uploads = wp_get_upload_dir();
+		$upload_root = $this->canonical_directory( $uploads['basedir'] );
+		if ( ! $canonical || ! $webroot || ! $upload_root ) {
+			return '';
+		}
+		foreach ( array( $webroot, $upload_root ) as $boundary ) {
+			if ( 0 === strpos( trailingslashit( $canonical ), trailingslashit( $boundary ) ) || 0 === strpos( trailingslashit( $boundary ), trailingslashit( $canonical ) ) ) {
+				return '';
+			}
+		}
+		return $this->contained_path( trailingslashit( wp_normalize_path( $root ) ) . 'site-' . get_current_blog_id(), $root );
+	}
+
+	/** Store only references belonging to this site's private namespace. */
+	private function backup_reference_for( $path ) {
+		$base = $this->backup_base_dir();
+		$safe = $base ? $this->contained_path( $path, $base ) : '';
+		return $safe ? 'private:' . substr( $safe, strlen( trailingslashit( $base ) ) ) : '';
+	}
+
+	/** Resolve backup references without filesystem mutation; optionally bind them to a source. */
+	private function backup_reference_to_path( $reference, $source = '' ) {
+		if ( ! is_string( $reference ) ) {
+			return '';
+		}
+		$reference = wp_normalize_path( $reference );
+		$private = 0 === strpos( $reference, 'private:' );
+		$legacy = 0 === strpos( $reference, self::BACKUP_DIR . '/' );
+		if ( ! $private && ! $legacy ) {
+			return '';
+		}
+		$relative = substr( $reference, $private ? 8 : strlen( self::BACKUP_DIR ) + 1 );
+		if ( '' === $relative || '/' === substr( $relative, 0, 1 ) ) {
+			return '';
+		}
+		if ( $source && $relative !== $this->relative_upload_path_for_storage( $source ) ) {
+			return '';
+		}
+		$base = $this->backup_base_dir();
+		$private_path = $base ? $this->contained_path( trailingslashit( $base ) . $relative, $base ) : '';
+		if ( $private ) {
+			return $private_path;
+		}
+		$uploads = wp_get_upload_dir();
+		$legacy_path = $this->contained_path( trailingslashit( $uploads['basedir'] ) . $reference, $uploads['basedir'] );
+		return $legacy_path ? ( file_exists( $legacy_path ) ? $legacy_path : $private_path ) : '';
+	}
+
+	/** Check snapshot readability without treating current optimized bytes as its provenance. */
+	private function readable_snapshot( $path ) {
+		return $path && ! is_link( $path ) && is_file( $path ) && is_readable( $path ) && filesize( $path ) > 0 && '' !== $this->file_hash( $path );
+	}
+
+	/** Stage a complete verified snapshot beside the destination; never write over the destination. */
+	private function stage_verified_copy( $source, $destination, $mode ) {
+		if ( ! function_exists( 'tempnam' ) || ! function_exists( 'chmod' ) || ! $this->readable_snapshot( $source ) || ! is_dir( dirname( $destination ) ) ) {
+			return '';
+		}
+		$hash = $this->file_hash( $source );
+		$size = filesize( $source );
+		$stage = @tempnam( dirname( $destination ), '.yoohw-mo-stage-' );
+		if ( ! $stage ) {
+			return '';
+		}
+		if ( realpath( dirname( $stage ) ) !== realpath( dirname( $destination ) ) || ! $this->copy_file( $source, $stage ) ) {
+			wp_delete_file( $stage );
+			return '';
+		}
+		clearstatcache( true, $stage );
+		$filesystem = new WP_Filesystem_Direct( array() );
+		if ( filesize( $stage ) !== $size || ! hash_equals( $hash, $this->file_hash( $stage ) ) || ! $mode || ! $filesystem->chmod( $stage, $mode ) ) {
+			wp_delete_file( $stage );
+			return '';
+		}
+		return $stage;
+	}
+
+	/** Publish an original atomically; rename success is the commit point, with no copy fallback. */
+	private function replace_original_file( $source, $destination ) {
+		if ( ! $this->relative_upload_path_for_storage( $destination ) || ! wp_mkdir_p( dirname( $destination ) ) || ! $this->relative_upload_path_for_storage( $destination ) ) {
+			return false;
+		}
+		$mode = file_exists( $destination ) ? fileperms( $destination ) & 0777 : ( defined( 'FS_CHMOD_FILE' ) ? FS_CHMOD_FILE : 0644 );
+		$stage = $this->stage_verified_copy( $source, $destination, $mode );
+		if ( ! $stage ) {
+			return false;
+		}
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.rename_rename -- WP_Filesystem::move pre-deletes the original; atomic commit must preserve it on failure.
+		$committed = $this->relative_upload_path_for_storage( $destination ) && function_exists( 'rename' ) && @rename( $stage, $destination );
+		if ( ! $committed ) {
+			wp_delete_file( $stage );
+		}
+		return (bool) $committed;
 	}
 
 	/**
@@ -5279,17 +5316,23 @@ Header append Vary Accept env=REDIRECT_accept
 	}
 
 	/**
-	 * Delete known sidecars for a source path.
+	 * Delete known sidecars for a source path and report any remaining files.
 	 *
 	 * @param string $path Source path.
-	 * @return void
+	 * @return bool Whether all associated sidecars are absent.
 	 */
 	private function delete_sidecars_for_path( $path ) {
+		$removed = true;
 		foreach ( array( $this->sidecar_path( $path ), $this->format_sidecar_path( $path, 'avif' ) ) as $sidecar ) {
 			if ( file_exists( $sidecar ) && $this->is_safe_sidecar_path( $sidecar ) ) {
 				wp_delete_file( $sidecar );
 			}
+			clearstatcache( true, $sidecar );
+			if ( file_exists( $sidecar ) || is_link( $sidecar ) ) {
+				$removed = false;
+			}
 		}
+		return $removed;
 	}
 
 	/**
