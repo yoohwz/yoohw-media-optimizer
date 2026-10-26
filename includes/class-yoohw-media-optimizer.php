@@ -230,6 +230,9 @@ class YoOhw_Media_Optimizer {
 					'sampleLabel'     => __( 'Sample', 'yoohw-media-optimizer' ),
 					'directAvifLabel' => __( 'Direct AVIF', 'yoohw-media-optimizer' ),
 					'directWebpLabel' => __( 'Direct WebP', 'yoohw-media-optimizer' ),
+					'rewriteAvifLabel' => __( 'Rewrite (AVIF preferred)', 'yoohw-media-optimizer' ),
+					'rewriteWebpLabel' => __( 'Rewrite (WebP only)', 'yoohw-media-optimizer' ),
+					'originalFallback' => __( 'Original fallback', 'yoohw-media-optimizer' ),
 					'avifSourceLabel' => __( 'AVIF picture source', 'yoohw-media-optimizer' ),
 					'webpSourceLabel' => __( 'WebP picture source', 'yoohw-media-optimizer' ),
 					'htmlModeLabel'   => __( 'HTML delivery mode', 'yoohw-media-optimizer' ),
@@ -399,7 +402,7 @@ class YoOhw_Media_Optimizer {
 		$srcset = $processor->get_attribute( 'srcset' );
 		$sizes  = $processor->get_attribute( 'sizes' );
 
-		if ( ! is_string( $src ) || '' === $src ) {
+		if ( ! is_string( $src ) || ! $this->upload_url_to_path( $src ) ) {
 			return $image_html;
 		}
 
@@ -1810,8 +1813,8 @@ Header append Vary Accept env=REDIRECT_accept
 		}
 
 		$options = $this->get_options();
-		$direct_avif = $this->remote_head_report( $sample['avif_url'] ?? '' );
-		$direct_webp = $this->remote_head_report( $sample['webp_url'] ?? '' );
+		$direct_avif = $this->remote_head_report( $sample['avif_url'] ?? '', array(), array( 'avif' ) );
+		$direct_webp = $this->remote_head_report( $sample['webp_url'] ?? '', array(), array( 'webp' ) );
 		$rewrite_avif = $this->remote_head_report(
 			$sample['source_url'],
 			array(
@@ -1821,8 +1824,9 @@ Header append Vary Accept env=REDIRECT_accept
 		$rewrite_webp = $this->remote_head_report(
 			$sample['source_url'],
 			array(
-				'Accept' => 'image/webp,image/*,*/*;q=0.8',
-			)
+				'Accept' => 'image/avif;q=0,image/webp,image/*,*/*;q=0.8',
+			),
+			array( 'webp' )
 		);
 
 		wp_send_json_success(
@@ -4962,25 +4966,67 @@ Header append Vary Accept env=REDIRECT_accept
 	 * @return string
 	 */
 	private function upload_url_to_path( $url ) {
-		if ( ! $url ) {
+		$uploads = wp_get_upload_dir();
+		$target  = $this->delivery_url_parts( $url );
+		$base    = $this->delivery_url_parts( $uploads['baseurl'] );
+		if ( ! $this->same_delivery_origin( $target, $base ) ) {
 			return '';
 		}
-
-		$uploads   = wp_get_upload_dir();
-		$url_path  = wp_parse_url( $url, PHP_URL_PATH );
-		$base_path = wp_parse_url( $uploads['baseurl'], PHP_URL_PATH );
-
-		if ( ! $url_path || ! $base_path || 0 !== strpos( $url_path, $base_path ) ) {
+		$path      = $this->delivery_url_path( $target['path'] ?? '/' );
+		$base_path = $this->delivery_url_path( $base['path'] ?? '/' );
+		$prefix    = trailingslashit( $base_path );
+		if ( '' === $path || '' === $base_path || 0 !== strpos( $path, $prefix ) ) {
 			return '';
 		}
+		$relative = substr( $path, strlen( $prefix ) );
+		$local = wp_normalize_path( trailingslashit( $uploads['basedir'] ) . $relative );
+		return $relative && $this->relative_upload_path_for_storage( $local ) ? $local : '';
+	}
 
-		$relative = ltrim( substr( $url_path, strlen( $base_path ) ), '/' );
+	/** Parse a strict HTTP(S) URL, resolving root-relative references at the home origin. */
+	private function delivery_url_parts( $url ) {
+		if ( ! is_string( $url ) || '' === $url || preg_match( '/[\x00-\x20\x7f\\\\]|%(?![a-f0-9]{2})/i', $url ) ) {
+			return array();
+		}
+		if ( '/' === $url[0] ) {
+			$home = wp_parse_url( home_url( '/' ) );
+			if ( empty( $home['scheme'] ) || empty( $home['host'] ) || isset( $home['user'] ) || isset( $home['pass'] ) ) {
+				return array();
+			}
+			$url = 0 === strpos( $url, '//' ) ? $home['scheme'] . ':' . $url : $home['scheme'] . '://' . $home['host'] . ( isset( $home['port'] ) ? ':' . $home['port'] : '' ) . $url;
+		}
+		if ( ! preg_match( '#^https?://#i', $url ) ) {
+			return array();
+		}
+		$parts = wp_parse_url( $url );
+		if ( ! is_array( $parts ) || empty( $parts['host'] ) || isset( $parts['user'] ) || isset( $parts['pass'] ) || ( isset( $parts['port'] ) && ( $parts['port'] < 1 || $parts['port'] > 65535 ) ) ) {
+			return array();
+		}
+		$parts['scheme'] = strtolower( $parts['scheme'] );
+		$parts['host']   = strtolower( $parts['host'] );
+		$parts['port']   = $parts['port'] ?? ( 'https' === $parts['scheme'] ? 443 : 80 );
+		$parts['url']    = $url;
+		return $parts;
+	}
 
-		if ( '' === $relative ) {
+	/** Compare normalized scheme, host and effective port without accepting aliases. */
+	private function same_delivery_origin( $first, $second ) {
+		return $first && $second && $first['scheme'] === $second['scheme'] && $first['host'] === $second['host'] && $first['port'] === $second['port'];
+	}
+
+	/** Decode each URL path segment once, refusing traversal and ambiguous escapes. */
+	private function delivery_url_path( $path ) {
+		if ( '' === $path || '/' !== $path[0] ) {
 			return '';
 		}
-
-		return wp_normalize_path( trailingslashit( $uploads['basedir'] ) . $relative );
+		$segments = explode( '/', $path );
+		foreach ( $segments as &$segment ) {
+			$segment = rawurldecode( $segment );
+			if ( '.' === $segment || '..' === $segment || preg_match( '/[\x00-\x1f\x7f\/\\\\]|%[a-f0-9]{2}/i', $segment ) ) {
+				return '';
+			}
+		}
+		return implode( '/', $segments );
 	}
 
 	/**
@@ -5038,10 +5084,14 @@ Header append Vary Accept env=REDIRECT_accept
 	 * @return bool
 	 */
 	private function fresh_sidecar_exists( $source_path, $sidecar_path ) {
-		return $sidecar_path
-			&& file_exists( $source_path )
-			&& file_exists( $sidecar_path )
-			&& filemtime( $sidecar_path ) >= filemtime( $source_path );
+		foreach ( array( $source_path, $sidecar_path ) as $path ) {
+			if ( ! $this->relative_upload_path_for_storage( $path ) || ! is_file( $path ) || ! is_readable( $path ) ) {
+				return false;
+			}
+		}
+		$source_time  = filemtime( $source_path );
+		$sidecar_time = filemtime( $sidecar_path );
+		return false !== $source_time && false !== $sidecar_time && $sidecar_time >= $source_time;
 	}
 
 	/**
@@ -5102,9 +5152,9 @@ Header append Vary Accept env=REDIRECT_accept
 					continue;
 				}
 
-				$source = $this->relative_upload_path( $file['path'] );
-				$avif   = $has_avif ? $this->relative_upload_path( $avif_path ) : '';
-				$webp   = $has_webp ? $this->relative_upload_path( $webp_path ) : '';
+				$source = $this->relative_upload_path_for_storage( $file['path'] );
+				$avif   = $has_avif ? $this->relative_upload_path_for_storage( $avif_path ) : '';
+				$webp   = $has_webp ? $this->relative_upload_path_for_storage( $webp_path ) : '';
 
 				if ( ! $source || ( ! $avif && ! $webp ) ) {
 					continue;
@@ -5116,9 +5166,9 @@ Header append Vary Accept env=REDIRECT_accept
 					'sidecar'       => $webp,
 					'avif'          => $avif,
 					'webp'          => $webp,
-					'source_url'    => $baseurl . $source,
-					'avif_url'      => $avif ? $baseurl . $avif : '',
-					'webp_url'      => $webp ? $baseurl . $webp : '',
+					'source_url'    => $baseurl . implode( '/', array_map( 'rawurlencode', explode( '/', $source ) ) ),
+					'avif_url'      => $avif ? $baseurl . implode( '/', array_map( 'rawurlencode', explode( '/', $avif ) ) ) : '',
+					'webp_url'      => $webp ? $baseurl . implode( '/', array_map( 'rawurlencode', explode( '/', $webp ) ) ) : '',
 				);
 			}
 		}
@@ -5131,51 +5181,60 @@ Header append Vary Accept env=REDIRECT_accept
 	 *
 	 * @param string $url URL to test.
 	 * @param array  $headers Optional request headers.
+	 * @param array  $expected_formats Permitted modern response formats.
 	 * @return array
 	 */
-	private function remote_head_report( $url, $headers = array() ) {
+	private function remote_head_report( $url, $headers = array(), $expected_formats = array( 'avif', 'webp' ) ) {
+		$report = array(
+			'ok'          => false,
+			'status'      => 0,
+			'contentType' => '',
+			'isAvif'      => false,
+			'isWebp'      => false,
+			'kind'        => 'unverified',
+			'message'     => __( 'No URL is available for this format.', 'yoohw-media-optimizer' ),
+		);
 		if ( ! $url ) {
-			return array(
-				'ok'          => false,
-				'status'      => 0,
-				'contentType' => '',
-				'isAvif'      => false,
-				'isWebp'      => false,
-				'message'     => __( 'No URL is available for this format.', 'yoohw-media-optimizer' ),
-			);
+			return $report;
 		}
-
-		$response = wp_remote_head(
-			$url,
+		$target = $this->delivery_url_parts( $url );
+		$home   = $this->delivery_url_parts( home_url( '/' ) );
+		if ( ! $this->same_delivery_origin( $target, $home ) || ! $this->upload_url_to_path( $url ) ) {
+			$report['message'] = __( 'This URL is outside the safe site uploads boundary; it was not requested.', 'yoohw-media-optimizer' );
+			return $report;
+		}
+		$response = wp_safe_remote_head(
+			$target['url'],
 			array(
 				'timeout'     => 8,
-				'redirection' => 3,
+				'redirection' => 0,
 				'headers'     => $headers,
 			)
 		);
-
 		if ( is_wp_error( $response ) ) {
-			return array(
-				'ok'          => false,
-				'status'      => 0,
-				'contentType' => '',
-				'isAvif'      => false,
-				'isWebp'      => false,
-				'message'     => $response->get_error_message(),
-			);
+			$report['message'] = $response->get_error_message();
+			return $report;
 		}
-
-		$status       = (int) wp_remote_retrieve_response_code( $response );
-		$content_type = (string) wp_remote_retrieve_header( $response, 'content-type' );
-
-		return array(
-			'ok'          => $status >= 200 && $status < 400,
-			'status'      => $status,
-			'contentType' => $content_type,
-			'isAvif'      => false !== stripos( $content_type, 'image/avif' ),
-			'isWebp'      => false !== stripos( $content_type, 'image/webp' ),
-			'message'     => '',
-		);
+		$report['status']      = (int) wp_remote_retrieve_response_code( $response );
+		$content_type = wp_remote_retrieve_header( $response, 'content-type' );
+		$report['contentType'] = is_array( $content_type ) ? implode( ', ', $content_type ) : (string) $content_type;
+		$mime = is_array( $content_type ) ? '' : strtolower( trim( explode( ';', $report['contentType'], 2 )[0] ) );
+		$report['isAvif'] = 'image/avif' === $mime;
+		$report['isWebp'] = 'image/webp' === $mime;
+		$format = $report['isAvif'] ? 'avif' : ( $report['isWebp'] ? 'webp' : '' );
+		$report['ok'] = 200 === $report['status'] && '' !== $format && in_array( $format, $expected_formats, true );
+		if ( $report['ok'] ) {
+			$report['kind']    = 'modern';
+			$report['message'] = '';
+		} elseif ( 200 === $report['status'] && in_array( $mime, array( 'image/jpeg', 'image/png' ), true ) ) {
+			$report['kind']    = 'fallback';
+			$report['message'] = __( 'Original fallback; modern image delivery was not confirmed.', 'yoohw-media-optimizer' );
+		} elseif ( $report['status'] >= 300 && $report['status'] < 400 ) {
+			$report['message'] = __( 'The response redirects; redirects are not followed, so delivery is unverified.', 'yoohw-media-optimizer' );
+		} else {
+			$report['message'] = __( 'Expected HTTP 200 with the requested modern image Content-Type; delivery is unverified.', 'yoohw-media-optimizer' );
+		}
+		return $report;
 	}
 
 	/**

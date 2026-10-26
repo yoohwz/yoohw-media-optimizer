@@ -77,6 +77,9 @@ try {
 	$assert( false !== strpos( $picture, 'type="image/webp"' ), 'WebP source is missing.' );
 	$assert( false !== strpos( $picture, 'src="' . esc_url( $image_url ) . '"' ), 'Original image fallback is missing.' );
 
+	$delivery_checks = require __DIR__ . '/delivery-tests.php';
+	$delivery_checks( $optimizer, $invoke, $assert );
+
 	$unsafe = dirname( $uploads['basedir'] ) . '/outside.webp';
 	file_put_contents( $unsafe, 'outside-test' );
 	$created_paths[] = $unsafe;
