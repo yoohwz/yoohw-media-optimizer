@@ -171,7 +171,7 @@ try {
 		$wrong = new Imagick( $control );
 		$wrong->setImageRenderingIntent( Imagick::RENDERINGINTENT_RELATIVE );
 		$wrong->profileImage( 'icc', $profiles['srgb'] );
-		$wrong->removeImageProfile( 'icc' );
+		$wrong->stripImage();
 		$wrong->profileImage( 'icc', $profiles['display_p3'] );
 		$wrong->writeImage( $control ); $wrong->clear();
 		$oracle_rejected = false;
