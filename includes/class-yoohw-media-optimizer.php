@@ -1566,9 +1566,9 @@ Header append Vary Accept env=REDIRECT_accept
 			wp_die( esc_html__( 'You do not have permission to manage media optimization.', 'yoohw-media-optimizer' ) );
 		}
 		check_admin_referer( 'yoohw_mo_optimize_batch' );
-		$result = $this->browser_batch_request();
+		$result = $this->browser_batch_request( wp_unslash( $_POST ) );
 		if ( ! empty( $result['error'] ) ) {
-			wp_die( esc_html( $result['message'] ), '', array( 'response' => $result['httpStatus'] ) );
+			wp_die( esc_html( $result['message'] ), '', array( 'response' => absint( $result['httpStatus'] ) ) );
 		}
 		wp_safe_redirect( add_query_arg( array( 'yoohw_mo_notice' => 'batch_done', 'tab' => 'optimize', 'processed' => $result['processedTotal'], 'created' => $result['created'], 'existing' => $result['existing'], 'skipped' => $result['skipped'], 'failed' => $result['failed'], 'originalOptimized' => $result['originalOptimized'], 'originalSkipped' => $result['originalSkipped'], 'originalFailed' => $result['originalFailed'] ), $this->admin_page_url() ) );
 		exit;
@@ -1580,7 +1580,7 @@ Header append Vary Accept env=REDIRECT_accept
 			wp_send_json_error( array( 'message' => __( 'You do not have permission to manage media optimization.', 'yoohw-media-optimizer' ) ), 403 );
 		}
 		check_ajax_referer( 'yoohw_mo_ajax', 'nonce' );
-		$result = $this->browser_batch_request();
+		$result = $this->browser_batch_request( wp_unslash( $_POST ) );
 		if ( ! empty( $result['error'] ) ) {
 			wp_send_json_error( $result, $result['httpStatus'] );
 		}
@@ -1589,15 +1589,15 @@ Header append Vary Accept env=REDIRECT_accept
 
 	private function require_admin_mutation_result( $result ) {
 		if ( ! empty( $result['error'] ) ) {
-			wp_die( esc_html( $result['message'] ), '', array( 'response' => $result['httpStatus'] ?? 500 ) );
+			wp_die( esc_html( $result['message'] ), '', array( 'response' => absint( $result['httpStatus'] ?? 500 ) ) );
 		}
 	}
 
-	private function browser_batch_request() {
-		$run_id = isset( $_POST['run_id'] ) ? sanitize_text_field( wp_unslash( $_POST['run_id'] ) ) : '';
-		$start = ! empty( $_POST['start'] );
-		$force = isset( $_POST['force'] ) ? (bool) $_POST['force'] : null;
-		$limit = isset( $_POST['limit'] ) ? absint( wp_unslash( $_POST['limit'] ) ) : self::UI_BATCH_LIMIT;
+	private function browser_batch_request( $request ) {
+		$run_id = isset( $request['run_id'] ) ? sanitize_text_field( $request['run_id'] ) : '';
+		$start = ! empty( $request['start'] );
+		$force = isset( $request['force'] ) ? (bool) $request['force'] : null;
+		$limit = isset( $request['limit'] ) ? absint( $request['limit'] ) : self::UI_BATCH_LIMIT;
 		return $this->run_browser_batch( $run_id, $start, $force, $limit );
 	}
 
@@ -2665,12 +2665,15 @@ Header append Vary Accept env=REDIRECT_accept
 		}
 		// Exclusive creation never replaces an inode. Read access lets CLI and web users share flock.
 		// The e flag prevents encoder children inheriting the native descriptor.
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen -- WP_Filesystem has no native descriptor for process-held flock or close-on-exec.
 		$handle = $stat ? @fopen( $path, 'rbe' ) : @fopen( $path, 'x+be' );
 		if ( ! $handle && ! $stat ) {
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen -- Open the existing native mutex descriptor after another process wins exclusive creation.
 			$handle = @fopen( $path, 'rbe' );
 		}
 		if ( ! $handle || ! @flock( $handle, LOCK_EX | LOCK_NB, $would_block ) ) {
 			if ( is_resource( $handle ) ) {
+				// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- Close the native mutex descriptor; WP_Filesystem exposes no descriptor API.
 				fclose( $handle );
 			}
 			return new WP_Error( 'yoohw_mo_queue_locked', 'Another media mutation worker is running, or locking is unavailable.', array( 'status' => ! empty( $would_block ) ? 409 : 503 ) );
@@ -2738,6 +2741,7 @@ Header append Vary Accept env=REDIRECT_accept
 	private function close_mutation_handle() {
 		if ( is_resource( $this->mutation_handle ) ) {
 			flock( $this->mutation_handle, LOCK_UN );
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- Release the process-held descriptor; never unlink the shared mutex inode.
 			fclose( $this->mutation_handle );
 		}
 		$this->mutation_handle = null;
@@ -4709,8 +4713,8 @@ Header append Vary Accept env=REDIRECT_accept
 		if ( ! $stage ) {
 			return false;
 		}
-		// phpcs:ignore WordPress.WP.AlternativeFunctions.rename_rename -- WP_Filesystem::move pre-deletes the original; atomic commit must preserve it on failure.
 		$this->checkpoint_if_owned();
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.rename_rename -- WP_Filesystem::move pre-deletes the original; atomic commit must preserve it on failure.
 		$committed = $this->relative_upload_path_for_storage( $destination ) && function_exists( 'rename' ) && @rename( $stage, $destination );
 		if ( ! $committed ) {
 			wp_delete_file( $stage );
