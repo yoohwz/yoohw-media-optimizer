@@ -1437,7 +1437,7 @@ Header append Vary Accept env=REDIRECT_accept
 					<option value="aggressive" <?php selected( 'aggressive', $options['compression_mode'] ); ?>><?php esc_html_e( 'Aggressive', 'yoohw-media-optimizer' ); ?></option>
 					<option value="custom" <?php selected( 'custom', $options['compression_mode'] ); ?>><?php esc_html_e( 'Custom JPEG quality', 'yoohw-media-optimizer' ); ?></option>
 				</select>
-				<em><?php esc_html_e( 'Uses server binaries when available, then falls back to the active WordPress image editor. Lossless mode avoids recompressing unless resize is needed.', 'yoohw-media-optimizer' ); ?></em>
+				<em><?php esc_html_e( 'Uses server binaries when available, then falls back to the active WordPress image editor. Without resizing, lossless JPEG optimization requires jpegoptim or jpegtran; otherwise the original is kept unchanged.', 'yoohw-media-optimizer' ); ?></em>
 			</label>
 
 			<label class="yoohw-mo-field">
@@ -3710,6 +3710,11 @@ Header append Vary Accept env=REDIRECT_accept
 			$result['engine']  = $binary_result['engine'];
 		}
 
+		if ( ! $saved_path && ! $needs_resize && 'lossless' === $mode && $this->is_jpeg_path( $path ) ) {
+			$result['message'] = __( 'The JPEG was left unchanged because no smaller lossless output was available and resizing was not needed.', 'yoohw-media-optimizer' );
+			return $result;
+		}
+
 		if ( ! $saved_path ) {
 			$editor = wp_get_image_editor( $path );
 
@@ -4002,6 +4007,7 @@ Header append Vary Accept env=REDIRECT_accept
 				continue;
 			}
 
+			wp_delete_file( $destination );
 			$last_error = $result;
 		}
 
