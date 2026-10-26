@@ -167,6 +167,8 @@ class YoOhw_Media_Optimizer_Color {
 
 	/** Validate the candidate before any publication; never edits either file. */
 	public static function verify( $source, $output, $mime, $remove_private = false ) {
+		$header = @file_get_contents( $output, false, null, 0, 12 );
+		if ( ! is_string( $header ) || ( 'image/jpeg' === $mime && "\xff\xd8" !== substr( $header, 0, 2 ) ) || ( 'image/png' === $mime && "\x89PNG\r\n\x1a\n" !== substr( $header, 0, 8 ) ) || ( 'image/avif' === $mime && ( 'ftyp' !== substr( $header, 4, 4 ) || ! in_array( substr( $header, 8, 4 ), array( 'avif', 'avis' ), true ) ) ) ) { return self::error(); }
 		$before = self::inspect( $source );
 		if ( is_wp_error( $before ) ) { return $before; }
 		if ( 'image/webp' === $mime ) { $after = self::webp( $output ); }
