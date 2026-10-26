@@ -6,9 +6,20 @@ Run the integration regression checks against a disposable or local WordPress si
 wp eval-file wp-content/plugins/yoohw-media-optimizer/tests/regression-tests.php
 ```
 
-The script creates uniquely named temporary files, verifies picture fallbacks,
-sidecar path containment, idempotent original optimization, and private backup
-placement, then restores plugin options and removes its temporary files.
+The script creates temporary media files and an attachment, verifies picture
+fallbacks, sidecar path containment, idempotent original optimization, and private
+backup placement, then restores plugin options and removes its test attachment,
+files, and backups.
+
+With GD available, attachment lifecycle checks force the GD editor and exercise
+persisted tracking through `optimize_attachment()`: optimize originals, disable
+originals and process sidecars, then re-enable originals. They verify original
+and backup hashes, retained fingerprints and savings, current-run counters,
+changed settings, changed source content with identical size/mtime, explicit
+force, legacy identity (including JPEG with a non-default stored quality),
+incomplete modern identity, new image sizes, missing sources, restore, and
+independent original/sidecar failures. These checks do not certify concurrency, crash-safe
+replacement, filesystem fault recovery, or the full image-engine matrix.
 
 ## GitHub Actions
 

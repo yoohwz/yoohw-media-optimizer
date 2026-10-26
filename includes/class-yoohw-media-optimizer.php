@@ -3018,6 +3018,56 @@ Header append Vary Accept env=REDIRECT_accept
 
 		$tracking = $result;
 		unset( $tracking['metadata'] );
+
+		if ( empty( $options['optimize_originals'] ) ) {
+			foreach ( $tracking['files'] as $index => $tracked_file ) {
+				$previous = $previous_files[ wp_normalize_path( $tracked_file['source'] ) ] ?? array();
+				$path     = $files[ $index ]['path'] ?? '';
+
+				if ( empty( $previous ) ) {
+					continue;
+				}
+
+				// Retain recovery references and identity even if the source changed or disappeared.
+				foreach ( array( 'backup_path', 'original_input_hash', 'optimized_hash', 'original_options_fingerprint' ) as $key ) {
+					if ( isset( $previous[ $key ] ) ) {
+						$tracking['files'][ $index ][ $key ] = $previous[ $key ];
+					}
+				}
+
+				$current_hash    = $path ? $this->file_hash( $path ) : '';
+				$previous_status = sanitize_key( $previous['original_status'] ?? '' );
+
+				// Upgrade verifiable legacy evidence before this run replaces its option provenance.
+				if (
+					$current_hash
+					&& in_array( $previous_status, array( 'optimized', 'existing', 'no_change', 'skipped_larger' ), true )
+					&& $this->legacy_original_tracking_matches( $previous, $previous['_tracking_options'] ?? array(), $path )
+				) {
+					$legacy_options = $previous['_tracking_options'];
+					// Non-custom modes ignore this unstored value, but fingerprints include it.
+					$legacy_options['jpeg_quality'] = absint( $options['jpeg_quality'] ?? 82 );
+					$previous['optimized_hash'] = $current_hash;
+					$tracking['files'][ $index ]['optimized_hash'] = $current_hash;
+					$tracking['files'][ $index ]['original_options_fingerprint'] = $this->original_options_fingerprint( $legacy_options );
+				}
+
+				$unchanged = $current_hash && ! empty( $previous['optimized_hash'] )
+					&& hash_equals( (string) $previous['optimized_hash'], $current_hash );
+
+				if ( $unchanged ) {
+					// Keep original history separate from sidecar outcomes and current-run counters.
+					foreach ( array( 'original_status', 'original_message', 'original_size', 'saved_bytes', 'saved_percent', 'engine', 'mode', 'metadata_policy' ) as $key ) {
+						if ( isset( $previous[ $key ] ) ) {
+							$tracking['files'][ $index ][ $key ] = $previous[ $key ];
+						}
+					}
+				} elseif ( $current_hash && 'restored' === $previous_status ) {
+					$tracking['files'][ $index ]['original_status'] = 'restored';
+				}
+			}
+		}
+
 		update_post_meta( $attachment_id, self::META_KEY, $tracking );
 		$this->invalidate_savings_cache( $attachment_id );
 
@@ -3799,7 +3849,10 @@ Header append Vary Accept env=REDIRECT_accept
 		$tracked_options = is_array( $previous['_tracking_options'] ?? null ) ? $previous['_tracking_options'] : array();
 		$mode            = sanitize_key( $options['compression_mode'] ?? 'balanced' );
 
-		if ( empty( $previous ) || 'custom' === $mode || empty( $tracked_options ) || ! file_exists( $path ) ) {
+		if (
+			empty( $previous ) || 'custom' === $mode || empty( $tracked_options['optimize_originals'] ) || ! file_exists( $path )
+			|| ! empty( $previous['original_options_fingerprint'] ) || ! empty( $previous['optimized_hash'] ) || ! empty( $previous['original_input_hash'] )
+		) {
 			return false;
 		}
 
