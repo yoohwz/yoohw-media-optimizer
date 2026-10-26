@@ -167,6 +167,7 @@ try {
 	}
 	$editor_name = 'imagick' === $mode ? 'WP_Image_Editor_Imagick' : 'WP_Image_Editor_GD';
 	$filter( 'wp_image_editors', static function() use ( $editor_name ) { return array( $editor_name ); } );
+	$expected_editor = 'imagick' === $mode ? 'YoOhw_Media_Optimizer_Imagick' : $editor_name;
 	if ( 'native' !== $mode && 'fault' !== $mode ) {
 		// No optional tools may accidentally satisfy the explicit editor evidence.
 		putenv( 'PATH=' . $dir );
@@ -179,7 +180,7 @@ try {
 			$assert( $orientation === (int) $exif['Orientation'], 'Fixture EXIF orientation invalid.' );
 			$hash = hash_file( 'sha256', $path );
 			$result = $run( $id );
-			$expected = 1 === $orientation ? 'gd' : $editor_name;
+			$expected = 1 === $orientation ? 'gd' : $expected_editor;
 			$assert( 'created' === $result['files'][0]['status'] && $expected === $result['files'][0]['webp_engine'], 'Wrong WebP engine/status for orientation ' . $orientation . ': ' . wp_json_encode( $result ) );
 			$check_display( $path . '.webp', $orientation, $orientation >= 5 ? 64 : 96, $orientation >= 5 ? 96 : 64 );
 			$assert( $hash === hash_file( 'sha256', $path ), 'Sidecar generation mutated original JPEG/ICC.' );
@@ -194,7 +195,7 @@ try {
 			if ( 'imagick' === $mode ) {
 				if ( Imagick::queryFormats( 'AVIF' ) && wp_image_editor_supports( array( 'mime_type' => 'image/avif' ) ) ) {
 					$avif = $run( $id, array( 'generate_avif_sidecars' => 1 ) );
-					$assert( $editor_name === $avif['files'][0]['avif_engine'], 'Imagick oriented AVIF fell back to another engine.' );
+					$assert( $expected_editor === $avif['files'][0]['avif_engine'], 'Imagick oriented AVIF fell back to another engine.' );
 					$check_display( $path . '.avif', $orientation, $orientation >= 5 ? 64 : 96, $orientation >= 5 ? 96 : 64 );
 				} else {
 					$assert( ! $required, 'Required Imagick AVIF support unavailable.' );
@@ -206,7 +207,7 @@ try {
 			list( $id, $path ) = $attach( 'resize-' . $case[0] . '-' . $case[1] . '.jpg', $jpeg( 6 ), 'image/jpeg' );
 			$hash = hash_file( 'sha256', $path );
 			$result = $run( $id, array( 'optimize_originals' => 1, 'max_width' => $case[0], 'max_height' => $case[1], 'generate_webp_sidecars' => 0 ) );
-			$assert( 'optimized' === $result['files'][0]['original_status'] && $editor_name === $result['files'][0]['engine'], 'Resize did not use selected original editor.' );
+			$assert( 'optimized' === $result['files'][0]['original_status'] && $expected_editor === $result['files'][0]['engine'], 'Resize did not use selected original editor.' );
 			$check_display( $path, 6, $case[2], $case[3] );
 			$backup = $invoke( 'backup_path_for', array( $path ) );
 			$assert( $hash === hash_file( 'sha256', $backup ), 'Resize backup lost original EXIF/ICC bytes.' );
@@ -220,7 +221,7 @@ try {
 			$copy = $path . '.oracle';
 			file_put_contents( $copy, $bytes );
 			$result = $run( $id, array( 'optimize_originals' => 1, 'compression_mode' => 'lossless' ) );
-			$assert( 'optimized' === $result['files'][0]['original_status'] && $editor_name === $result['files'][0]['engine'], 'PNG original did not use selected lossless editor.' );
+			$assert( 'optimized' === $result['files'][0]['original_status'] && $expected_editor === $result['files'][0]['engine'], 'PNG original did not use selected lossless editor.' );
 			$check_alpha( $copy, $path, true );
 
 			$restore = $optimizer->restore_attachment( $id );
@@ -277,15 +278,16 @@ try {
 		// Optional encoders enabled must still defer non-neutral EXIF to normalization.
 		$native_editor = class_exists( 'Imagick' ) ? 'WP_Image_Editor_Imagick' : 'WP_Image_Editor_GD';
 		$filter( 'wp_image_editors', static function() use ( $native_editor ) { return array( $native_editor ); } );
+		$native_expected_editor = class_exists( 'Imagick' ) ? 'YoOhw_Media_Optimizer_Imagick' : $native_editor;
 		foreach ( array( 6, 2 ) as $orientation ) {
 			list( $id, $path ) = $attach( 'native-oriented-' . $orientation . '.jpg', $jpeg( $orientation ), 'image/jpeg' );
 			$hash = hash_file( 'sha256', $path );
 			$avif_capable = class_exists( 'Imagick' ) && Imagick::queryFormats( 'AVIF' ) && wp_image_editor_supports( array( 'mime_type' => 'image/avif' ) );
 			$result = $run( $id, array( 'use_external_binaries' => 1, 'generate_avif_sidecars' => $avif_capable ? 1 : 0 ) );
-			$assert( $native_editor === $result['files'][0]['webp_engine'], 'Oriented JPEG used an external encoder without normalization.' );
+			$assert( $native_expected_editor === $result['files'][0]['webp_engine'], 'Oriented JPEG used an external encoder without normalization.' );
 			$check_display( $path . '.webp', $orientation, $orientation >= 5 ? 64 : 96, $orientation >= 5 ? 96 : 64 );
 			if ( $avif_capable ) {
-				$assert( $native_editor === $result['files'][0]['avif_engine'], 'Oriented AVIF did not use capable normalizing editor.' );
+				$assert( $native_expected_editor === $result['files'][0]['avif_engine'], 'Oriented AVIF did not use capable normalizing editor.' );
 				$check_display( $path . '.avif', $orientation, $orientation >= 5 ? 64 : 96, $orientation >= 5 ? 96 : 64 );
 			} else {
 				$assert( ! $required, 'Required oriented native AVIF editor unavailable.' );

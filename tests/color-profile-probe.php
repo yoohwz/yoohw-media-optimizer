@@ -164,6 +164,19 @@ try {
 		$result = $run( $id, array(), false );
 		$assert( 'existing' === $result['files'][0]['status'] && 'legacy untagged webp' === file_get_contents( $path . '.webp' ), 'Fresh legacy sidecar automatically regenerated.' );
 	} elseif ( 'imagick' === $mode ) {
+		// Negative control: matching ICC alone must not hide converted-and-relabelled pixels.
+		$control = $dir . '/wrong-p3.png';
+		file_put_contents( $control, $fixture( 'rgba', $profiles['display_p3'] ) );
+		$wrong = new Imagick( $control );
+		$wrong->setImageRenderingIntent( Imagick::RENDERINGINTENT_RELATIVE );
+		$wrong->profileImage( 'icc', $profiles['srgb'] );
+		$wrong->removeImageProfile( 'icc' );
+		$wrong->profileImage( 'icc', $profiles['display_p3'] );
+		$wrong->writeImage( $control ); $wrong->clear();
+		$oracle_rejected = false;
+		try { $check( $control, 'display_p3', 1, 96, 64, 'rgba' ); }
+		catch ( RuntimeException $expected ) { $oracle_rejected = false !== strpos( $expected->getMessage(), 'converted/relabelled' ); }
+		$assert( $oracle_rejected, 'ICC oracle accepted sRGB pixels relabelled as P3.' );
 		foreach ( $profiles as $name => $profile ) {
 			foreach ( array( 'jpeg', 'palette', 'rgba' ) as $kind ) {
 				list( $id, $path ) = $attach( $name . '-' . $kind . ( 'jpeg' === $kind ? '.jpg' : '.png' ), $fixture( $kind, $profile ) );
@@ -185,7 +198,12 @@ try {
 			}
 		}
 		foreach ( array( 6, 2 ) as $orientation ) {
-			list( $id, $path ) = $attach( 'p3-orientation-' . $orientation . '.jpg', $fixture( 'jpeg', $profiles['display_p3'], $orientation ) );
+			$oriented_bytes = $fixture( 'jpeg', $profiles['display_p3'], $orientation );
+			if ( 2 === $orientation ) {
+				$parts = str_split( $profiles['display_p3'], (int) ceil( strlen( $profiles['display_p3'] ) / 2 ) );
+				$oriented_bytes = str_replace( $segment( 0xe2, "ICC_PROFILE\0\x01\x01" . $profiles['display_p3'] ), $segment( 0xe2, "ICC_PROFILE\0\x01\x02" . $parts[0] ) . $segment( 0xe2, "ICC_PROFILE\0\x02\x02" . $parts[1] ), $oriented_bytes );
+			}
+			list( $id, $path ) = $attach( 'p3-orientation-' . $orientation . '.jpg', $oriented_bytes );
 			$hash = hash_file( 'sha256', $path ); $rotated = 6 === $orientation;
 			$result = $run( $id ); $assert( 'created' === $result['files'][0]['status'], 'Tagged oriented sidecar failed.' );
 			$check( $path . '.webp', 'display_p3', $orientation, $rotated ? 64 : 96, $rotated ? 96 : 64 );
@@ -243,15 +261,20 @@ try {
 			$safe_failure( $name . '.jpg', substr( $valid, 0, 2 ) . $extra . substr( $valid, 2 ) );
 		}
 		$png = $fixture( 'rgba', '' );
-		foreach ( array( 'corrupt-iccp' => $chunk( 'iCCP', "Fixture\0\0not zlib" ), 'oversized-iccp' => $chunk( 'iCCP', "Fixture\0\0" . gzcompress( str_repeat( 'x', 1048577 ) ) ), 'gamma-no-icc' => $chunk( 'gAMA', pack( 'N', 45455 ) ) ) as $name => $extra ) {
+		foreach ( array( 'corrupt-iccp' => $chunk( 'iCCP', "Fixture\0\0not zlib" ), 'oversized-iccp' => $chunk( 'iCCP', "Fixture\0\0" . gzcompress( str_repeat( 'x', 1048577 ) ) ), 'nonstandard-gamma' => $chunk( 'gAMA', pack( 'N', 100000 ) ) ) as $name => $extra ) {
 			$safe_failure( $name . '.png', substr( $png, 0, 33 ) . $extra . substr( $png, 33 ) );
 		}
 		if ( class_exists( 'Imagick' ) ) {
 			$cmyk = new Imagick(); $cmyk->newImage( 96, 64, 'red', 'jpeg' ); $cmyk->transformImageColorspace( Imagick::COLORSPACE_CMYK );
-			$safe_failure( 'untagged-cmyk.jpg', $cmyk->getImageBlob() ); $cmyk->clear();
+			$cmyk_bytes = $cmyk->getImageBlob(); $cmyk->clear();
+			$safe_failure( 'untagged-cmyk.jpg', $cmyk_bytes );
+			$safe_failure( 'rgb-profile-cmyk-raster.jpg', substr( $cmyk_bytes, 0, 2 ) . $icc_segment . substr( $cmyk_bytes, 2 ) );
 			require_once ABSPATH . WPINC . '/class-wp-image-editor-imagick.php';
-			class YoOhw_MO_Color_Stripping_Editor extends WP_Image_Editor_Imagick {
+			require_once dirname( __DIR__ ) . '/includes/class-yoohw-media-optimizer-imagick.php';
+			class YoOhw_MO_Color_Stripping_Editor extends YoOhw_Media_Optimizer_Imagick {
+				public static $saves = 0;
 				public function save( $destination = null, $mime_type = null ) {
+					++self::$saves;
 					$result = parent::save( $destination, $mime_type );
 					if ( ! is_wp_error( $result ) ) { $image = new Imagick( $result['path'] ); $image->stripImage(); $image->writeImage( $result['path'] ); $image->clear(); }
 					return $result;
@@ -259,6 +282,7 @@ try {
 			}
 			$filter( 'wp_image_editors', static function() { return array( 'YoOhw_MO_Color_Stripping_Editor' ); } );
 			$safe_failure( 'stripped-output.jpg', $fixture( 'jpeg', $profiles['display_p3'], 6 ) );
+			$assert( YoOhw_MO_Color_Stripping_Editor::$saves > 0, 'Stripping editor never reached candidate verification.' );
 		} else { echo "ICC stripped-editor/CMYK: NOT RUN — Imagick unavailable.\n"; }
 		$assert( array() === glob( $dir . '/.*.yoohw-mo-*' ) && array() === glob( $dir . '/*.tmp-*' ), 'ICC rejection leaked owned temporary output.' );
 	} elseif ( 'tool-flags' === $mode ) {
