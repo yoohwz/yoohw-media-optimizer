@@ -37,12 +37,18 @@ jobs:
       - uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
         with:
           php-version: ${{ inputs.php }}
-          extensions: mysqli, gd, exif
+          extensions: ${{ inputs.php == '8.4' && 'mysqli, gd, exif, imagick' || 'mysqli, gd, exif' }}
           tools: wp-cli:2.12.0
           coverage: none
+      - name: Install real image encoders for the representative native profile
+        if: ${{ inputs.php == '8.4' }}
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends -y webp libavif-bin libjpeg-turbo-progs
       - name: Check PHP syntax on the selected runtime
         run: find . -name '*.php' -not -path './.git/*' -print0 | xargs -0 -n1 php -l
-      - name: Run existing WP-CLI regression checks with GD
+      - name: Run WP-CLI regression checks with required image capabilities
         run: bash bin/run-wp-regression.sh
         env:
           WP_VERSION: ${{ inputs.wordpress }}
+          YOOHW_MO_REQUIRE_NATIVE_QUALITY: ${{ inputs.php == '8.4' && '1' || '0' }}

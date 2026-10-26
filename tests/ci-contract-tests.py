@@ -7,6 +7,7 @@ import os
 from pathlib import Path
 import re
 import subprocess
+import tempfile
 import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -60,6 +61,62 @@ class CIContracts(unittest.TestCase):
         excludes = set((ROOT / ".distignore").read_text().splitlines())
         for path in ("/.git", "/.github", "/AGENTS.md", "/bin", "/tests"):
             self.assertIn(path, excludes)
+
+    def test_native_profile_routing(self):
+        workflow = (ROOT / ".github/workflows/regression.yml").read_text()
+        self.assertIn("extensions: ${{ inputs.php == '8.4' && 'mysqli, gd, exif, imagick' || 'mysqli, gd, exif' }}", workflow)
+        self.assertRegex(workflow, r"if: \$\{\{ inputs.php == '8\.4' \}\}\n        run: \|\n          sudo apt-get update\n          sudo apt-get install --no-install-recommends -y webp libavif-bin libjpeg-turbo-progs")
+        self.assertIn("YOOHW_MO_REQUIRE_NATIVE_QUALITY: ${{ inputs.php == '8.4' && '1' || '0' }}", workflow)
+        self.assertNotIn("continue-on-error", workflow)
+        canary = (ROOT / ".github/workflows/compatibility-canary.yml").read_text()
+        self.assertIn("uses: ./.github/workflows/regression.yml", canary)
+        self.assertIn("wordpress: nightly\n      php: '8.4'", canary)
+        for path in (".github/workflows/regression.yml", "bin/run-wp-regression.sh"):
+            self.assertIn("      - " + path, canary)
+
+    def test_required_capabilities_fail_closed(self):
+        runner = (ROOT / "bin/run-wp-regression.sh").read_text()
+        self.assertIn('export YOOHW_MO_REQUIRE_NATIVE_QUALITY="${YOOHW_MO_REQUIRE_NATIVE_QUALITY:-0}"', runner)
+        # Bound assertions to the actual pre-provisioning PHP guard, not docs/log text.
+        preflight = runner.split("php <<'PHP'\n", 1)[1].split("\nPHP\n", 1)[0]
+        self.assertIn("array( 'mysqli', 'gd', 'exif' )", preflight)
+        self.assertIn("array( 'imagepng', 'imagecreatetruecolor', 'exif_read_data' )", preflight)
+        native = preflight.split("if ( '1' === getenv( 'YOOHW_MO_REQUIRE_NATIVE_QUALITY' ) ) {", 1)[1]
+        self.assertIn("array( 'JPEG', 'PNG', 'WEBP', 'AVIF' )", native)
+        for condition in ("! extension_loaded( $extension )", "! function_exists( $function )",
+                          "! extension_loaded( 'imagick' ) || ! class_exists( 'Imagick' )",
+                          "! Imagick::queryFormats( $format )"):
+            self.assertRegex(preflight, r"if \( " + re.escape(condition) + r" \) \{\s*fwrite\([^;]+;\s*exit\( 1 \);")
+        self.assertLess(runner.index("\nPHP\n"), runner.index("wp core download"))
+
+    def test_required_encoder_preflight(self):
+        runner = (ROOT / "bin/run-wp-regression.sh").read_text()
+        guard = runner.split("\nPHP\n", 1)[1].split("\nwp core download", 1)[0]
+        # Execute the real shell guard with isolated executable fixtures: no PHP/WP/site writes.
+        def run(required, missing="", failed="", old_avif=False, spaced=False):
+            with tempfile.TemporaryDirectory() as directory:
+                for encoder in ("cwebp", "avifenc", "jpegtran"):
+                    if encoder == missing:
+                        continue
+                    executable = Path(directory) / encoder
+                    help_text = "old interface" if old_avif else ("-q, --qcolor Q" if spaced else "-q,--qcolor Q")
+                    executable.write_text("#!/bin/sh\n" + ("exit 1\n" if encoder == failed else
+                                          "if [ \"$1\" = --help ]; then printf '%s\\n' '" + help_text + "'; else printf 'test encoder 1.0\\n'; fi\n"))
+                    executable.chmod(0o755)
+                return subprocess.run(["/bin/bash", "-euo", "pipefail", "-c", guard],
+                                      env=dict(os.environ, PATH=directory, YOOHW_MO_REQUIRE_NATIVE_QUALITY=required),
+                                      capture_output=True, text=True)
+        self.assertEqual(run("1").returncode, 0)
+        self.assertEqual(run("1", spaced=True).returncode, 0)
+        for encoder in ("cwebp", "avifenc", "jpegtran"):
+            with self.subTest(missing=encoder):
+                result = run("1", missing=encoder)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("Missing required encoder: " + encoder, result.stderr)
+            with self.subTest(failed=encoder):
+                self.assertNotEqual(run("1", failed=encoder).returncode, 0)
+        self.assertNotEqual(run("1", old_avif=True).returncode, 0)
+        self.assertEqual(run("0", missing="cwebp").returncode, 0)
 
     def test_gate_rejects_incomplete_results(self):
         env = dict(os.environ, FULL="true", PLAN="success", CONTRACTS="success", QUALITY="success",
