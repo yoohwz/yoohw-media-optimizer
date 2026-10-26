@@ -5218,7 +5218,7 @@ Header append Vary Accept env=REDIRECT_accept
 		$report['status']      = (int) wp_remote_retrieve_response_code( $response );
 		$content_type = wp_remote_retrieve_header( $response, 'content-type' );
 		$report['contentType'] = is_array( $content_type ) ? implode( ', ', $content_type ) : (string) $content_type;
-		$mime = strtolower( trim( explode( ';', $report['contentType'], 2 )[0] ) );
+		$mime = is_array( $content_type ) ? '' : strtolower( trim( explode( ';', $report['contentType'], 2 )[0] ) );
 		$report['isAvif'] = 'image/avif' === $mime;
 		$report['isWebp'] = 'image/webp' === $mime;
 		$format = $report['isAvif'] ? 'avif' : ( $report['isWebp'] ? 'webp' : '' );

@@ -85,6 +85,16 @@ Plugin optimization, backup/restore, sidecar cleanup and queue mutations share a
 
 Only after HTML delivery is enabled. The plugin then prefers an available AVIF, falls back to WebP, and finally uses the original image.
 
+= Which URLs can use HTML delivery? =
+
+Only URLs on the configured uploads origin and inside its uploads path can select local sidecars. Root-relative and protocol-relative URLs must resolve to that same origin. Other hosts, ambiguous paths, backups and symlinks below uploads keep their original image markup. The plugin uses fresh readable AVIF/WebP files and preserves the original JPEG/PNG fallback; it does not vary cached HTML by the request Accept header.
+
+= How should I interpret Delivery Assistant? =
+
+Direct AVIF/WebP and rewrite checks are reported separately. OK requires HTTP 200 with the expected modern image Content-Type. The AVIF-preferred rewrite check accepts AVIF or WebP; the WebP-only check excludes AVIF. An original JPEG/PNG is labeled Original fallback, and HTML or missing/wrong MIME cannot pass. These HEAD checks inspect headers, not image bytes or browser/CDN cache behavior. Redirects are reported without following them, and no GET fallback is attempted.
+
+Diagnostic requests stay on the site's home origin and inside its uploads path, subject to WordPress safe HTTP checks. An external uploads/CDN origin may still work for frontend delivery, but Delivery Assistant will not probe it. The assistant does not change server/CDN rules or certify their configuration.
+
 = Does it send images to an external optimization service? =
 
 No. Processing is local and does not require paid credits, an API key, or a subscription.

@@ -117,15 +117,17 @@
 				return config.strings.notTested;
 			}
 
+			var details = report.status ? report.status + ' · ' + (report.contentType || config.strings.unknownContentType) : '';
 			if (report.ok) {
-				return config.strings.ok + ' ' + report.status + ' · ' + (report.contentType || config.strings.unknownContentType);
+				return config.strings.ok + ' ' + details;
 			}
 
-			if (report.message) {
-				return config.strings.unavailable + ' · ' + report.message;
+			if (report.kind === 'fallback') {
+				return config.strings.originalFallback + ' · ' + details;
 			}
 
-			return formatLabel + ' ' + config.strings.notDetected;
+			var message = report.message || formatLabel + ' ' + config.strings.notDetected;
+			return message + (details ? ' · ' + details : '');
 		}
 
 		function renderDeliveryResult(data) {
@@ -147,6 +149,14 @@
 				{
 					label: config.strings.directWebpLabel,
 					value: formatHeadStatus(data.directWebp, 'WebP')
+				},
+				{
+					label: config.strings.rewriteAvifLabel,
+					value: formatHeadStatus(data.rewriteAvif, 'AVIF/WebP')
+				},
+				{
+					label: config.strings.rewriteWebpLabel,
+					value: formatHeadStatus(data.rewriteWebp, 'WebP')
 				},
 				{
 					label: config.strings.avifSourceLabel,
