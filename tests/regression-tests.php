@@ -402,6 +402,8 @@ try {
 
 		$image_quality_checks = require __DIR__ . '/image-quality-tests.php';
 		$image_quality_checks( $optimizer, $invoke, $assert, $test_dir );
+		$color_profile_checks = require __DIR__ . '/color-profile-tests.php';
+		$color_profile_checks( $optimizer, $invoke, $assert, $test_dir );
 	}
 
 } catch ( Throwable $error ) {

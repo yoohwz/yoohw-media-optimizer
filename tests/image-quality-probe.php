@@ -100,7 +100,7 @@ $check_display = static function( $path, $orientation, $width, $height ) use ( $
 	}
 };
 $icc = file_get_contents( __DIR__ . '/fixtures/srgb.icc' );
-$jpeg = static function( $orientation ) use ( $colors, $icc ) {
+$jpeg = static function( $orientation, $tagged = false ) use ( $colors, $icc ) {
 	$image = imagecreatetruecolor( 96, 64 );
 	foreach ( $colors as $index => $color ) {
 		$x = ( $index % 2 ) * 48;
@@ -114,7 +114,7 @@ $jpeg = static function( $orientation ) use ( $colors, $icc ) {
 	$exif = "Exif\0\0II\x2a\0" . pack( 'Vv', 8, 1 ) . pack( 'vvVv', 0x0112, 3, 1, $orientation ) . "\0\0" . pack( 'V', 0 );
 	$profile = "ICC_PROFILE\0\x01\x01" . $icc;
 	$padding = str_repeat( 'Generated image quality metadata. ', 1000 );
-	return substr( $body, 0, 2 ) . "\xff\xe1" . pack( 'n', strlen( $exif ) + 2 ) . $exif . "\xff\xe2" . pack( 'n', strlen( $profile ) + 2 ) . $profile . "\xff\xef" . pack( 'n', strlen( $padding ) + 2 ) . $padding . substr( $body, 2 );
+	return substr( $body, 0, 2 ) . "\xff\xe1" . pack( 'n', strlen( $exif ) + 2 ) . $exif . ( $tagged ? "\xff\xe2" . pack( 'n', strlen( $profile ) + 2 ) . $profile : '' ) . "\xff\xef" . pack( 'n', strlen( $padding ) + 2 ) . $padding . substr( $body, 2 );
 };
 $chunk = static function( $name, $bytes ) {
 	return pack( 'N', strlen( $bytes ) ) . $name . $bytes . pack( 'N', crc32( $name . $bytes ) );
@@ -192,9 +192,6 @@ try {
 				}
 			}
 			if ( 'imagick' === $mode ) {
-				$profile_image = new Imagick( $path );
-				$assert( $icc === $profile_image->getImageProfile( 'icc' ), 'Decoder did not recognize embedded valid ICC bytes.' );
-				$profile_image->clear();
 				if ( Imagick::queryFormats( 'AVIF' ) && wp_image_editor_supports( array( 'mime_type' => 'image/avif' ) ) ) {
 					$avif = $run( $id, array( 'generate_avif_sidecars' => 1 ) );
 					$assert( $editor_name === $avif['files'][0]['avif_engine'], 'Imagick oriented AVIF fell back to another engine.' );
@@ -320,7 +317,7 @@ try {
 			$check_display( $path, 1, 96, 64 );
 			$assert( $hash === hash_file( 'sha256', $invoke( 'backup_path_for', array( $path ) ) ), 'Real jpegtran backup lost source/profile.' );
 			// Preserve-all must keep non-neutral EXIF/ICC together with unchanged raw pixels.
-			list( $preserve_id, $preserve_path ) = $attach( 'native-preserved-orientation.jpg', $jpeg( 6 ), 'image/jpeg' );
+			list( $preserve_id, $preserve_path ) = $attach( 'native-preserved-orientation.jpg', $jpeg( 6, true ), 'image/jpeg' );
 			$preserve_stage = $dir . '/native-preserved-output.jpg';
 			$preserved = $invoke( 'optimize_jpeg_with_jpegtran', array( $preserve_path, $preserve_stage, array( 'metadata_policy' => 'preserve_all' ) ) );
 			$assert( ! is_wp_error( $preserved ) && 'jpegtran' === $preserved['engine'], 'Real preserve-all jpegtran did not execute.' );
