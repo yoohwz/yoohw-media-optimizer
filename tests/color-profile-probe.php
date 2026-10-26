@@ -148,6 +148,15 @@ try {
 		echo 'Color profile ' . $mode . ": NOT RUN — Imagick unavailable.\n";
 		return;
 	}
+	if ( in_array( $mode, array( 'imagick', 'native' ), true ) ) {
+		// profileImage() may silently leave pixels unchanged when LCMS was not compiled in.
+		$delegates = implode( ' ', Imagick::getConfigureOptions( 'DELEGATES' ) );
+		if ( ! preg_match( '/\blcms(?:2)?\b/i', $delegates ) ) {
+			$assert( ! $required, 'Required ICC color-managed oracle unavailable: Imagick lacks LCMS delegate.' );
+			echo 'Color profile ' . $mode . ": NOT RUN — Imagick lacks LCMS delegate for the color-managed oracle.\n";
+			return;
+		}
+	}
 	if ( 'gd' === $mode ) {
 		foreach ( $profiles as $profile ) {
 			foreach ( array( 'jpeg', 'palette', 'rgba' ) as $kind ) { $safe_failure( 'gd-' . $count . ( 'jpeg' === $kind ? '.jpg' : '.png' ), $fixture( $kind, $profile ) ); }
