@@ -11,6 +11,25 @@ fallbacks, sidecar path containment, idempotent original optimization, and priva
 backup placement, then restores plugin options and removes its test attachment,
 files, and backups.
 
+`delivery-tests.php` runs before the GD-dependent checks. It isolates uploads and
+attachment queries, then checks configured-origin/default-port matching,
+root/protocol-relative references, path segment decoding, query/fragment
+preservation, foreign origins, malformed/traversal/separator/control escapes,
+backup exclusions, descendant symlinks, regular files and freshness. Picture
+checks retain original HTML, AVIF/WebP ordering and complete srcsets, and compare
+markup across request Accept values for shared-cache safety. Sample attachment
+paths include spaces, Unicode, a literal percent and hash to verify segment
+encoding.
+
+Delivery HTTP checks intercept `pre_http_request` rather than using external
+network access. They assert the target, HEAD method, safe URL rejection, timeout,
+zero redirects and supplied Accept header, plus exact expected MIME/status
+classification, original fallback, dynamic WebP, redirects and transport errors.
+Fixtures restore options, filters and request Accept, and remove temporary posts
+and paths. These checks do not certify actual HTTP transports, server/CDN rewrite
+configuration, browser rendering, nonce/capability AJAX handling or MIME bytes;
+those affected boundaries require separate targeted evidence.
+
 With GD available, attachment lifecycle checks force the GD editor and exercise
 persisted tracking through `optimize_attachment()`: optimize originals, disable
 originals and process sidecars, then re-enable originals. They verify original
