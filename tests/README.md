@@ -51,6 +51,27 @@ power-loss/fsync, hostile symlink-race or full WordPress crash-recovery test.
 Temporary cleanup is best-effort when permissions deny removal; killed workers
 may leave an unpublished stage. No production fault-injection hooks are added.
 
+`queue-tests.php` checks the shared persistent lifecycle through real WordPress
+calls and `queue-process-probe.php` child PHP processes bootstrapping the same
+disposable WordPress site. A live owner with an expired legacy heartbeat remains
+exclusive before and after a real database reconnect. Wrong tokens cannot refresh
+or release the mutex; direct optimize/restore/cleanup and queue building report
+busy. Directory/symlink lockfiles and a replaced lock inode fail closed; release
+retains the inert lockfile.
+
+Queue fixtures cover empty run identity, bounded snapshot batches, two clients
+sharing an active run, deleted IDs becoming skipped, new IDs waiting for the next
+run, lost-response retries using absolute progress, stale run rejection, force
+binding/inheritance/conflict, legacy terminal-state adoption without invented file
+operation totals, authoritative reads despite an old process option cache, and
+refused option writes without false progress. A child is killed after it persists
+`running` and before image work; the next native owner immediately reclaims it
+without replaying force. Fixtures restore queue/token/options and remove their
+media and backups. These are process and persistence checks, not an atomic
+filesystem/database transaction, exactly-once, power-loss, hostile lockfile-race,
+multihost filesystem or browser certification. Browser pause/reload/nonce flows
+require separate evidence. The native mutex currently requires POSIX `flock`.
+
 ## GitHub Actions
 
 `Media Optimizer CI` runs on pull requests, pushes to `main`, and manual dispatch.

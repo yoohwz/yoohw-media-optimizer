@@ -62,6 +62,12 @@ class YoOhw_Media_Optimizer {
 	 */
 	private $admin_hook = '';
 
+	/** Native mutation ownership; never inherited by a reentrant public call. */
+	private $mutation_handle = null;
+	private $mutation_token = '';
+	private $mutation_root = '';
+	private $mutation_path = '';
+
 	/**
 	 * Get singleton instance.
 	 *
@@ -199,7 +205,9 @@ class YoOhw_Media_Optimizer {
 				'ajaxUrl' => admin_url( 'admin-ajax.php' ),
 				'nonce'   => wp_create_nonce( 'yoohw_mo_ajax' ),
 				'batchSize' => self::UI_BATCH_LIMIT,
+				'queueProgress' => $this->browser_queue_progress(),
 				'strings' => array(
+					'resume'         => __( 'Resume optimizing', 'yoohw-media-optimizer' ),
 					'starting'       => __( 'Preparing media optimization...', 'yoohw-media-optimizer' ),
 					'running'        => __( 'Optimizing media...', 'yoohw-media-optimizer' ),
 					'paused'         => __( 'Optimization paused.', 'yoohw-media-optimizer' ),
@@ -507,8 +515,7 @@ class YoOhw_Media_Optimizer {
 		$summary = $this->scan_library( 2000, 0 );
 		$savings = $this->savings_report();
 		$queue   = $this->queue_status();
-		$offset  = absint( $this->get_query_arg( 'next_offset' ) );
-		$offset  = empty( $this->get_query_arg( 'has_more' ) ) ? 0 : $offset;
+		$progress = $this->browser_queue_progress();
 		$tab     = $this->current_admin_tab();
 		?>
 		<div class="wrap yoohw-mo-wrap">
@@ -564,7 +571,7 @@ class YoOhw_Media_Optimizer {
 				<section class="yoohw-mo-card yoohw-mo-card-wide" <?php echo 'optimize' === $tab ? '' : 'hidden'; ?>>
 					<h2><?php esc_html_e( 'Optimize media library', 'yoohw-media-optimizer' ); ?></h2>
 					<p class="yoohw-mo-muted"><?php esc_html_e( 'Processes existing uploads with automatic batching, live progress, and resumable pause controls.', 'yoohw-media-optimizer' ); ?></p>
-					<?php $this->render_batch_form( $offset ); ?>
+					<?php $this->render_batch_form( $progress ); ?>
 				</section>
 
 				<section class="yoohw-mo-card yoohw-mo-card-wide" <?php echo 'settings' === $tab ? '' : 'hidden'; ?>>
@@ -905,6 +912,7 @@ class YoOhw_Media_Optimizer {
 
 		foreach ( (array) $post_ids as $post_id ) {
 			$restored = $this->restore_attachment( absint( $post_id ) );
+			$this->require_admin_mutation_result( $restored );
 
 			$result['restored'] += absint( $restored['restored'] ?? 0 );
 			$result['failed']   += absint( $restored['failed'] ?? 0 );
@@ -1282,15 +1290,16 @@ Header append Vary Accept env=REDIRECT_accept
 	/**
 	 * Render batch optimize form.
 	 *
-	 * @param int $offset Batch offset.
+	 * @param array $progress Persisted queue progress.
 	 * @return void
 	 */
-	private function render_batch_form( $offset ) {
+	private function render_batch_form( $progress ) {
 		?>
 		<form class="yoohw-mo-batch-form" method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" data-yoohw-mo-batch-form>
 			<input type="hidden" name="action" value="yoohw_mo_optimize_batch">
 			<input type="hidden" name="limit" value="<?php echo esc_attr( self::UI_BATCH_LIMIT ); ?>">
-			<input type="hidden" name="offset" value="<?php echo esc_attr( $offset ); ?>">
+			<input type="hidden" name="run_id" value="<?php echo esc_attr( $progress['runId'] ); ?>">
+			<input type="hidden" name="start" value="<?php echo $progress['hasMore'] ? '0' : '1'; ?>">
 			<?php wp_nonce_field( 'yoohw_mo_optimize_batch' ); ?>
 
 			<div class="yoohw-mo-optimize-console">
@@ -1305,7 +1314,7 @@ Header append Vary Accept env=REDIRECT_accept
 				<div class="yoohw-mo-batch-actions">
 					<button type="submit" class="button button-primary button-hero" data-yoohw-mo-start <?php disabled( ! $this->can_run_any_optimization() ); ?>>
 						<span class="dashicons dashicons-controls-play" aria-hidden="true"></span>
-						<?php esc_html_e( 'Start optimizing', 'yoohw-media-optimizer' ); ?>
+						<?php echo esc_html( $progress['hasMore'] ? __( 'Resume optimizing', 'yoohw-media-optimizer' ) : __( 'Start optimizing', 'yoohw-media-optimizer' ) ); ?>
 					</button>
 					<button type="button" class="button button-hero" data-yoohw-mo-stop hidden>
 						<span class="dashicons dashicons-controls-pause" aria-hidden="true"></span>
@@ -1317,21 +1326,21 @@ Header append Vary Accept env=REDIRECT_accept
 			<details class="yoohw-mo-advanced-options">
 				<summary><?php esc_html_e( 'Advanced options', 'yoohw-media-optimizer' ); ?></summary>
 				<label class="yoohw-mo-check">
-					<input type="checkbox" name="force" value="1">
+					<input type="checkbox" name="force" value="1" <?php checked( ! empty( $progress['force'] ) ); ?> <?php disabled( ! empty( $progress['hasMore'] ) && ! empty( $progress['runId'] ) ); ?>>
 					<span><?php esc_html_e( 'Force rebuild existing modern sidecars', 'yoohw-media-optimizer' ); ?></span>
 				</label>
 			</details>
 
-			<div class="yoohw-mo-progress" data-yoohw-mo-progress hidden aria-live="polite">
+			<div class="yoohw-mo-progress" data-yoohw-mo-progress <?php echo empty( $progress['runId'] ) ? 'hidden' : ''; ?> aria-live="polite">
 				<div class="yoohw-mo-progress-head">
 					<div class="yoohw-mo-progress-title">
 						<span class="yoohw-mo-progress-pulse" aria-hidden="true"></span>
 						<strong data-yoohw-mo-progress-title><?php esc_html_e( 'Ready to optimize', 'yoohw-media-optimizer' ); ?></strong>
 					</div>
-					<span data-yoohw-mo-progress-percent>0%</span>
+					<span data-yoohw-mo-progress-percent><?php echo esc_html( $progress['percent'] ); ?>%</span>
 				</div>
-				<div class="yoohw-mo-progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" data-yoohw-mo-progressbar>
-					<span data-yoohw-mo-progress-fill></span>
+				<div class="yoohw-mo-progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="<?php echo esc_attr( $progress['percent'] ); ?>" data-yoohw-mo-progressbar>
+					<span data-yoohw-mo-progress-fill style="width: <?php echo esc_attr( $progress['percent'] ); ?>%"></span>
 				</div>
 				<div class="yoohw-mo-progress-meta">
 					<span data-yoohw-mo-current><?php esc_html_e( 'Waiting to start', 'yoohw-media-optimizer' ); ?></span>
@@ -1339,16 +1348,16 @@ Header append Vary Accept env=REDIRECT_accept
 					<span><?php esc_html_e( 'ETA', 'yoohw-media-optimizer' ); ?> <strong data-yoohw-mo-eta>-</strong></span>
 				</div>
 				<div class="yoohw-mo-progress-stats">
-					<span><?php esc_html_e( 'Processed', 'yoohw-media-optimizer' ); ?> <strong data-yoohw-mo-stat="processed">0</strong></span>
-					<span><?php esc_html_e( 'Created/updated', 'yoohw-media-optimizer' ); ?> <strong data-yoohw-mo-stat="created">0</strong></span>
-					<span><?php esc_html_e( 'Existing', 'yoohw-media-optimizer' ); ?> <strong data-yoohw-mo-stat="existing">0</strong></span>
-					<span><?php esc_html_e( 'Skipped larger', 'yoohw-media-optimizer' ); ?> <strong data-yoohw-mo-stat="skipped">0</strong></span>
-					<span><?php esc_html_e( 'Originals optimized', 'yoohw-media-optimizer' ); ?> <strong data-yoohw-mo-stat="originalOptimized">0</strong></span>
-					<span><?php esc_html_e( 'Originals skipped', 'yoohw-media-optimizer' ); ?> <strong data-yoohw-mo-stat="originalSkipped">0</strong></span>
-					<span><?php esc_html_e( 'Failed', 'yoohw-media-optimizer' ); ?> <strong data-yoohw-mo-stat="failed">0</strong></span>
+					<span><?php esc_html_e( 'Processed', 'yoohw-media-optimizer' ); ?> <strong data-yoohw-mo-stat="processed"><?php echo esc_html( $progress['processedTotal'] ); ?></strong></span>
+					<span><?php esc_html_e( 'Created/updated', 'yoohw-media-optimizer' ); ?> <strong data-yoohw-mo-stat="created"><?php echo esc_html( $progress['created'] ); ?></strong></span>
+					<span><?php esc_html_e( 'Existing', 'yoohw-media-optimizer' ); ?> <strong data-yoohw-mo-stat="existing"><?php echo esc_html( $progress['existing'] ); ?></strong></span>
+					<span><?php esc_html_e( 'Skipped larger', 'yoohw-media-optimizer' ); ?> <strong data-yoohw-mo-stat="skipped"><?php echo esc_html( $progress['skipped'] ); ?></strong></span>
+					<span><?php esc_html_e( 'Originals optimized', 'yoohw-media-optimizer' ); ?> <strong data-yoohw-mo-stat="originalOptimized"><?php echo esc_html( $progress['originalOptimized'] ); ?></strong></span>
+					<span><?php esc_html_e( 'Originals skipped', 'yoohw-media-optimizer' ); ?> <strong data-yoohw-mo-stat="originalSkipped"><?php echo esc_html( $progress['originalSkipped'] ); ?></strong></span>
+					<span><?php esc_html_e( 'Failed', 'yoohw-media-optimizer' ); ?> <strong data-yoohw-mo-stat="failed"><?php echo esc_html( $progress['failed'] + $progress['originalFailed'] ); ?></strong></span>
 					<span><?php esc_html_e( 'Rate', 'yoohw-media-optimizer' ); ?> <strong data-yoohw-mo-rate>-</strong></span>
 				</div>
-				<p class="yoohw-mo-progress-note" data-yoohw-mo-progress-note><?php esc_html_e( 'The optimizer will continue automatically until all supported media is processed.', 'yoohw-media-optimizer' ); ?></p>
+				<p class="yoohw-mo-progress-note" data-yoohw-mo-progress-note><?php echo esc_html( $progress['note'] ? $progress['note'] : __( 'The optimizer will continue automatically until all supported media is processed.', 'yoohw-media-optimizer' ) ); ?></p>
 				<ul class="yoohw-mo-progress-log" data-yoohw-mo-progress-log></ul>
 			</div>
 
@@ -1556,85 +1565,40 @@ Header append Vary Accept env=REDIRECT_accept
 		if ( ! current_user_can( self::CAPABILITY ) ) {
 			wp_die( esc_html__( 'You do not have permission to manage media optimization.', 'yoohw-media-optimizer' ) );
 		}
-
 		check_admin_referer( 'yoohw_mo_optimize_batch' );
-
-		$limit  = isset( $_POST['limit'] ) ? max( 1, min( 200, absint( wp_unslash( $_POST['limit'] ) ) ) ) : self::DEFAULT_LIMIT;
-		$offset = isset( $_POST['offset'] ) ? absint( wp_unslash( $_POST['offset'] ) ) : 0;
-		$force  = ! empty( $_POST['force'] );
-		$query  = $this->query_supported_attachment_ids( $limit, $offset, true );
-		$totals = $this->optimize_attachment_ids( $query['ids'], $force );
-
-		$next_offset = $offset + $limit;
-		$has_more    = $query['found'] > $next_offset ? 1 : 0;
-
-		wp_safe_redirect(
-			add_query_arg(
-				array(
-					'yoohw_mo_notice' => 'batch_done',
-					'tab'             => 'optimize',
-					'processed'       => $totals['processed'],
-					'created'         => $totals['created'],
-					'existing'        => $totals['existing'],
-					'skipped'         => $totals['skipped'],
-					'failed'          => $totals['failed'],
-					'originalOptimized' => $totals['original_optimized'],
-					'originalSkipped' => $totals['original_skipped'],
-					'originalFailed'  => $totals['original_failed'],
-					'next_offset'     => $next_offset,
-					'has_more'        => $has_more,
-				),
-				$this->admin_page_url()
-			)
-		);
+		$result = $this->browser_batch_request( wp_unslash( $_POST ) );
+		if ( ! empty( $result['error'] ) ) {
+			wp_die( esc_html( $result['message'] ), '', array( 'response' => absint( $result['httpStatus'] ) ) );
+		}
+		wp_safe_redirect( add_query_arg( array( 'yoohw_mo_notice' => 'batch_done', 'tab' => 'optimize', 'processed' => $result['processedTotal'], 'created' => $result['created'], 'existing' => $result['existing'], 'skipped' => $result['skipped'], 'failed' => $result['failed'], 'originalOptimized' => $result['originalOptimized'], 'originalSkipped' => $result['originalSkipped'], 'originalFailed' => $result['originalFailed'] ), $this->admin_page_url() ) );
 		exit;
 	}
 
-	/**
-	 * AJAX batch optimize handler.
-	 *
-	 * @return void
-	 */
+	/** AJAX uses the same persisted lifecycle as a regular form submission. */
 	public function handle_ajax_optimize_batch() {
 		if ( ! current_user_can( self::CAPABILITY ) ) {
-			wp_send_json_error(
-				array(
-					'message' => __( 'You do not have permission to manage media optimization.', 'yoohw-media-optimizer' ),
-				),
-				403
-			);
+			wp_send_json_error( array( 'message' => __( 'You do not have permission to manage media optimization.', 'yoohw-media-optimizer' ) ), 403 );
 		}
-
 		check_ajax_referer( 'yoohw_mo_ajax', 'nonce' );
+		$result = $this->browser_batch_request( wp_unslash( $_POST ) );
+		if ( ! empty( $result['error'] ) ) {
+			wp_send_json_error( $result, $result['httpStatus'] );
+		}
+		wp_send_json_success( $result );
+	}
 
-		$limit  = isset( $_POST['limit'] ) ? max( 1, min( 200, absint( wp_unslash( $_POST['limit'] ) ) ) ) : self::DEFAULT_LIMIT;
-		$offset = isset( $_POST['offset'] ) ? absint( wp_unslash( $_POST['offset'] ) ) : 0;
-		$force  = ! empty( $_POST['force'] );
-		$query  = $this->query_supported_attachment_ids( $limit, $offset, true );
-		$totals = $this->optimize_attachment_ids( $query['ids'], $force );
+	private function require_admin_mutation_result( $result ) {
+		if ( ! empty( $result['error'] ) ) {
+			wp_die( esc_html( $result['message'] ), '', array( 'response' => absint( $result['httpStatus'] ?? 500 ) ) );
+		}
+	}
 
-		$next_offset     = $offset + count( $query['ids'] );
-		$processed_total = min( $next_offset, $query['found'] );
-		$has_more        = $query['found'] > $next_offset;
-		$percent         = $query['found'] > 0 ? round( ( $processed_total / $query['found'] ) * 100, 1 ) : 100;
-
-		wp_send_json_success(
-			array(
-				'found'          => absint( $query['found'] ),
-				'processed'      => absint( $totals['processed'] ),
-				'processedTotal' => absint( $processed_total ),
-				'nextOffset'     => absint( $next_offset ),
-				'hasMore'        => (bool) $has_more,
-				'percent'        => $percent,
-				'created'        => absint( $totals['created'] ),
-				'existing'       => absint( $totals['existing'] ),
-				'skipped'        => absint( $totals['skipped'] ),
-				'failed'         => absint( $totals['failed'] ),
-				'originalOptimized' => absint( $totals['original_optimized'] ),
-				'originalSkipped' => absint( $totals['original_skipped'] ),
-				'originalFailed'  => absint( $totals['original_failed'] ),
-			)
-		);
+	private function browser_batch_request( $request ) {
+		$run_id = isset( $request['run_id'] ) ? sanitize_text_field( $request['run_id'] ) : '';
+		$start = ! empty( $request['start'] );
+		$force = isset( $request['force'] ) ? (bool) $request['force'] : null;
+		$limit = isset( $request['limit'] ) ? absint( $request['limit'] ) : self::UI_BATCH_LIMIT;
+		return $this->run_browser_batch( $run_id, $start, $force, $limit );
 	}
 
 	/**
@@ -1667,6 +1631,7 @@ Header append Vary Accept env=REDIRECT_accept
 		}
 
 		$result = $this->cleanup_sidecars( ! empty( $_POST['delete_tracking'] ) );
+		$this->require_admin_mutation_result( $result );
 
 		wp_safe_redirect(
 			add_query_arg(
@@ -1697,6 +1662,7 @@ Header append Vary Accept env=REDIRECT_accept
 		check_admin_referer( 'yoohw_mo_restore_attachment_' . $attachment_id );
 
 		$result   = $attachment_id ? $this->restore_attachment( $attachment_id ) : array( 'restored' => 0, 'failed' => 1 );
+		$this->require_admin_mutation_result( $result );
 		$redirect = wp_get_referer() ? wp_get_referer() : $this->admin_page_url();
 
 		wp_safe_redirect(
@@ -1735,6 +1701,7 @@ Header append Vary Accept env=REDIRECT_accept
 
 			foreach ( $query['ids'] as $attachment_id ) {
 				$restored = $this->restore_attachment( $attachment_id );
+				$this->require_admin_mutation_result( $restored );
 
 				$result['restored'] += absint( $restored['restored'] ?? 0 );
 				$result['failed']   += absint( $restored['failed'] ?? 0 );
@@ -1768,6 +1735,7 @@ Header append Vary Accept env=REDIRECT_accept
 		check_admin_referer( 'yoohw_mo_build_queue' );
 
 		$result = $this->build_queue();
+		$this->require_admin_mutation_result( $result );
 
 		wp_safe_redirect(
 			add_query_arg(
@@ -1795,7 +1763,8 @@ Header append Vary Accept env=REDIRECT_accept
 		check_admin_referer( 'yoohw_mo_process_queue' );
 
 		$limit  = isset( $_POST['limit'] ) ? max( 1, min( 200, absint( wp_unslash( $_POST['limit'] ) ) ) ) : self::DEFAULT_LIMIT;
-		$result = $this->process_queue_batch( $limit, false );
+		$result = $this->process_queue_batch( $limit, null );
+		$this->require_admin_mutation_result( $result );
 		$notice = ! empty( $result['locked'] ) ? 'queue_locked' : 'queue_done';
 
 		wp_safe_redirect(
@@ -1804,7 +1773,7 @@ Header append Vary Accept env=REDIRECT_accept
 					'yoohw_mo_notice' => $notice,
 					'tab'             => 'optimize',
 					'processed'       => absint( $result['processed'] ?? 0 ),
-					'failed'          => absint( $result['failed'] ?? 0 ),
+					'failed'          => absint( $result['batchFailed'] ?? 0 ),
 				),
 				$this->admin_page_url()
 			)
@@ -1867,49 +1836,6 @@ Header append Vary Accept env=REDIRECT_accept
 				'htmlModeEnabled' => self::DELIVERY_HTML === $options['delivery_mode'],
 			)
 		);
-	}
-
-	/**
-	 * Optimize a list of attachment IDs and return batch totals.
-	 *
-	 * @param array $attachment_ids Attachment IDs.
-	 * @param bool  $force Whether to rebuild existing sidecars.
-	 * @return array
-	 */
-	private function optimize_attachment_ids( $attachment_ids, $force ) {
-		$totals = array(
-			'processed'          => 0,
-			'created'            => 0,
-			'existing'           => 0,
-			'skipped'            => 0,
-			'failed'             => 0,
-			'original_optimized' => 0,
-			'original_skipped'   => 0,
-			'original_failed'    => 0,
-			'backed_up'          => 0,
-		);
-
-		foreach ( $attachment_ids as $attachment_id ) {
-			$result = $this->optimize_attachment( $attachment_id, $force );
-
-			++$totals['processed'];
-			$totals['created']            += absint( $result['summary']['created'] ?? 0 );
-			$totals['created']            += absint( $result['summary']['updated'] ?? 0 );
-			$totals['created']            += absint( $result['summary']['avif_created'] ?? 0 );
-			$totals['created']            += absint( $result['summary']['avif_updated'] ?? 0 );
-			$totals['existing']           += absint( $result['summary']['existing'] ?? 0 );
-			$totals['existing']           += absint( $result['summary']['avif_existing'] ?? 0 );
-			$totals['skipped']            += absint( $result['summary']['skipped_larger'] ?? 0 );
-			$totals['skipped']            += absint( $result['summary']['avif_skipped_larger'] ?? 0 );
-			$totals['failed']             += absint( $result['summary']['failed'] ?? 0 );
-			$totals['failed']             += absint( $result['summary']['avif_failed'] ?? 0 );
-			$totals['original_optimized'] += absint( $result['summary']['original_optimized'] ?? 0 );
-			$totals['original_skipped']   += absint( $result['summary']['original_skipped'] ?? 0 );
-			$totals['original_failed']    += absint( $result['summary']['original_failed'] ?? 0 );
-			$totals['backed_up']          += absint( $result['summary']['backed_up'] ?? 0 );
-		}
-
-		return $totals;
 	}
 
 	/**
@@ -2545,202 +2471,314 @@ Header append Vary Accept env=REDIRECT_accept
 	 *
 	 * @return array
 	 */
+	/** Return persisted counts without rebuilding the attachment snapshot. */
 	public function queue_status() {
-		$queue  = $this->get_queue();
-		$status = array(
-			'total'   => 0,
-			'pending' => 0,
-			'running' => 0,
-			'done'    => 0,
-			'failed'  => 0,
-		);
+		try {
+			return $this->summarize_queue( $this->get_queue() );
+		} catch ( RuntimeException $error ) {
+			return array_merge( $this->summarize_queue( array( 'items' => array() ) ), $this->mutation_error( $error->getMessage() ) );
+		}
+	}
 
+	private function summarize_queue( $queue ) {
+		$status = array( 'total' => 0, 'pending' => 0, 'running' => 0, 'done' => 0, 'failed' => 0, 'skipped' => 0, 'run_id' => $queue['run_id'] ?? '' );
 		foreach ( $queue['items'] as $item ) {
 			++$status['total'];
-
-			$item_status = sanitize_key( $item['status'] ?? 'pending' );
-
-			if ( isset( $status[ $item_status ] ) ) {
-				++$status[ $item_status ];
+			$key = $item['status'] ?? 'pending';
+			if ( isset( $status[ $key ] ) ) {
+				++$status[ $key ];
 			}
 		}
-
 		return $status;
 	}
 
-	/**
-	 * Build a persistent queue of supported attachment IDs.
-	 *
-	 * @return array
-	 */
+	/** Build only when the previous snapshot has no unfinished items. */
 	public function build_queue() {
-		$query = $this->query_supported_attachment_ids( 0, 0, false );
-		$items = array();
-
-		foreach ( $query['ids'] as $attachment_id ) {
-			$attachment_id = absint( $attachment_id );
-			$items[ $attachment_id ] = array(
-				'id'         => $attachment_id,
-				'status'     => 'pending',
-				'message'    => '',
-				'updated_at' => current_time( 'mysql' ),
-			);
-		}
-
-		$this->save_queue(
-			array(
-				'created_at' => current_time( 'mysql' ),
-				'updated_at' => current_time( 'mysql' ),
-				'items'      => $items,
-			)
-		);
-
-		return array(
-			'queued' => count( $items ),
-		);
+		return $this->with_mutation_lock( function () {
+			$queue = $this->adopt_queue( $this->get_queue() );
+			if ( ! $this->queue_has_more( $queue ) ) {
+				$queue = $this->new_queue();
+			}
+			$this->save_queue( $queue );
+			return array( 'queued' => count( $queue['items'] ), 'runId' => $queue['run_id'] );
+		} );
 	}
 
-	/**
-	 * Process one queue batch.
-	 *
-	 * @param int  $limit Batch size.
-	 * @param bool $force Whether to force rebuild sidecars.
-	 * @return array
-	 */
-	public function process_queue_batch( $limit = self::DEFAULT_LIMIT, $force = false ) {
-		$limit  = max( 1, absint( $limit ) );
-		$result = array(
-			'processed' => 0,
-			'failed'    => 0,
-			'done'      => 0,
-			'locked'    => 0,
-		);
-		$lock = $this->acquire_queue_lock();
-
-		if ( is_wp_error( $lock ) ) {
-			$result['locked'] = 1;
-			return $result;
+	private function new_queue( $force = null ) {
+		$query = $this->query_supported_attachment_ids( 0, 0, false );
+		$queue = array( 'run_id' => wp_generate_uuid4(), 'force' => $force, 'totals' => $this->empty_queue_totals(), 'created_at' => current_time( 'mysql' ), 'updated_at' => current_time( 'mysql' ), 'items' => array() );
+		foreach ( $query['ids'] as $id ) {
+			$queue['items'][ $id ] = array( 'id' => absint( $id ), 'status' => 'pending', 'message' => '', 'updated_at' => current_time( 'mysql' ) );
 		}
+		return $queue;
+	}
 
-		try {
-			$queue = $this->get_queue();
+	private function empty_queue_totals() {
+		return array_fill_keys( array( 'processed', 'created', 'existing', 'skipped', 'failed', 'original_optimized', 'original_skipped', 'original_failed', 'backed_up' ), 0 );
+	}
 
-			foreach ( $queue['items'] as $attachment_id => $item ) {
-				if ( $result['processed'] >= $limit ) {
-					break;
-				}
+	private function adopt_queue( $queue ) {
+		if ( empty( $queue['run_id'] ) ) {
+			$queue['run_id'] = wp_generate_uuid4();
+		}
+		if ( ! array_key_exists( 'force', $queue ) ) {
+			$queue['force'] = null;
+		}
+		$queue['legacy_totals_unknown'] = ! isset( $queue['totals'] ) || ! empty( $queue['legacy_totals_unknown'] );
+		$queue['totals'] = array_merge( $this->empty_queue_totals(), is_array( $queue['totals'] ?? null ) ? $queue['totals'] : array() );
+		return $queue;
+	}
 
-				$item_status = sanitize_key( $item['status'] ?? 'pending' );
-
-				if ( 'pending' !== $item_status && ! ( 'running' === $item_status && $this->queue_item_is_stale( $item ) ) ) {
-					continue;
-				}
-
-				$this->refresh_queue_lock( $lock );
-				$queue['items'][ $attachment_id ]['status']     = 'running';
-				$queue['items'][ $attachment_id ]['updated_at'] = current_time( 'mysql' );
-				$this->save_queue( $queue );
-
-				$optimized = $this->optimize_attachment( absint( $attachment_id ), $force );
-				$failures  = absint( $optimized['summary']['failed'] ?? 0 )
-					+ absint( $optimized['summary']['avif_failed'] ?? 0 )
-					+ absint( $optimized['summary']['original_failed'] ?? 0 );
-
-				++$result['processed'];
-
-				if ( $failures > 0 ) {
-					++$result['failed'];
-					$queue['items'][ $attachment_id ]['status']  = 'failed';
-					$queue['items'][ $attachment_id ]['message'] = sprintf(
-						/* translators: %d: failure count. */
-						__( '%d file operation(s) failed.', 'yoohw-media-optimizer' ),
-						$failures
-					);
-				} else {
-					++$result['done'];
-					$queue['items'][ $attachment_id ]['status']  = 'done';
-					$queue['items'][ $attachment_id ]['message'] = '';
-				}
-
-				$queue['items'][ $attachment_id ]['updated_at'] = current_time( 'mysql' );
-				$queue['updated_at'] = current_time( 'mysql' );
-				$this->save_queue( $queue );
+	private function queue_has_more( $queue ) {
+		foreach ( $queue['items'] as $item ) {
+			if ( in_array( $item['status'] ?? 'pending', array( 'pending', 'running' ), true ) ) {
+				return true;
 			}
-		} finally {
-			$this->release_queue_lock( $lock );
 		}
+		return false;
+	}
 
+	/** Omitted force inherits the run's policy. */
+	public function process_queue_batch( $limit = self::DEFAULT_LIMIT, $force = null ) {
+		return $this->with_mutation_lock( function () use ( $limit, $force ) {
+			$queue = $this->adopt_queue( $this->get_queue() );
+			$this->bind_queue_force( $queue, $force );
+			$this->save_queue( $queue );
+			return $this->process_queue_owned( $queue, $limit );
+		} );
+	}
+
+	/** Browser and no-JavaScript submissions share exactly the same run. */
+	public function run_browser_batch( $run_id, $start, $force, $limit = self::UI_BATCH_LIMIT ) {
+		return $this->with_mutation_lock( function () use ( $run_id, $start, $force, $limit ) {
+			$queue = $this->get_queue();
+			$existing_id = $queue['run_id'] ?? '';
+			if ( $run_id && ( ! $existing_id || ! hash_equals( $existing_id, (string) $run_id ) ) ) {
+				throw new RuntimeException( 'This optimization run has been replaced. Reload the page.', 409 );
+			}
+			if ( $existing_id && ! $run_id ) {
+				throw new RuntimeException( 'An optimization run ID is required. Reload the page.', 409 );
+			}
+			if ( ! $start && ! $existing_id && empty( $queue['items'] ) ) {
+				throw new RuntimeException( 'An optimization run ID is required to resume.', 409 );
+			}
+			if ( $start && ! $this->queue_has_more( $queue ) ) {
+				$queue = $this->new_queue( (bool) $force );
+			} else {
+				$queue = $this->adopt_queue( $queue );
+				$this->bind_queue_force( $queue, $force );
+			}
+			$this->save_queue( $queue );
+			return $this->process_queue_owned( $queue, $limit );
+		} );
+	}
+
+	private function bind_queue_force( &$queue, $force ) {
+		if ( null === $queue['force'] ) {
+			$queue['force'] = (bool) $force;
+		} elseif ( null !== $force && (bool) $force !== (bool) $queue['force'] ) {
+			throw new RuntimeException( 'The force policy is bound to this run and cannot be changed on resume.', 409 );
+		}
+	}
+
+	private function process_queue_owned( $queue, $limit ) {
+		$limit = max( 1, min( 200, absint( $limit ) ) );
+		$started = microtime( true );
+		$processed = 0;
+		$done = 0;
+		$failed = 0;
+		foreach ( $queue['items'] as $id => $item ) {
+			if ( $processed >= $limit || ( $processed && microtime( true ) - $started >= 20 ) ) {
+				break;
+			}
+			$status = $item['status'] ?? 'pending';
+			if ( ! in_array( $status, array( 'pending', 'running' ), true ) ) {
+				continue;
+			}
+			$queue['items'][ $id ]['status'] = 'running';
+			$queue['items'][ $id ]['updated_at'] = current_time( 'mysql' );
+			$this->save_queue( $queue );
+			if ( ! $this->is_supported_attachment( $id ) ) {
+				$summary = array();
+				$terminal = 'skipped';
+			} else {
+				// A previous native owner may have published files before dying. Never force its retry.
+				$optimized = $this->optimize_attachment_owned( absint( $id ), 'running' === $status ? false : (bool) $queue['force'] );
+				$summary = $optimized['summary'];
+				$failures = absint( $summary['failed'] ?? 0 ) + absint( $summary['avif_failed'] ?? 0 ) + absint( $summary['original_failed'] ?? 0 );
+				$terminal = $failures ? 'failed' : 'done';
+			}
+			++$processed;
+			$done += 'done' === $terminal ? 1 : 0;
+			$failed += 'failed' === $terminal ? 1 : 0;
+			++$queue['totals']['processed'];
+			foreach ( array( 'created' => array( 'created', 'updated', 'avif_created', 'avif_updated' ), 'existing' => array( 'existing', 'avif_existing' ), 'skipped' => array( 'skipped_larger', 'avif_skipped_larger' ), 'failed' => array( 'failed', 'avif_failed' ), 'original_optimized' => array( 'original_optimized' ), 'original_skipped' => array( 'original_skipped' ), 'original_failed' => array( 'original_failed' ), 'backed_up' => array( 'backed_up' ) ) as $key => $sources ) {
+				foreach ( $sources as $source ) {
+					$queue['totals'][ $key ] += absint( $summary[ $source ] ?? 0 );
+				}
+			}
+			$queue['items'][ $id ]['status'] = $terminal;
+			$queue['items'][ $id ]['message'] = 'failed' === $terminal ? 'File operations failed.' : '';
+			$queue['items'][ $id ]['updated_at'] = current_time( 'mysql' );
+			$queue['updated_at'] = current_time( 'mysql' );
+			$this->save_queue( $queue );
+		}
+		return array_merge( $this->queue_progress( $queue ), array( 'processed' => $processed, 'batchProcessed' => $processed, 'done' => $done, 'batchFailed' => $failed, 'locked' => 0 ) );
+	}
+
+	private function queue_progress( $queue ) {
+		$status = $this->summarize_queue( $queue );
+		$total = $status['total'];
+		$processed = $total - $status['pending'] - $status['running'];
+		$totals = array_merge( $this->empty_queue_totals(), $queue['totals'] ?? array() );
+		$result = array( 'runId' => $queue['run_id'] ?? '', 'force' => (bool) ( $queue['force'] ?? false ), 'found' => $total, 'processedTotal' => $processed, 'percent' => $total ? round( 100 * $processed / $total, 1 ) : 100, 'hasMore' => $this->queue_has_more( $queue ), 'legacyTotalsUnknown' => ! empty( $queue['legacy_totals_unknown'] ), 'skippedItems' => $status['skipped'], 'created' => $totals['created'], 'existing' => $totals['existing'], 'skipped' => $totals['skipped'], 'failed' => $totals['failed'], 'originalOptimized' => $totals['original_optimized'], 'originalSkipped' => $totals['original_skipped'], 'originalFailed' => $totals['original_failed'] );
+		$result['note'] = ! empty( $queue['legacy_totals_unknown'] ) ? __( 'File-operation totals from before this queue was upgraded are unavailable.', 'yoohw-media-optimizer' ) : '';
+		if ( $status['skipped'] ) {
+			$result['note'] .= ' ' . sprintf( /* translators: %d: unavailable snapshot attachments. */ __( '%d snapshot attachment(s) no longer available were skipped.', 'yoohw-media-optimizer' ), $status['skipped'] );
+		}
 		return $result;
 	}
 
-	/**
-	 * Acquire a short-lived global queue worker lock using atomic option creation.
-	 *
-	 * @return string|WP_Error
-	 */
+	private function browser_queue_progress() {
+		try {
+			return $this->queue_progress( $this->get_queue() );
+		} catch ( RuntimeException $error ) {
+			return array_merge( $this->queue_progress( array( 'items' => array() ) ), $this->mutation_error( $error->getMessage() ) );
+		}
+	}
+
+	/** A single descriptor is held through encoding, publication and persistence. */
 	private function acquire_queue_lock() {
-		$token = wp_generate_uuid4();
-		$value = array(
-			'token'       => $token,
-			'acquired_at' => time(),
-		);
-
-		if ( add_option( self::QUEUE_LOCK_OPTION, $value, '', false ) ) {
-			return $token;
+		if ( is_resource( $this->mutation_handle ) || DIRECTORY_SEPARATOR !== '/' || ! function_exists( 'flock' ) ) {
+			return new WP_Error( 'yoohw_mo_queue_locked', 'Media mutation locking is busy or unavailable.', array( 'status' => is_resource( $this->mutation_handle ) ? 409 : 503 ) );
 		}
-
-		$existing = get_option( self::QUEUE_LOCK_OPTION, array() );
-
-		if ( is_array( $existing ) && ( time() - absint( $existing['acquired_at'] ?? 0 ) ) > 1800 ) {
-			delete_option( self::QUEUE_LOCK_OPTION );
-
-			if ( add_option( self::QUEUE_LOCK_OPTION, $value, '', false ) ) {
-				return $token;
+		$uploads = wp_get_upload_dir();
+		$root = realpath( $uploads['basedir'] );
+		if ( ! $root || ! empty( $uploads['error'] ) ) {
+			return new WP_Error( 'yoohw_mo_queue_locked', 'The canonical uploads directory is unavailable.', array( 'status' => 503 ) );
+		}
+		$path = $root . '/.yoohw-media-optimizer.lock';
+		clearstatcache( true, $path );
+		$stat = @lstat( $path );
+		if ( $stat && ( $stat['mode'] & 0170000 ) !== 0100000 ) {
+			return new WP_Error( 'yoohw_mo_queue_locked', 'The media mutation lockfile is unsafe.', array( 'status' => 503 ) );
+		}
+		// Exclusive creation never replaces an inode. Read access lets CLI and web users share flock.
+		// The e flag prevents encoder children inheriting the native descriptor.
+		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen -- WP_Filesystem has no native descriptor for process-held flock or close-on-exec.
+		$handle = $stat ? @fopen( $path, 'rbe' ) : @fopen( $path, 'x+be' );
+		if ( ! $handle && ! $stat ) {
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen -- Open the existing native mutex descriptor after another process wins exclusive creation.
+			$handle = @fopen( $path, 'rbe' );
+		}
+		if ( ! $handle || ! @flock( $handle, LOCK_EX | LOCK_NB, $would_block ) ) {
+			if ( is_resource( $handle ) ) {
+				// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- Close the native mutex descriptor; WP_Filesystem exposes no descriptor API.
+				fclose( $handle );
 			}
+			return new WP_Error( 'yoohw_mo_queue_locked', 'Another media mutation worker is running, or locking is unavailable.', array( 'status' => ! empty( $would_block ) ? 409 : 503 ) );
 		}
-
-		return new WP_Error( 'yoohw_mo_queue_locked', __( 'Another queue worker is already running.', 'yoohw-media-optimizer' ) );
+		$this->mutation_handle = $handle;
+		$this->mutation_root = $root;
+		$this->mutation_path = $path;
+		$this->mutation_token = wp_generate_uuid4();
+		try {
+			$this->check_lockfile();
+			$existing = $this->fresh_option( self::QUEUE_LOCK_OPTION, array() );
+			if ( $existing && ( ! is_array( $existing ) || empty( $existing['native'] ) ) && ( ! is_array( $existing ) || time() - absint( $existing['acquired_at'] ?? time() ) <= 1800 ) ) {
+				throw new RuntimeException( 'A legacy queue worker may still be running.', 409 );
+			}
+			$value = array( 'token' => $this->mutation_token, 'acquired_at' => time(), 'native' => 1 );
+			$this->write_verified_option( self::QUEUE_LOCK_OPTION, $value );
+			return $this->mutation_token;
+		} catch ( RuntimeException $error ) {
+			$this->close_mutation_handle();
+			return new WP_Error( 'yoohw_mo_queue_locked', $error->getMessage(), array( 'status' => $error->getCode() ?: 500 ) );
+		}
 	}
 
-	/**
-	 * Release a queue lock owned by this worker.
-	 *
-	 * @param string $token Lock token.
-	 * @return void
-	 */
+	private function check_lockfile() {
+		$uploads = wp_get_upload_dir();
+		clearstatcache( true, $this->mutation_path );
+		$path = @lstat( $this->mutation_path );
+		$handle = is_resource( $this->mutation_handle ) ? fstat( $this->mutation_handle ) : false;
+		if ( ! $path || ! $handle || ( $path['mode'] & 0170000 ) !== 0100000 || ( $handle['mode'] & 0170000 ) !== 0100000 || $path['dev'] !== $handle['dev'] || $path['ino'] !== $handle['ino'] || realpath( $uploads['basedir'] ) !== $this->mutation_root ) {
+			throw new RuntimeException( 'The media mutation lockfile identity changed.', 503 );
+		}
+	}
+
+	private function checkpoint_if_owned() {
+		if ( $this->mutation_token ) {
+			$this->mutation_checkpoint();
+		}
+	}
+
+	private function mutation_checkpoint() {
+		$this->check_lockfile();
+		$existing = $this->fresh_option( self::QUEUE_LOCK_OPTION, array() );
+		if ( ! is_array( $existing ) || empty( $this->mutation_token ) || ! hash_equals( $this->mutation_token, (string) ( $existing['token'] ?? '' ) ) ) {
+			throw new RuntimeException( 'Media mutation ownership was lost.', 503 );
+		}
+	}
+
 	private function release_queue_lock( $token ) {
-		$existing = get_option( self::QUEUE_LOCK_OPTION, array() );
-
-		if ( is_array( $existing ) && hash_equals( (string) ( $existing['token'] ?? '' ), (string) $token ) ) {
+		if ( ! $this->mutation_token || ! hash_equals( $this->mutation_token, (string) $token ) ) {
+			return false;
+		}
+		$released = false;
+		try {
+			$this->mutation_checkpoint();
 			delete_option( self::QUEUE_LOCK_OPTION );
+			$released = ! $this->fresh_option( self::QUEUE_LOCK_OPTION, false );
+		} catch ( RuntimeException $error ) {
+			$released = false;
+		} finally {
+			$this->close_mutation_handle();
 		}
+		return $released;
 	}
 
-	/**
-	 * Refresh a queue lock heartbeat owned by this worker.
-	 *
-	 * @param string $token Lock token.
-	 * @return void
-	 */
+	private function close_mutation_handle() {
+		if ( is_resource( $this->mutation_handle ) ) {
+			flock( $this->mutation_handle, LOCK_UN );
+			// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fclose -- Release the process-held descriptor; never unlink the shared mutex inode.
+			fclose( $this->mutation_handle );
+		}
+		$this->mutation_handle = null;
+		$this->mutation_token = '';
+	}
+
 	private function refresh_queue_lock( $token ) {
-		$existing = get_option( self::QUEUE_LOCK_OPTION, array() );
-
-		if ( is_array( $existing ) && hash_equals( (string) ( $existing['token'] ?? '' ), (string) $token ) ) {
-			$existing['acquired_at'] = time();
-			update_option( self::QUEUE_LOCK_OPTION, $existing, false );
+		if ( ! $this->mutation_token || ! hash_equals( $this->mutation_token, (string) $token ) ) {
+			return false;
+		}
+		try {
+			$this->mutation_checkpoint();
+			$this->write_verified_option( self::QUEUE_LOCK_OPTION, array( 'token' => $token, 'acquired_at' => time(), 'native' => 1 ) );
+			return true;
+		} catch ( RuntimeException $error ) {
+			return false;
 		}
 	}
 
-	/**
-	 * Whether a running queue item is old enough to reclaim after a worker crash.
-	 *
-	 * @param array $item Queue item.
-	 * @return bool
-	 */
-	private function queue_item_is_stale( $item ) {
-		$updated = ! empty( $item['updated_at'] ) ? strtotime( $item['updated_at'] ) : false;
+	private function mutation_error( $message, $status = 500 ) {
+		return array( 'httpStatus' => $status, 'locked' => 409 === $status ? 1 : 0, 'error' => 'yoohw_mo_mutation_stopped', 'message' => $message, 'processed' => 0, 'done' => 0, 'queued' => 0, 'restored' => 0, 'deleted' => 0, 'failed' => 1, 'summary' => array( 'failed' => 1 ) );
+	}
 
-		return ! $updated || ( time() - $updated ) > 1800;
+	private function with_mutation_lock( $callback ) {
+		$token = $this->acquire_queue_lock();
+		if ( is_wp_error( $token ) ) {
+			return $this->mutation_error( $token->get_error_message(), $token->get_error_data()['status'] ?? 500 );
+		}
+		try {
+			$this->mutation_checkpoint();
+			$result = $callback();
+		} catch ( RuntimeException $error ) {
+			$result = $this->mutation_error( $error->getMessage(), $error->getCode() ?: 500 );
+		} finally {
+			$released = $this->release_queue_lock( $token );
+		}
+		return $released || ! empty( $result['error'] ) ? $result : $this->mutation_error( 'Could not verify media mutation ownership at completion.', 503 );
 	}
 
 	/**
@@ -2750,6 +2788,12 @@ Header append Vary Accept env=REDIRECT_accept
 	 * @return array
 	 */
 	public function restore_attachment( $attachment_id ) {
+		return $this->with_mutation_lock( function () use ( $attachment_id ) {
+			return $this->restore_attachment_owned( $attachment_id );
+		} );
+	}
+
+	private function restore_attachment_owned( $attachment_id ) {
 		$attachment_id = absint( $attachment_id );
 		$candidates    = $this->restore_candidates( $attachment_id );
 		$result        = array(
@@ -2814,6 +2858,7 @@ Header append Vary Accept env=REDIRECT_accept
 
 				$tracked['restored_at']     = current_time( 'mysql' );
 				$tracked['restore_summary'] = $result;
+				$this->checkpoint_if_owned();
 				update_post_meta( $attachment_id, self::META_KEY, $tracked );
 			}
 
@@ -2829,27 +2874,39 @@ Header append Vary Accept env=REDIRECT_accept
 	 * @return array
 	 */
 	private function get_queue() {
-		$queue = get_option( self::QUEUE_OPTION, array() );
-
-		if ( ! is_array( $queue ) || empty( $queue['items'] ) || ! is_array( $queue['items'] ) ) {
-			return array(
-				'created_at' => '',
-				'updated_at' => '',
-				'items'      => array(),
-			);
+		$queue = $this->fresh_option( self::QUEUE_OPTION, array() );
+		if ( ! is_array( $queue ) || ! isset( $queue['items'] ) || ! is_array( $queue['items'] ) ) {
+			if ( $queue ) {
+				throw new RuntimeException( 'The persisted optimization queue is invalid.' );
+			}
+			$queue = array( 'created_at' => '', 'updated_at' => '', 'items' => array() );
 		}
-
 		return $queue;
 	}
 
-	/**
-	 * Persist queue state.
-	 *
-	 * @param array $queue Queue state.
-	 * @return void
-	 */
 	private function save_queue( $queue ) {
-		update_option( self::QUEUE_OPTION, $queue, false );
+		$this->mutation_checkpoint();
+		$this->write_verified_option( self::QUEUE_OPTION, $queue );
+	}
+
+	/** Bypass persistent option caches for ownership and queue decisions. */
+	private function fresh_option( $name, $default ) {
+		global $wpdb;
+		$row = $wpdb->get_row( $wpdb->prepare( "SELECT option_value FROM {$wpdb->options} WHERE option_name = %s", $name ), ARRAY_A );
+		if ( $wpdb->last_error ) {
+			throw new RuntimeException( 'Could not read authoritative media mutation state.' );
+		}
+		return $row ? maybe_unserialize( $row['option_value'] ) : $default;
+	}
+
+	private function write_verified_option( $name, $value ) {
+		wp_cache_delete( $name, 'options' );
+		wp_cache_delete( 'alloptions', 'options' );
+		wp_cache_delete( 'notoptions', 'options' );
+		update_option( $name, $value, false );
+		if ( $this->fresh_option( $name, null ) !== $value ) {
+			throw new RuntimeException( 'Could not persist media mutation state.' );
+		}
 	}
 
 	/**
@@ -2921,6 +2978,12 @@ Header append Vary Accept env=REDIRECT_accept
 	 * @return array
 	 */
 	public function optimize_attachment( $attachment_id, $force = false, $metadata = null, $override_options = array() ) {
+		return $this->with_mutation_lock( function () use ( $attachment_id, $force, $metadata, $override_options ) {
+			return $this->optimize_attachment_owned( $attachment_id, $force, $metadata, $override_options );
+		} );
+	}
+
+	private function optimize_attachment_owned( $attachment_id, $force = false, $metadata = null, $override_options = array() ) {
 		$options = wp_parse_args( is_array( $override_options ) ? $override_options : array(), $this->get_options() );
 		$result = array(
 			'attachment_id' => absint( $attachment_id ),
@@ -3066,6 +3129,7 @@ Header append Vary Accept env=REDIRECT_accept
 			}
 		}
 
+		$this->checkpoint_if_owned();
 		update_post_meta( $attachment_id, self::META_KEY, $tracking );
 		$this->invalidate_savings_cache( $attachment_id );
 
@@ -3957,6 +4021,7 @@ Header append Vary Accept env=REDIRECT_accept
 			return new WP_Error( 'yoohw_mo_binary_no_gain', __( 'External optimizer did not improve the temporary image.', 'yoohw-media-optimizer' ) );
 		}
 
+		$this->checkpoint_if_owned();
 		wp_delete_file( $path );
 		$result['replaced'] = true;
 
@@ -4462,6 +4527,7 @@ Header append Vary Accept env=REDIRECT_accept
 				return new WP_Error( 'yoohw_mo_backup_failed', __( 'Could not create and verify the image backup.', 'yoohw-media-optimizer' ) );
 			}
 			// A hard link publishes a complete snapshot exclusively, without replacing another backup.
+			$this->checkpoint_if_owned();
 			$created = $backup_path === $this->backup_path_for( $path ) && function_exists( 'link' ) && @link( $stage, $backup_path );
 			wp_delete_file( $stage );
 			if ( ! $created && ! file_exists( $backup_path ) ) {
@@ -4476,6 +4542,7 @@ Header append Vary Accept env=REDIRECT_accept
 			if ( ! hash_equals( $this->file_hash( $legacy_path ), $this->file_hash( $backup_path ) ) ) {
 				return new WP_Error( 'yoohw_mo_backup_migration_conflict', __( 'Private and legacy backups differ. Both recovery files were preserved.', 'yoohw-media-optimizer' ) );
 			}
+			$this->checkpoint_if_owned();
 			wp_delete_file( $legacy_path );
 			if ( file_exists( $legacy_path ) ) {
 				return new WP_Error( 'yoohw_mo_backup_migration_failed', __( 'The verified private backup is safe, but the legacy copy could not be removed.', 'yoohw-media-optimizer' ) );
@@ -4646,6 +4713,7 @@ Header append Vary Accept env=REDIRECT_accept
 		if ( ! $stage ) {
 			return false;
 		}
+		$this->checkpoint_if_owned();
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.rename_rename -- WP_Filesystem::move pre-deletes the original; atomic commit must preserve it on failure.
 		$committed = $this->relative_upload_path_for_storage( $destination ) && function_exists( 'rename' ) && @rename( $stage, $destination );
 		if ( ! $committed ) {
@@ -4767,6 +4835,7 @@ Header append Vary Accept env=REDIRECT_accept
 
 		if ( $write ) {
 			$this->metadata_refreshing[ $attachment_id ] = true;
+			$this->checkpoint_if_owned();
 			update_post_meta( $attachment_id, '_wp_attachment_metadata', $metadata );
 			unset( $this->metadata_refreshing[ $attachment_id ] );
 		}
@@ -5116,6 +5185,12 @@ Header append Vary Accept env=REDIRECT_accept
 	 * @return array
 	 */
 	private function cleanup_sidecars( $delete_tracking ) {
+		return $this->with_mutation_lock( function () use ( $delete_tracking ) {
+			return $this->cleanup_sidecars_owned( $delete_tracking );
+		} );
+	}
+
+	private function cleanup_sidecars_owned( $delete_tracking ) {
 		$query  = $this->query_supported_attachment_ids( 0, 0, false );
 		$result = array(
 			'deleted' => 0,
@@ -5139,6 +5214,7 @@ Header append Vary Accept env=REDIRECT_accept
 					continue;
 				}
 
+				$this->checkpoint_if_owned();
 				wp_delete_file( $sidecar );
 
 				if ( file_exists( $sidecar ) ) {
@@ -5149,6 +5225,7 @@ Header append Vary Accept env=REDIRECT_accept
 			}
 
 			if ( $delete_tracking ) {
+				$this->checkpoint_if_owned();
 				delete_post_meta( $attachment_id, self::META_KEY );
 			}
 		}
@@ -5261,6 +5338,7 @@ Header append Vary Accept env=REDIRECT_accept
 	 * @return bool
 	 */
 	private function move_file( $source, $destination ) {
+		$this->checkpoint_if_owned();
 		if ( ! class_exists( 'WP_Filesystem_Base' ) ) {
 			require_once ABSPATH . 'wp-admin/includes/class-wp-filesystem-base.php';
 		}
@@ -5302,6 +5380,12 @@ Header append Vary Accept env=REDIRECT_accept
 	 * @return void
 	 */
 	public function delete_attachment_sidecars( $attachment_id ) {
+		return $this->with_mutation_lock( function () use ( $attachment_id ) {
+			return $this->delete_attachment_sidecars_owned( $attachment_id );
+		} );
+	}
+
+	private function delete_attachment_sidecars_owned( $attachment_id ) {
 		$files = $this->collect_attachment_files( $attachment_id );
 
 		foreach ( $files as $file ) {
@@ -5325,6 +5409,7 @@ Header append Vary Accept env=REDIRECT_accept
 		$removed = true;
 		foreach ( array( $this->sidecar_path( $path ), $this->format_sidecar_path( $path, 'avif' ) ) as $sidecar ) {
 			if ( file_exists( $sidecar ) && $this->is_safe_sidecar_path( $sidecar ) ) {
+				$this->checkpoint_if_owned();
 				wp_delete_file( $sidecar );
 			}
 			clearstatcache( true, $sidecar );
@@ -5548,6 +5633,9 @@ if ( defined( 'WP_CLI' ) && WP_CLI && class_exists( 'WP_CLI_Command' ) ) {
 
 				foreach ( $query['ids'] as $attachment_id ) {
 					$restored = $optimizer->restore_attachment( $attachment_id );
+					if ( ! empty( $restored['error'] ) ) {
+						WP_CLI::error( $restored['message'] );
+					}
 
 					$result['restored'] += absint( $restored['restored'] ?? 0 );
 					$result['failed']   += absint( $restored['failed'] ?? 0 );
@@ -5557,6 +5645,9 @@ if ( defined( 'WP_CLI' ) && WP_CLI && class_exists( 'WP_CLI_Command' ) ) {
 				$progress->finish();
 			}
 
+			if ( ! empty( $result['error'] ) ) {
+				WP_CLI::error( $result['message'] );
+			}
 			WP_CLI::success(
 				sprintf(
 					'Restored: %1$d. Failed: %2$d.',
@@ -5609,17 +5700,20 @@ if ( defined( 'WP_CLI' ) && WP_CLI && class_exists( 'WP_CLI_Command' ) ) {
 
 			if ( 'build' === $action ) {
 				$result = $optimizer->build_queue();
+				if ( ! empty( $result['error'] ) ) {
+					WP_CLI::error( $result['message'] );
+				}
 				WP_CLI::success( sprintf( 'Queued: %d.', absint( $result['queued'] ?? 0 ) ) );
 				return;
 			}
 
 			if ( in_array( $action, array( 'run', 'process' ), true ) ) {
 				$limit  = isset( $assoc_args['limit'] ) ? max( 1, absint( $assoc_args['limit'] ) ) : YoOhw_Media_Optimizer::DEFAULT_LIMIT;
-				$force  = ! empty( $assoc_args['force'] );
+				$force  = array_key_exists( 'force', $assoc_args ) ? (bool) $assoc_args['force'] : null;
 				$result = $optimizer->process_queue_batch( $limit, $force );
 
-				if ( ! empty( $result['locked'] ) ) {
-					WP_CLI::warning( 'Another queue worker is already running.' );
+				if ( ! empty( $result['error'] ) ) {
+					WP_CLI::error( $result['message'] );
 					return;
 				}
 
@@ -5628,7 +5722,7 @@ if ( defined( 'WP_CLI' ) && WP_CLI && class_exists( 'WP_CLI_Command' ) ) {
 						'Processed: %1$d. Done: %2$d. Failed: %3$d.',
 						absint( $result['processed'] ?? 0 ),
 						absint( $result['done'] ?? 0 ),
-						absint( $result['failed'] ?? 0 )
+						absint( $result['batchFailed'] ?? 0 )
 					)
 				);
 				return;
@@ -5671,6 +5765,9 @@ if ( defined( 'WP_CLI' ) && WP_CLI && class_exists( 'WP_CLI_Command' ) ) {
 
 			foreach ( $query['ids'] as $attachment_id ) {
 				$result = $optimizer->optimize_attachment( $attachment_id, $force, null, $override_options );
+				if ( ! empty( $result['error'] ) ) {
+					WP_CLI::error( $result['message'] );
+				}
 
 				foreach ( $totals as $key => $value ) {
 					$totals[ $key ] += absint( $result['summary'][ $key ] ?? 0 );

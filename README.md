@@ -73,6 +73,14 @@ New backups remain outside the document root in the current site's backup direct
 
 Restore accepts only private or legacy backup references matching the source upload. The configured uploads root may be a symlink, but symlinks below uploads or a site's backup directory are rejected. Copies are verified before replacing an original; failed originals keep their sidecars and tracking. If an original is restored but sidecar cleanup fails, the result reports partial failure. This does not provide automatic recovery of database state after a process stops following file replacement.
 
+= Can a batch resume after closing the browser? =
+
+Yes. Browser batches and WP-CLI queue commands share a saved snapshot of attachment IDs and cumulative progress. Reload the optimizer page and choose Resume. Pause stops further batches in that tab after its active request; another tab or CLI worker can still continue the same run. Deleted attachments are skipped and later uploads wait for the next run. Force is fixed for a run; an interrupted running item retries without force. Legacy queues retain completed items, but historical file-operation counters are unavailable.
+
+= How are simultaneous media operations handled? =
+
+Plugin optimization, backup/restore, sidecar cleanup and queue mutations share a process-held filesystem lock. A busy request reports contention instead of modifying media or resetting progress. Automatic upload optimization leaves metadata unchanged when busy; a later manual run can process it. The uploads directory must remain stable and support native cross-process flock on a local POSIX filesystem. The inert .yoohw-media-optimizer.lock file must remain in place, including after uninstall. Stop workers before updating the plugin or changing uploads configuration. Shared multi-host storage, overlapping older plugin workers and external WordPress/manual file changes are not coordinated. A process interruption after publishing a file but before saving tracking is not an atomic file/database transaction.
+
 = Does it serve AVIF and WebP automatically? =
 
 Only after HTML delivery is enabled. The plugin then prefers an available AVIF, falls back to WebP, and finally uses the original image.

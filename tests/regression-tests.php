@@ -33,7 +33,9 @@ $gd_editors = static function() {
 
 $invoke = static function( $method, array $arguments = array() ) use ( $optimizer, $reflection ) {
 	$ref = $reflection->getMethod( $method );
-	$ref->setAccessible( true );
+	if ( PHP_VERSION_ID < 80100 ) {
+		$ref->setAccessible( true );
+	}
 
 	return $ref->invokeArgs( $optimizer, $arguments );
 };
@@ -391,6 +393,9 @@ try {
 
 		$lossless_jpeg_checks = require __DIR__ . '/lossless-jpeg-tests.php';
 		$lossless_jpeg_checks( $optimizer, $invoke, $assert, $test_dir, $runtime_options );
+
+		$queue_checks = require __DIR__ . '/queue-tests.php';
+		$queue_checks( $optimizer, $invoke, $assert );
 	}
 
 } catch ( Throwable $error ) {
