@@ -3312,6 +3312,7 @@ Header append Vary Accept env=REDIRECT_accept
 		$saved   = $this->save_webp_file( $source_path, $tmp, absint( $options['quality'] ) );
 
 		if ( is_wp_error( $saved ) ) {
+			wp_delete_file( $tmp );
 			return array(
 				'status'  => 'failed',
 				'message' => $saved->get_error_message(),
@@ -3385,6 +3386,7 @@ Header append Vary Accept env=REDIRECT_accept
 		$saved   = $this->save_avif_file( $source_path, $tmp, absint( $options['quality'] ) );
 
 		if ( is_wp_error( $saved ) ) {
+			wp_delete_file( $tmp );
 			return array(
 				'status'  => 'failed',
 				'message' => $saved->get_error_message(),
@@ -3435,6 +3437,38 @@ Header append Vary Accept env=REDIRECT_accept
 		);
 	}
 
+	/** Read JPEG display orientation without assuming an unavailable reader means upright. */
+	private function jpeg_orientation( $path ) {
+		if ( ! $this->is_jpeg_path( $path ) ) {
+			return 1;
+		}
+		$disabled = array_map( 'trim', explode( ',', (string) ini_get( 'disable_functions' ) ) );
+		if ( ! is_callable( 'exif_read_data' ) || in_array( 'exif_read_data', $disabled, true ) ) {
+			return new WP_Error( 'yoohw_mo_exif_unavailable', __( 'JPEG encoding needs PHP EXIF support to preserve display orientation. The source was left unchanged.', 'yoohw-media-optimizer' ) );
+		}
+		$exif = @exif_read_data( $path );
+		$orientation = isset( $exif['Orientation'] ) ? (int) $exif['Orientation'] : 1;
+		return $orientation >= 1 && $orientation <= 8 ? $orientation : new WP_Error( 'yoohw_mo_exif_orientation', __( 'The JPEG orientation cannot be normalized safely.', 'yoohw-media-optimizer' ) );
+	}
+
+	/** Normalize pixels through the existing editor instead of dropping the orientation tag. */
+	private function save_oriented_sidecar( $source, $destination, $quality, $mime ) {
+		$editor = wp_get_image_editor( $source, array( 'mime_type' => $mime ) );
+		if ( is_wp_error( $editor ) ) {
+			return $editor;
+		}
+		$rotated = method_exists( $editor, 'maybe_exif_rotate' ) ? $editor->maybe_exif_rotate() : false;
+		if ( is_wp_error( $rotated ) || true !== $rotated ) {
+			return is_wp_error( $rotated ) ? $rotated : new WP_Error( 'yoohw_mo_exif_rotation', __( 'The image editor could not normalize JPEG display orientation.', 'yoohw-media-optimizer' ) );
+		}
+		$editor->set_quality( $quality );
+		$saved = $editor->save( $destination, $mime );
+		if ( ! is_wp_error( $saved ) ) {
+			$saved['engine'] = get_class( $editor );
+		}
+		return $saved;
+	}
+
 	/**
 	 * Save a source image as WebP.
 	 *
@@ -3444,6 +3478,14 @@ Header append Vary Accept env=REDIRECT_accept
 	 * @return array|WP_Error
 	 */
 	private function save_webp_file( $source_path, $destination, $quality ) {
+		$orientation = $this->jpeg_orientation( $source_path );
+		if ( is_wp_error( $orientation ) ) {
+			return $orientation;
+		}
+		if ( $orientation > 1 ) {
+			return $this->save_oriented_sidecar( $source_path, $destination, $quality, 'image/webp' );
+		}
+
 		$saved = $this->save_webp_file_with_cwebp( $source_path, $destination, $quality );
 
 		if ( ! is_wp_error( $saved ) ) {
@@ -3506,6 +3548,7 @@ Header append Vary Accept env=REDIRECT_accept
 		$run     = $this->run_external_binary( $command, 45 );
 
 		if ( is_wp_error( $run ) ) {
+			wp_delete_file( $destination );
 			return $run;
 		}
 
@@ -3528,6 +3571,14 @@ Header append Vary Accept env=REDIRECT_accept
 	 * @return array|WP_Error
 	 */
 	private function save_avif_file( $source_path, $destination, $quality ) {
+		$orientation = $this->jpeg_orientation( $source_path );
+		if ( is_wp_error( $orientation ) ) {
+			return $orientation;
+		}
+		if ( $orientation > 1 ) {
+			return $this->save_oriented_sidecar( $source_path, $destination, $quality, 'image/avif' );
+		}
+
 		$saved = $this->save_avif_file_with_avifenc( $source_path, $destination, $quality );
 
 		if ( ! is_wp_error( $saved ) ) {
@@ -3623,13 +3674,13 @@ Header append Vary Accept env=REDIRECT_accept
 				return new WP_Error( 'yoohw_mo_gd_unavailable', __( 'GD JPEG support is unavailable.', 'yoohw-media-optimizer' ) );
 			}
 
-			$image = imagecreatefromjpeg( $source_path );
+			$image = @imagecreatefromjpeg( $source_path );
 		} elseif ( 'png' === $extension ) {
 			if ( ! function_exists( 'imagecreatefrompng' ) ) {
 				return new WP_Error( 'yoohw_mo_gd_unavailable', __( 'GD PNG support is unavailable.', 'yoohw-media-optimizer' ) );
 			}
 
-			$image = imagecreatefrompng( $source_path );
+			$image = @imagecreatefrompng( $source_path );
 
 			if ( $image && function_exists( 'imageistruecolor' ) && function_exists( 'imagepalettetotruecolor' ) && ! imageistruecolor( $image ) ) {
 				imagepalettetotruecolor( $image );
@@ -3765,12 +3816,23 @@ Header append Vary Accept env=REDIRECT_accept
 			return $result;
 		}
 
+		$orientation = $this->jpeg_orientation( $path );
+		if ( is_wp_error( $orientation ) ) {
+			$result['status'] = 'failed';
+			$result['message'] = $orientation->get_error_message();
+			return $result;
+		}
+
 		$dimensions = $this->image_dimensions( $path );
 
 		if ( empty( $dimensions['width'] ) || empty( $dimensions['height'] ) ) {
 			$result['status']  = 'failed';
 			$result['message'] = __( 'Could not read image dimensions.', 'yoohw-media-optimizer' );
 			return $result;
+		}
+
+		if ( $orientation >= 5 ) {
+			$dimensions = array( 'width' => $dimensions['height'], 'height' => $dimensions['width'] );
 		}
 
 		$target       = $this->constrained_dimensions( $dimensions['width'], $dimensions['height'], absint( $options['max_width'] ?? 0 ), absint( $options['max_height'] ?? 0 ) );
@@ -3783,8 +3845,15 @@ Header append Vary Accept env=REDIRECT_accept
 			return $result;
 		}
 
+		if ( $orientation > 1 && ! $needs_resize && 'lossless' === $mode && 'remove' === $metadata_policy ) {
+			$result['message'] = __( 'The JPEG was left unchanged because removing its orientation without a lossless display transform would change its appearance.', 'yoohw-media-optimizer' );
+			return $result;
+		}
+
 		$saved_path    = '';
-		$binary_result = $this->optimize_original_file_with_external_binary( $path, $options, $needs_resize );
+		$binary_result = $orientation > 1 && 'remove' === $metadata_policy
+			? new WP_Error( 'yoohw_mo_orientation_editor', 'Display normalization requires the image editor.' )
+			: $this->optimize_original_file_with_external_binary( $path, $options, $needs_resize );
 
 		if ( ! is_wp_error( $binary_result ) && ! empty( $binary_result['path'] ) && file_exists( $binary_result['path'] ) ) {
 			$saved_path        = $binary_result['path'];
@@ -3807,15 +3876,25 @@ Header append Vary Accept env=REDIRECT_accept
 
 			$result['engine'] = is_object( $editor ) ? get_class( $editor ) : '';
 
+			if ( $orientation > 1 && ! method_exists( $editor, 'maybe_exif_rotate' ) ) {
+				$result['status'] = 'failed';
+				$result['message'] = __( 'The image editor cannot normalize JPEG display orientation.', 'yoohw-media-optimizer' );
+				return $result;
+			}
+
 			if ( method_exists( $editor, 'maybe_exif_rotate' ) ) {
 				$rotated = $editor->maybe_exif_rotate();
 
-				if ( is_wp_error( $rotated ) ) {
+				if ( is_wp_error( $rotated ) || ( $orientation > 1 && true !== $rotated ) ) {
 					$result['status']  = 'failed';
-					$result['message'] = $rotated->get_error_message();
+					$result['message'] = is_wp_error( $rotated ) ? $rotated->get_error_message() : __( 'The image editor could not normalize JPEG display orientation.', 'yoohw-media-optimizer' );
 					return $result;
 				}
 			}
+
+			$display_size = $editor->get_size();
+			$target = $this->constrained_dimensions( $display_size['width'], $display_size['height'], absint( $options['max_width'] ?? 0 ), absint( $options['max_height'] ?? 0 ) );
+			$needs_resize = $target['width'] < $display_size['width'] || $target['height'] < $display_size['height'];
 
 			if ( $needs_resize ) {
 				$resized = $editor->resize( $target['width'], $target['height'], false );
@@ -3837,6 +3916,7 @@ Header append Vary Accept env=REDIRECT_accept
 			$saved     = $editor->save( $tmp, $mime );
 
 			if ( is_wp_error( $saved ) ) {
+				wp_delete_file( $tmp );
 				$result['status']  = 'failed';
 				$result['message'] = $saved->get_error_message();
 				return $result;

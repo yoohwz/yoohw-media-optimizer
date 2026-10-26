@@ -399,6 +399,9 @@ try {
 
 		$queue_checks = require __DIR__ . '/queue-tests.php';
 		$queue_checks( $optimizer, $invoke, $assert );
+
+		$image_quality_checks = require __DIR__ . '/image-quality-tests.php';
+		$image_quality_checks( $optimizer, $invoke, $assert, $test_dir );
 	}
 
 } catch ( Throwable $error ) {

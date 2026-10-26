@@ -65,6 +65,12 @@ Yes, as an opt-in feature. A backup is required before an original physical file
 
 Without resizing, lossless JPEG optimization uses optional `jpegoptim` or `jpegtran`. If no smaller lossless output is available, the original is kept unchanged, including its metadata. Force retries do not enable lossy JPEG fallback. Resizing remains allowed in this mode and may re-encode the image, with a backup retained before replacement.
 
+= How is JPEG display orientation preserved? =
+
+Oriented JPEG sidecars are normalized by a capable WordPress image editor before encoding, and original resize limits apply to displayed dimensions. Safe JPEG encoding requires an available PHP EXIF reader and successful orientation normalization. If either is unavailable, the source and existing sidecars are retained with an explanatory failure; PNG processing remains available.
+
+A lossless JPEG with nontrivial orientation is left unchanged when metadata removal is requested without resizing, including force runs. This keeps its appearance intact rather than stripping the orientation tag without a lossless display transform. Previously generated files are not automatically migrated or repaired; regenerate sidecars explicitly when needed. Backups and restore preserve the original bytes, including EXIF and ICC metadata. Metadata preservation in re-encoded output remains engine-dependent.
+
 = What storage is required for backup and restore? =
 
 New backups remain outside the document root in the current site's backup directory. Backup roots must not overlap the WordPress directory or uploads, including uploads configured outside WordPress. The local backup filesystem must support hard links, and original replacement requires safe rename within the upload directory. If safe publication is unavailable, the operation fails without overwriting the current original. Independent WordPress installations must use separate backup roots, including when configuring a custom backup directory.
