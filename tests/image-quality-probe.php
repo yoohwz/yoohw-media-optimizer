@@ -195,7 +195,7 @@ try {
 				$profile_image = new Imagick( $path );
 				$assert( $icc === $profile_image->getImageProfile( 'icc' ), 'Decoder did not recognize embedded valid ICC bytes.' );
 				$profile_image->clear();
-				if ( Imagick::queryFormats( 'AVIF' ) && $optimizer->avif_editor_supported() ) {
+				if ( Imagick::queryFormats( 'AVIF' ) && wp_image_editor_supports( array( 'mime_type' => 'image/avif' ) ) ) {
 					$avif = $run( $id, array( 'generate_avif_sidecars' => 1 ) );
 					$assert( $editor_name === $avif['files'][0]['avif_engine'], 'Imagick oriented AVIF fell back to another engine.' );
 					$check_display( $path . '.avif', $orientation, $orientation >= 5 ? 64 : 96, $orientation >= 5 ? 96 : 64 );
@@ -283,7 +283,7 @@ try {
 		foreach ( array( 6, 2 ) as $orientation ) {
 			list( $id, $path ) = $attach( 'native-oriented-' . $orientation . '.jpg', $jpeg( $orientation ), 'image/jpeg' );
 			$hash = hash_file( 'sha256', $path );
-			$avif_capable = class_exists( 'Imagick' ) && Imagick::queryFormats( 'AVIF' ) && $optimizer->avif_editor_supported();
+			$avif_capable = class_exists( 'Imagick' ) && Imagick::queryFormats( 'AVIF' ) && wp_image_editor_supports( array( 'mime_type' => 'image/avif' ) );
 			$result = $run( $id, array( 'use_external_binaries' => 1, 'generate_avif_sidecars' => $avif_capable ? 1 : 0 ) );
 			$assert( $native_editor === $result['files'][0]['webp_engine'], 'Oriented JPEG used an external encoder without normalization.' );
 			$check_display( $path . '.webp', $orientation, $orientation >= 5 ? 64 : 96, $orientation >= 5 ? 96 : 64 );
