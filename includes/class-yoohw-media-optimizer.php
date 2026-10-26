@@ -1462,10 +1462,10 @@ Header append Vary Accept env=REDIRECT_accept
 			<label class="yoohw-mo-field">
 				<span><?php esc_html_e( 'Metadata policy', 'yoohw-media-optimizer' ); ?></span>
 			<select name="metadata_policy">
-					<option value="remove" <?php selected( 'remove', $options['metadata_policy'] ); ?>><?php esc_html_e( 'Remove metadata when re-encoding', 'yoohw-media-optimizer' ); ?></option>
+					<option value="remove" <?php selected( 'remove', $options['metadata_policy'] ); ?>><?php esc_html_e( 'Remove private metadata; retain color profiles', 'yoohw-media-optimizer' ); ?></option>
 					<option value="preserve_all" <?php selected( 'preserve_all', $options['metadata_policy'] ); ?>><?php esc_html_e( 'Preserve all metadata when possible', 'yoohw-media-optimizer' ); ?></option>
 				</select>
-				<em><?php esc_html_e( 'Metadata preservation depends on the active GD/Imagick editor; backups keep the untouched original.', 'yoohw-media-optimizer' ); ?></em>
+				<em><?php esc_html_e( 'Supported color profiles are retained. Files are left unchanged when their colors cannot be preserved safely. Backups keep the untouched original.', 'yoohw-media-optimizer' ); ?></em>
 			</label>
 
 			<fieldset class="yoohw-mo-field yoohw-mo-radio-field">
