@@ -295,7 +295,17 @@ try {
 		imagewebp( $untagged, $dir . '/stripped.webp', 90 ); imagedestroy( $untagged );
 		file_put_contents( $dir . '/cwebp', "#!/bin/sh\nfor argument in \"\$@\"; do destination=\$argument; done\n/bin/cp \"\${0%/*}/stripped.webp\" \"\$destination\"\nprintf called > \"\${0%/*}/called\"\n" );
 		chmod( $dir . '/cwebp', 0700 );
-		$safe_failure( 'native-stripped.jpg', $fixture( 'jpeg', $profiles['display_p3'] ), array( 'use_external_binaries' => 1 ) );
+		$bytes = $fixture( 'jpeg', $profiles['display_p3'] );
+		list( $id, $path ) = $attach( 'native-stripped.jpg', $bytes );
+		$backup = $invoke( 'backup_file', array( $path ) );
+		$assert( ! is_wp_error( $backup ), 'Could not seed native-strip recovery data.' );
+		$backup_hash = hash_file( 'sha256', $backup['path'] );
+		file_put_contents( $path . '.webp', 'old webp' );
+		$result = $run( $id, array( 'use_external_binaries' => 1, 'optimize_originals' => 0, 'generate_avif_sidecars' => 0 ) );
+		$file = $result['files'][0];
+		$assert( 'failed' === $file['status'] && 'disabled' === $file['original_status'] && 'disabled' === $file['avif_status'], 'Stripped WebP candidate reported success: ' . wp_json_encode( $result ) );
+		$assert( 1 === $result['summary']['failed'] && 0 === $result['summary']['created'] && 0 === $result['summary']['original_optimized'] && 0 === $result['summary']['original_failed'] && 0 === $result['summary']['avif_created'], 'Native-strip WebP failure counters untruthful.' );
+		$assert( $bytes === file_get_contents( $path ) && $backup_hash === hash_file( 'sha256', $backup['path'] ) && 'old webp' === file_get_contents( $path . '.webp' ), 'Native ICC rejection changed source/backup/old WebP.' );
 		$assert( is_file( $dir . '/called' ), 'Stripped native output probe never executed.' );
 		$assert( array() === glob( $dir . '/.*.yoohw-mo-*' ) && array() === glob( $dir . '/*.tmp-*' ), 'Native ICC rejection leaked owned stages.' );
 	} elseif ( 'tool-flags' === $mode ) {
