@@ -60,12 +60,12 @@ $colors = array( array( 230, 25, 35 ), array( 20, 205, 50 ), array( 25, 45, 225 
 $managed = array( 'srgb' => $colors, 'display_p3' => array( array( 251, 0, 7 ), array( 0, 209, 0 ), array( 18, 46, 234 ), array( 234, 209, 0 ) ), 'adobe_rgb_1998' => array( array( 255, 18, 30 ), array( 0, 206, 8 ), array( 0, 41, 230 ), array( 238, 211, 0 ) ) );
 $segment = static function( $marker, $body ) { return "\xff" . chr( $marker ) . pack( 'n', strlen( $body ) + 2 ) . $body; };
 $chunk = static function( $name, $body ) { return pack( 'N', strlen( $body ) ) . $name . $body . pack( 'N', crc32( $name . $body ) ); };
-$fixture = static function( $kind, $profile, $orientation = 1 ) use ( $colors, $segment, $chunk ) {
+$fixture = static function( $kind, $profile, $orientation = 1, $pixel_colors = null ) use ( $colors, $segment, $chunk ) {
 	$palette = 'palette' === $kind;
 	$image = $palette ? imagecreate( 96, 64 ) : imagecreatetruecolor( 96, 64 );
 	imagealphablending( $image, false );
 	imagesavealpha( $image, true );
-	foreach ( $colors as $index => $color ) {
+	foreach ( null === $pixel_colors ? $colors : $pixel_colors as $index => $color ) {
 		$alpha = 'jpeg' === $kind ? 0 : ( 2 === $index ? 127 : ( 3 === $index && ! $palette ? 64 : 0 ) );
 		$c = imagecolorallocatealpha( $image, $color[0], $color[1], $color[2], $alpha );
 		imagefilledrectangle( $image, ( $index % 2 ) * 48, (int) ( $index / 2 ) * 32, ( $index % 2 ) * 48 + 47, (int) ( $index / 2 ) * 32 + 31, $c );
@@ -165,15 +165,9 @@ try {
 		$result = $run( $id, array(), false );
 		$assert( 'existing' === $result['files'][0]['status'] && 'legacy untagged webp' === file_get_contents( $path . '.webp' ), 'Fresh legacy sidecar automatically regenerated.' );
 	} elseif ( 'imagick' === $mode ) {
-		// Negative control: matching ICC alone must not hide converted-and-relabelled pixels.
+		// Negative control: independently CMS-converted sRGB pixels carry the wrong P3 ICC.
 		$control = $dir . '/wrong-p3.png';
-		file_put_contents( $control, $fixture( 'rgba', $profiles['display_p3'] ) );
-		$wrong = new Imagick( $control );
-		$wrong->setImageRenderingIntent( Imagick::RENDERINGINTENT_RELATIVE );
-		$wrong->profileImage( 'icc', $profiles['srgb'] );
-		$wrong->stripImage();
-		$wrong->profileImage( 'icc', $profiles['display_p3'] );
-		$wrong->writeImage( $control ); $wrong->clear();
+		file_put_contents( $control, $fixture( 'rgba', $profiles['display_p3'], 1, $managed['display_p3'] ) );
 		$oracle_rejected = false;
 		try { $check( $control, 'display_p3', 1, 96, 64, 'rgba' ); }
 		catch ( RuntimeException $expected ) { $oracle_rejected = false !== strpos( $expected->getMessage(), 'converted/relabelled' ); }
