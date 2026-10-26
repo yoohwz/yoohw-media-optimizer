@@ -19,6 +19,8 @@ class YoOhw_Media_Optimizer_Imagick extends WP_Image_Editor_Imagick {
 				foreach ( $this->image->getImageProperties( '*', false ) as $name ) { $this->image->deleteImageProperty( $name ); }
 				$this->image->setImageOrientation( Imagick::ORIENTATION_TOPLEFT );
 			}
+			// The PNG writer otherwise replaces recognized sRGB ICC data with an sRGB chunk.
+			if ( $icc ) { $this->image->setOption( 'png:preserve-iCCP', 'true' ); }
 			return true;
 		} catch ( Exception $e ) {
 			return new WP_Error( 'yoohw_mo_color_editor', $e->getMessage() );
