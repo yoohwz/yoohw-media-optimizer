@@ -1,5 +1,10 @@
 # Regression checks
 
+The separate [offline quality benchmark](benchmark/README.md) measures candidate
+WebP/AVIF profiles and color handling without changing plugin defaults. It is
+development tooling, not part of the WordPress regression entry point or the
+distributed plugin. Its perceptual scores do not replace the safety checks below.
+
 Run the integration regression checks against a disposable or local WordPress site:
 
 ```bash

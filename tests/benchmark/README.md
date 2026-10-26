@@ -1,0 +1,198 @@
+# Offline image benchmark corpus
+
+This is test tooling only. It does not change plugin defaults, invoke WordPress,
+modify uploads, or publish a release. Generated media and reports belong outside
+Git and outside a site's upload directory. The runner's measurements describe a
+small PoC, not a universal quality or encoder ranking.
+
+See [the measured round-1 report](RESULTS.md) for findings, per-case data and limitations.
+
+## Build the 64-case corpus
+
+Requires Python 3.12, Pillow 12.3.0, NumPy 2.3.5 and LittleCMS (Pillow's bundled
+macOS library is detected; Linux can supply `liblcms2`). Encoder/runtime versions
+are recorded in the manifest. Use the repository's benchmark requirements when
+installing the shared harness environment.
+
+```sh
+python3 tests/benchmark/corpus.py \
+  --sources /tmp/yoohw-benchmark-sources \
+  --output /tmp/yoohw-benchmark-round1 --fetch
+```
+
+`--fetch` explicitly permits downloading missing masters from immutable URLs in
+`SOURCES.json`. Every download and every cached master must match its SHA256.
+Subsequent runs omit `--fetch` and use a **new** `--output` directory. Output
+creation is exclusive; the builder never recursively cleans, replaces existing
+output, or writes to a master. A failed run leaves its partial output for
+inspection. The builder does not fetch licenses dynamically or accept unreviewed
+source additions.
+
+`manifest.json` contains `images`, an array of 64 objects. Paths are relative to
+that manifest. Each object records `id`, `path`, `sha256`, `group`, provenance,
+`independent_master_id`, dimensions, mode, profile and EXIF orientation. Its
+`reference_path` is a lossless sRGB PNG prepared by decoding the **saved input**,
+applying EXIF display orientation, then performing the ICC transform. This avoids
+comparing a compressed JPEG against the pixels before its input compression.
+References have their own SHA256. Untagged RGB declares `color_policy=assume_srgb`.
+
+| Group | Cases | Independent content / purpose |
+| --- | ---: | --- |
+| `natural` | 16 | 4 masters: astronaut, cat, cameraman, eagle |
+| `product_detail` | 16 | 4 masters: coffee, motion-blurred clock, brick, gravel |
+| `graphics` | 16 | 4 procedural designs × 4 encodings |
+| `alpha` | 16 | 4 procedural designs × RGBA/palette/hidden-RGB variants |
+
+**There are eight independent photographic masters, not 32 independent photos or
+64 photographs.** Each master yields a JPEG q95, cropped/smaller JPEG q55,
+CMS-transformed P3 PNG, and CMS-transformed Adobe RGB compatible JPEG q95.
+Five masters are grayscale; converting those pixels to RGB does not add color
+photographic diversity. `product_detail` is an object/detail/texture proxy; there
+is no independent catalog-product dataset in this round. It cannot support
+claims about a production library's content distribution. Long edges are at most
+768px; original camera-size, HDR and 16-bit workflows remain untested.
+
+## Provenance and ICC semantics
+
+`SOURCES.json` records each master's immutable download URL, hash, author or
+credited collection, individual license, source page and pinned license-evidence
+source. The source is the scikit-image curated collection; its declarations are
+preserved separately from the plugin's GPL license. No photographs or downloaded
+ICC profiles are committed. Author names and CC0/public-domain declarations can
+be checked in the [pinned collection source](https://github.com/scikit-image/scikit-image/blob/e8a42ba85aaf5fd9322ef9ca51bc21063b22fcae/skimage/data/_fetchers.py).
+NASA media also has [NASA's usage guidelines](https://www.nasa.gov/nasa-brand-center/images-and-media/).
+The SpaceX rocket image was excluded because its current Flickr license conflicted
+with the collection's public-domain statement. Brick/gravel credit identifies the
+CC0Textures collection; the collection does not identify an individual photographer.
+
+The builder generates its own matrix/TRC ICC profiles with LittleCMS. sRGB uses
+LittleCMS's built-in profile. Display P3 uses D65, the [ICC/Apple P3 primaries and
+sRGB transfer function](https://registry.color.org/rgb-registry/displayp3).
+Adobe RGB compatible encoding uses D65, primaries from [Adobe's encoding
+specification](https://www.adobe.com/digitalimag/pdfs/AdobeRGB1998.pdf) and gamma
+563/256; it is generated locally, not Adobe's distributed profile. ICC header
+creation time and optional profile ID are fixed for deterministic builds.
+Generated profiles are recognized and transformed by Pillow/LittleCMS; this does
+not certify every ICC implementation or a calibrated physical display.
+
+Photographic masters are assumed sRGB because their camera colorimetry is not
+certified. The builder **transforms their pixel values** before attaching P3 or
+Adobe RGB profiles. Procedural designs instead define RGB coordinates directly
+in their declared encoding, including saturated P3 patches. Their P3 and sRGB
+coordinate twins intentionally differ in displayed color. `graphics-N-1` (P3)
+and `graphics-N-3` (untagged) have identical decoded RGB samples. The gradient
+and textured pairs (N=0,1) have different sRGB references that expose profile
+stripping; pure fully saturated patches may clip to the same sRGB values. Do not treat identical
+encoded samples as equivalent displayed color.
+
+`camera-0` has EXIF orientation 6; `coffee-3` has orientation 2. Alpha fixtures
+include soft transparent edges, fully opaque/transparent areas, palette+tRNS,
+and magenta RGB behind alpha zero. Graphics include small text, ramps, saturated
+edges and checkerboards. These are synthetic fixtures, not stock photos.
+
+`policy-probes.json` contains two additional cases outside the 64-case aggregate:
+malformed ICC (`expected_failure="invalid ICC"`) and unprofiled CMYK
+(`expected_failure="unprofiled CMYK"`). These must be rejected by a color-correct
+normalizer; arbitrary sRGB assignment would conceal missing information.
+**CMYK ICC conversion: NOT RUN** — no reliably redistributable CMYK profile was
+acquired for this round. Browser comparison, display calibration, image-engine
+parity and larger independent product/photo corpora need separate evidence.
+
+Rebuild hashes are reproducible in the recorded environment. Different Pillow,
+LittleCMS, JPEG/PNG or font versions may produce different byte hashes; record
+that environment instead of changing pinned master hashes to hide drift.
+
+## Run the experiments
+
+Create a development virtual environment with Python 3.12 and install
+`python3 -m pip install -r tests/benchmark/requirements.txt`. Supply `cwebp`,
+`avifenc` (with the `-q` interface), and `ssimulacra2` on PATH. No binary is bundled
+with the plugin. Native executable hashes, versions, actual commands, Pillow and
+LittleCMS versions are captured in `results.json`.
+
+```sh
+python3 tests/benchmark/test_run.py
+python3 tests/benchmark/run.py /tmp/yoohw-benchmark-round1/manifest.json \
+  /tmp/yoohw-benchmark-external
+python3 tests/benchmark/run.py /tmp/yoohw-benchmark-round1/policy-probes.json \
+  /tmp/yoohw-benchmark-policy --profiles webp_baseline82
+python3 tests/benchmark/run.py /tmp/yoohw-benchmark-round1/manifest.json \
+  /tmp/yoohw-benchmark-icc-control --profiles webp_icc82
+```
+
+Every output directory must be new. The runner verifies source hashes before
+and after processing, never removes an existing directory, and reports encoding,
+decoding and metric failures. Expected invalid-profile/CMYK preflight rejection
+is recorded separately from successful images. Reports include JSON, CSV and a
+local HTML gallery with reference/candidate PNGs for full-size inspection.
+
+The default eight profiles compare the existing external commands at quality 82
+with combined candidate configurations: WebP sharp YUV/method 6 with either ICC
+preservation or sRGB conversion, WebP lossless for graphics/alpha, and AVIF
+speed 6/jobs 1 with 4:2:0 or 4:4:4 at quality 82 plus 4:4:4 at quality 70.
+They are experiments, not production defaults. A combined profile comparison
+cannot attribute an improvement to one flag. Equal quality numbers do not imply
+equal fidelity across codecs. Lossless describes encoded pixel preservation,
+not reversal of a preceding gamut conversion.
+
+The optional `webp_icc82` control adds only `-metadata icc` to the baseline
+command and skips non-neutral EXIF sources. It isolates profile copying from
+method/sharp-YUV changes; profile overhead and perceptual score can be compared
+to the corresponding neutral baseline rows.
+
+Each reference is decoded from the saved source, oriented, and transformed to
+sRGB with Pillow/LittleCMS. Untagged RGB requires the manifest's explicit sRGB
+assumption; unprofiled CMYK and malformed ICC are rejected. Candidate output is
+also interpreted through its ICC, or explicitly assumed sRGB if untagged. The
+runner then scores opaque black and white composites separately and records the
+lower SSIMULACRA2 score plus alpha-channel error. This SDR sRGB comparison does
+not measure retained out-of-sRGB gamut, HDR, or calibrated display appearance.
+The generated corpus references are a reproducibility cross-check; the runner
+computes its own reference from the input. Both use LittleCMS, so this is not
+independent color-engine certification.
+
+Raw command baselines do not implement the plugin's EXIF editor routing.
+Non-neutral EXIF inputs are excluded from command-baseline quality comparisons.
+Use the separate actual-plugin probe below to check that boundary.
+
+## Actual plugin encoder-path probe
+
+Run only on an appropriate local/disposable WordPress installation with this
+plugin active and its runtime class byte-identical to the checkout. This invokes
+the private sidecar-save seam at quality 82; it does **not** exercise attachment
+transactions, backups, tracking, queue, delivery, or the larger-output skip rule.
+It never calls attachment optimization or persists option changes. External
+encoders are enabled only through a request-local option filter. WordPress
+bootstrap still executes the test site's active plugins, so use a test site.
+
+```sh
+php tests/benchmark/plugin-baseline.php /path/to/disposable-wordpress \
+  /tmp/yoohw-benchmark-round1/manifest.json /tmp/yoohw-benchmark-plugin
+python3 tests/benchmark/run.py /tmp/yoohw-benchmark-round1/manifest.json \
+  /tmp/yoohw-benchmark-plugin-scored \
+  --profiles webp_baseline82 avif_baseline82 \
+  --plugin-baseline /tmp/yoohw-benchmark-plugin/plugin-baseline.json
+```
+
+Probe output must be outside both the corpus and WordPress trees and must not
+exist. Engine identity, output/source hashes, errors and seam wall time are
+recorded. The scoring runner checks the manifest hash and each source/output
+hash; stale, missing or failed baseline rows are failures. PHP seam peak RSS is
+unavailable and remains null.
+
+## Interpreting costs and results
+
+This is one encode per image/profile, with correlated derivatives and no timing
+confidence interval or independent holdout. Encode time and peak RSS describe
+the encoder subprocess; shared Python source decoding, ICC normalization and
+intermediate PNG writes are **not** included in those encoder costs. Decoder
+time includes a fresh Python process, Pillow decode, ICC/EXIF normalization and
+PNG serialization, rather than a browser's pure decoder cost. Peak RSS uses
+per-child `wait4` with platform-specific unit conversion. AVIF candidates pin
+one job while the baseline retains encoder defaults; time ratios reflect those
+different configurations, not an isolated algorithm comparison.
+
+Choose follow-up experiments from paired rows and worst cases, then inspect
+text, edges, gradients and alpha at display size and 1:1. The gallery is labeled;
+agent inspection is not a blinded human panel. Do not infer a universal score
+threshold, production savings percentage or production-ready color policy.

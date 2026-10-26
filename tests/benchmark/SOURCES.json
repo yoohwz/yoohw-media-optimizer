@@ -1,0 +1,114 @@
+{
+  "schema_version": 1,
+  "verified_date": "2026-10-26",
+  "sources": [
+    {
+      "file": "astronaut.png",
+      "url": "https://raw.githubusercontent.com/scikit-image/scikit-image/e8a42ba85aaf5fd9322ef9ca51bc21063b22fcae/skimage/data/astronaut.png",
+      "sha256": "88431cd9653ccd539741b555fb0a46b61558b301d4110412b5bc28b5e3ea6cb5",
+      "id": "astronaut",
+      "author": "NASA",
+      "license": "Public domain",
+      "group": "natural",
+      "source_page": "https://scikit-image.org/docs/0.25.x/api/skimage.data.html#skimage.data.astronaut",
+      "license_evidence": "https://github.com/scikit-image/scikit-image/blob/e8a42ba85aaf5fd9322ef9ca51bc21063b22fcae/skimage/data/_fetchers.py",
+      "license_url": "https://www.nasa.gov/nasa-brand-center/images-and-media/"
+    },
+    {
+      "file": "chelsea.png",
+      "url": "https://raw.githubusercontent.com/scikit-image/scikit-image/e8a42ba85aaf5fd9322ef9ca51bc21063b22fcae/skimage/data/chelsea.png",
+      "sha256": "596aa1e7cb875eb79f437e310381d26b338a81c2da23439704a73c4651e8c4bb",
+      "id": "chelsea",
+      "author": "Stefan van der Walt",
+      "license": "CC0-1.0",
+      "group": "natural",
+      "source_page": "https://scikit-image.org/docs/0.25.x/api/skimage.data.html#skimage.data.chelsea",
+      "license_evidence": "https://github.com/scikit-image/scikit-image/blob/e8a42ba85aaf5fd9322ef9ca51bc21063b22fcae/skimage/data/_fetchers.py",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/"
+    },
+    {
+      "file": "camera.png",
+      "url": "https://raw.githubusercontent.com/scikit-image/scikit-image/e8a42ba85aaf5fd9322ef9ca51bc21063b22fcae/skimage/data/camera.png",
+      "sha256": "b0793d2adda0fa6ae899c03989482bff9a42d3d5690fc7e3648f2795d730c23a",
+      "id": "camera",
+      "author": "Lav Varshney",
+      "license": "CC0-1.0",
+      "group": "natural",
+      "source_page": "https://scikit-image.org/docs/0.25.x/api/skimage.data.html#skimage.data.camera",
+      "license_evidence": "https://github.com/scikit-image/scikit-image/blob/e8a42ba85aaf5fd9322ef9ca51bc21063b22fcae/skimage/data/_fetchers.py",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/"
+    },
+    {
+      "file": "coffee.png",
+      "url": "https://raw.githubusercontent.com/scikit-image/scikit-image/e8a42ba85aaf5fd9322ef9ca51bc21063b22fcae/skimage/data/coffee.png",
+      "sha256": "cc02f8ca188b167c775a7101b5d767d1e71792cf762c33d6fa15a4599b5a8de7",
+      "id": "coffee",
+      "author": "Rachel Michetti; courtesy of Pikolo Espresso Bar",
+      "license": "CC0-1.0",
+      "group": "product_detail",
+      "source_page": "https://scikit-image.org/docs/0.25.x/api/skimage.data.html#skimage.data.coffee",
+      "license_evidence": "https://github.com/scikit-image/scikit-image/blob/e8a42ba85aaf5fd9322ef9ca51bc21063b22fcae/skimage/data/_fetchers.py",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/"
+    },
+    {
+      "file": "clock_motion.png",
+      "url": "https://raw.githubusercontent.com/scikit-image/scikit-image/e8a42ba85aaf5fd9322ef9ca51bc21063b22fcae/skimage/data/clock_motion.png",
+      "sha256": "f029226b28b642e80113d86622e9b215ee067a0966feaf5e60604a1e05733955",
+      "id": "clock",
+      "author": "Stefan van der Walt",
+      "license": "Public domain",
+      "group": "product_detail",
+      "source_page": "https://scikit-image.org/docs/0.25.x/api/skimage.data.html#skimage.data.clock",
+      "license_evidence": "https://github.com/scikit-image/scikit-image/blob/e8a42ba85aaf5fd9322ef9ca51bc21063b22fcae/skimage/data/_fetchers.py",
+      "license_url": "https://scikit-image.org/docs/0.25.x/api/skimage.data.html#skimage.data.clock"
+    },
+    {
+      "file": "brick.png",
+      "url": "https://raw.githubusercontent.com/scikit-image/scikit-image/e8a42ba85aaf5fd9322ef9ca51bc21063b22fcae/skimage/data/brick.png",
+      "sha256": "7966caf324f6ba843118d98f7a07746d22f6a343430add0233eca5f6eaaa8fcf",
+      "id": "brick",
+      "author": "CC0Textures collection (individual photographer not identified)",
+      "license": "CC0-1.0",
+      "group": "product_detail",
+      "source_page": "https://scikit-image.org/docs/0.25.x/api/skimage.data.html#skimage.data.brick",
+      "license_evidence": "https://github.com/scikit-image/scikit-image/blob/e8a42ba85aaf5fd9322ef9ca51bc21063b22fcae/skimage/data/_fetchers.py",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/"
+    },
+    {
+      "file": "gravel.png",
+      "url": "https://raw.githubusercontent.com/scikit-image/scikit-image/e8a42ba85aaf5fd9322ef9ca51bc21063b22fcae/skimage/data/gravel.png",
+      "sha256": "c48615b451bf1e606fbd72c0aa9f8cc0f068ab7111ef7d93bb9b0f2586440c12",
+      "id": "gravel",
+      "author": "CC0Textures collection (individual photographer not identified)",
+      "license": "CC0-1.0",
+      "group": "product_detail",
+      "source_page": "https://scikit-image.org/docs/0.25.x/api/skimage.data.html#skimage.data.gravel",
+      "license_evidence": "https://github.com/scikit-image/scikit-image/blob/e8a42ba85aaf5fd9322ef9ca51bc21063b22fcae/skimage/data/_fetchers.py",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/"
+    },
+    {
+      "file": "eagle.png",
+      "url": "https://gitlab.com/scikit-image/data/-/raw/1e4f62ac31ba4553d176d4473a5967ad1b076d62/eagle.png",
+      "sha256": "928f1bbe7403b533265f56db3a6b07c835dfa8e2513f5c5075ca2f1960f6179e",
+      "id": "eagle",
+      "author": "Dayane Machado",
+      "license": "CC0-1.0",
+      "group": "natural",
+      "source_page": "https://scikit-image.org/docs/0.25.x/api/skimage.data.html#skimage.data.eagle",
+      "license_evidence": "https://github.com/scikit-image/scikit-image/blob/e8a42ba85aaf5fd9322ef9ca51bc21063b22fcae/skimage/data/_fetchers.py",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/"
+    }
+  ],
+  "notes": [
+    "Only eight independent photographic masters; derivatives must not be counted as independent photographs.",
+    "product_detail is a proxy of coffee, clock and texture photographs, not an independent catalog-product dataset.",
+    "Rocket excluded: current SpaceX Flickr license conflicts with scikit-image public-domain statement.",
+    "Source pixels are treated as sRGB for this corpus; their original camera colorimetry is not certified.",
+    "Synthetic artwork and generated ICC profiles are authored by corpus.py; no downloaded artwork or profile is embedded in Git."
+  ],
+  "profile_specifications": {
+    "display_p3": "https://registry.color.org/rgb-registry/displayp3",
+    "adobe_rgb_1998": "https://www.adobe.com/digitalimag/pdfs/AdobeRGB1998.pdf",
+    "generation": "Local LittleCMS matrix/TRC profiles; no downloaded profile redistributed."
+  }
+}

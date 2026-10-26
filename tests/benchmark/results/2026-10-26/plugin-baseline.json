@@ -1,0 +1,1288 @@
+{
+  "php": "8.4.21",
+  "manifest_sha256": "62cdac33bb4303745ef2f787bef6fc4f760f3d44a9178eaa2e40c8796c3a6c69",
+  "plugin_sha256": "e71e25e3d7cd504c84c3d5b9adf94c5f0433192f0d7b9cc54b28fa52ac35b798",
+  "source_hashes_unchanged": true,
+  "images": [
+    {
+      "id": "astronaut-0",
+      "codec": "webp",
+      "source_sha256": "78ab69a8a5a4899f820b6c7d97f029713b36a058515e2294961efafd1ae2d383",
+      "seconds": 0.10972094535827637,
+      "engine": "cwebp",
+      "path": "astronaut-0.webp",
+      "bytes": 35162,
+      "sha256": "79a225190d1cdf937afe11783c2fcaab2dab729755a07d5d192e605ce73f6408"
+    },
+    {
+      "id": "astronaut-0",
+      "codec": "avif",
+      "source_sha256": "78ab69a8a5a4899f820b6c7d97f029713b36a058515e2294961efafd1ae2d383",
+      "seconds": 0.1113898754119873,
+      "engine": "avifenc",
+      "path": "astronaut-0.avif",
+      "bytes": 49644,
+      "sha256": "4fb1946c82d6776f5bdb0855f41147d9ba1d468a48e33dec0e8403d995b569be"
+    },
+    {
+      "id": "astronaut-1",
+      "codec": "webp",
+      "source_sha256": "a7beccc55eee2dbdfbc32dd0482b784bd3afde3bc897c488c5af076a2e278398",
+      "seconds": 0.11057591438293457,
+      "engine": "cwebp",
+      "path": "astronaut-1.webp",
+      "bytes": 20764,
+      "sha256": "4f44a3b337af4ca4332b5a63170ee95d9d3367e6a9cfcd932e8392a747fef096"
+    },
+    {
+      "id": "astronaut-1",
+      "codec": "avif",
+      "source_sha256": "a7beccc55eee2dbdfbc32dd0482b784bd3afde3bc897c488c5af076a2e278398",
+      "seconds": 0.10334086418151855,
+      "engine": "avifenc",
+      "path": "astronaut-1.avif",
+      "bytes": 20471,
+      "sha256": "47a0904daa76a82f129db5f8644394d60cd957c92cb852e7cec44ec53936c8a0"
+    },
+    {
+      "id": "astronaut-2",
+      "codec": "webp",
+      "source_sha256": "2578b147132025b97e57fa68492f85c544e4f5aaa8651bafe94db4496a966e0a",
+      "seconds": 0.10619807243347168,
+      "engine": "cwebp",
+      "path": "astronaut-2.webp",
+      "bytes": 32680,
+      "sha256": "863a360528fb1fca41fee4bf2b4b2a7c93173696c714a7b09e0b11684f9be249"
+    },
+    {
+      "id": "astronaut-2",
+      "codec": "avif",
+      "source_sha256": "2578b147132025b97e57fa68492f85c544e4f5aaa8651bafe94db4496a966e0a",
+      "seconds": 0.10919404029846191,
+      "engine": "avifenc",
+      "path": "astronaut-2.avif",
+      "bytes": 44213,
+      "sha256": "fb99c8421e13436ad7ee7f0232e9a0b9383b1c476f332353fdbb3d39e3b61ed8"
+    },
+    {
+      "id": "astronaut-3",
+      "codec": "webp",
+      "source_sha256": "ec91b3f22d756ea512945d3d1a30bd0f8dcad57c1a51a60e74e705d505d84e90",
+      "seconds": 0.11047506332397461,
+      "engine": "cwebp",
+      "path": "astronaut-3.webp",
+      "bytes": 33418,
+      "sha256": "a7310750220cb55f2c74ad553493ffa424bfb6032847292a7e6c398e0a2c4583"
+    },
+    {
+      "id": "astronaut-3",
+      "codec": "avif",
+      "source_sha256": "ec91b3f22d756ea512945d3d1a30bd0f8dcad57c1a51a60e74e705d505d84e90",
+      "seconds": 0.1102750301361084,
+      "engine": "avifenc",
+      "path": "astronaut-3.avif",
+      "bytes": 48203,
+      "sha256": "6b1efad331f3ef1a5cd8408c2e184992220f32379e048a711d11555d368d1233"
+    },
+    {
+      "id": "chelsea-0",
+      "codec": "webp",
+      "source_sha256": "99cf52fa765e50a1bb876b2f62d1595c60578a6cd431baa4b8d70251bb2274b0",
+      "seconds": 0.10566186904907227,
+      "engine": "cwebp",
+      "path": "chelsea-0.webp",
+      "bytes": 18754,
+      "sha256": "a8dc1dfee2935914c5f210eaa68da3fa57d466ee2aca162706d89a12ce6ff8b5"
+    },
+    {
+      "id": "chelsea-0",
+      "codec": "avif",
+      "source_sha256": "99cf52fa765e50a1bb876b2f62d1595c60578a6cd431baa4b8d70251bb2274b0",
+      "seconds": 0.11034417152404785,
+      "engine": "avifenc",
+      "path": "chelsea-0.avif",
+      "bytes": 27321,
+      "sha256": "6104246dbc6cfaa79af84f58cd8ae9ed2e8514e5984a12b542370b4e1d8763eb"
+    },
+    {
+      "id": "chelsea-1",
+      "codec": "webp",
+      "source_sha256": "b89495c49fcfa25c401cefea282595001014f962ed70610a4918d661a9716d7b",
+      "seconds": 0.10218119621276855,
+      "engine": "cwebp",
+      "path": "chelsea-1.webp",
+      "bytes": 11292,
+      "sha256": "bb86c1da5a98bc94fc2e1570829af82634be5c5fb9312f0955e2628976afddff"
+    },
+    {
+      "id": "chelsea-1",
+      "codec": "avif",
+      "source_sha256": "b89495c49fcfa25c401cefea282595001014f962ed70610a4918d661a9716d7b",
+      "seconds": 0.11063289642333984,
+      "engine": "avifenc",
+      "path": "chelsea-1.avif",
+      "bytes": 10699,
+      "sha256": "680af652a903a073ba635afbac867c58aef1c152b3765e9e7e4a21d4c3e7d7d5"
+    },
+    {
+      "id": "chelsea-2",
+      "codec": "webp",
+      "source_sha256": "4f5f84e2c93adc9e58122da66081736d67a75b207c4a2d12edd4fe2a4e06f088",
+      "seconds": 0.11057305335998535,
+      "engine": "cwebp",
+      "path": "chelsea-2.webp",
+      "bytes": 18554,
+      "sha256": "779200d9d2abdfb77e57168aa590279e5858cc2c15a69c3e1503025efc15cae6"
+    },
+    {
+      "id": "chelsea-2",
+      "codec": "avif",
+      "source_sha256": "4f5f84e2c93adc9e58122da66081736d67a75b207c4a2d12edd4fe2a4e06f088",
+      "seconds": 0.10817790031433105,
+      "engine": "avifenc",
+      "path": "chelsea-2.avif",
+      "bytes": 25300,
+      "sha256": "931780eaeb8a1f3ab338facd823fde59ab33d1e3d5b14467c8c6f6417d35c0d9"
+    },
+    {
+      "id": "chelsea-3",
+      "codec": "webp",
+      "source_sha256": "7ec40860a152e3e1e746c3c511e7fe7741fe68b9c833cb1be6b2aeba9ec87ee8",
+      "seconds": 0.1104731559753418,
+      "engine": "cwebp",
+      "path": "chelsea-3.webp",
+      "bytes": 18322,
+      "sha256": "de7289c9bd1411f9fdbd4e07ab1efc90cebcfabc915f917cd84f0fc89644e2f8"
+    },
+    {
+      "id": "chelsea-3",
+      "codec": "avif",
+      "source_sha256": "7ec40860a152e3e1e746c3c511e7fe7741fe68b9c833cb1be6b2aeba9ec87ee8",
+      "seconds": 0.11059880256652832,
+      "engine": "avifenc",
+      "path": "chelsea-3.avif",
+      "bytes": 26508,
+      "sha256": "eb78028abfe51c686b3f68afa88bb2980637d2dc65b8cfce5a9aa0f5dae985fe"
+    },
+    {
+      "id": "camera-0",
+      "codec": "webp",
+      "source_sha256": "9119724d8f49b9a59641eefa4645ecc3983e1de99ce172329a25081d7fc60144",
+      "seconds": 0.0402979850769043,
+      "engine": "WP_Image_Editor_Imagick",
+      "path": "camera-0.webp",
+      "bytes": 40954,
+      "sha256": "80007b3e8abe79380d4a9ef3d4a07b3a86f1578f2448b1603f42e55a2a445c11"
+    },
+    {
+      "id": "camera-0",
+      "codec": "avif",
+      "source_sha256": "9119724d8f49b9a59641eefa4645ecc3983e1de99ce172329a25081d7fc60144",
+      "seconds": 0.12168693542480469,
+      "engine": "WP_Image_Editor_Imagick",
+      "path": "camera-0.avif",
+      "bytes": 49359,
+      "sha256": "32485252077503b5300ab603432326b2bb1ed864706db687dec905cb8bbe9ac7"
+    },
+    {
+      "id": "camera-1",
+      "codec": "webp",
+      "source_sha256": "e1a6382c791866ed31acc40514421f68f019d81b56f0679e79e502dfa9899f75",
+      "seconds": 0.10195207595825195,
+      "engine": "cwebp",
+      "path": "camera-1.webp",
+      "bytes": 17694,
+      "sha256": "f2ee4e76b58ff8bc12f9172493be099d1da3548a88fd4ac309a73151e1511b82"
+    },
+    {
+      "id": "camera-1",
+      "codec": "avif",
+      "source_sha256": "e1a6382c791866ed31acc40514421f68f019d81b56f0679e79e502dfa9899f75",
+      "seconds": 0.1105489730834961,
+      "engine": "avifenc",
+      "path": "camera-1.avif",
+      "bytes": 16553,
+      "sha256": "cfb3fd85a5265831109253624bec2d76487ad43ec52357c70985959c83ebb685"
+    },
+    {
+      "id": "camera-2",
+      "codec": "webp",
+      "source_sha256": "84797bdbd585bf19786f8456680af5961be7c91f15e8091715ee9cf785740c15",
+      "seconds": 0.10557699203491211,
+      "engine": "cwebp",
+      "path": "camera-2.webp",
+      "bytes": 33010,
+      "sha256": "41de71b441aca58de535f77f90f60167f72e40d40fd0456308b8f001b085c6ed"
+    },
+    {
+      "id": "camera-2",
+      "codec": "avif",
+      "source_sha256": "84797bdbd585bf19786f8456680af5961be7c91f15e8091715ee9cf785740c15",
+      "seconds": 0.10368108749389648,
+      "engine": "avifenc",
+      "path": "camera-2.avif",
+      "bytes": 43780,
+      "sha256": "bc5dd3df3c4fb9450eb07c7777e3ca63020316dd07a0f63be7ea56dcc6779e75"
+    },
+    {
+      "id": "camera-3",
+      "codec": "webp",
+      "source_sha256": "6c93a7d481add1146bf5bea5fe663273c806f059a15c49f3f5bc38b8628bf9ec",
+      "seconds": 0.10088992118835449,
+      "engine": "cwebp",
+      "path": "camera-3.webp",
+      "bytes": 32770,
+      "sha256": "bdefa80fa2f3fa426925824a54266c507670017eef5ffdb60cfe8cdc50680dbe"
+    },
+    {
+      "id": "camera-3",
+      "codec": "avif",
+      "source_sha256": "6c93a7d481add1146bf5bea5fe663273c806f059a15c49f3f5bc38b8628bf9ec",
+      "seconds": 0.10551810264587402,
+      "engine": "avifenc",
+      "path": "camera-3.avif",
+      "bytes": 45156,
+      "sha256": "b5a161d8bdea0d879b2e749e61f662752b392a5b319b757eb64fc4ee7fb1a815"
+    },
+    {
+      "id": "coffee-0",
+      "codec": "webp",
+      "source_sha256": "d9e8e98f60edb9b7ea910b6fec804d523b52698745d1398c0dfeddda5e66ac88",
+      "seconds": 0.10719990730285645,
+      "engine": "cwebp",
+      "path": "coffee-0.webp",
+      "bytes": 42402,
+      "sha256": "ea7067868db17cbec1e3a0e036a2e339317c8e1138b07db95c72139601745555"
+    },
+    {
+      "id": "coffee-0",
+      "codec": "avif",
+      "source_sha256": "d9e8e98f60edb9b7ea910b6fec804d523b52698745d1398c0dfeddda5e66ac88",
+      "seconds": 0.10819697380065918,
+      "engine": "avifenc",
+      "path": "coffee-0.avif",
+      "bytes": 60573,
+      "sha256": "662f326ae42592e4affffc13f081ee67e361e7262831a707205be8c48a61cec3"
+    },
+    {
+      "id": "coffee-1",
+      "codec": "webp",
+      "source_sha256": "05b784fa809d6f44392e94b42d25e09466bd0433fc809f797509eef98afd4df0",
+      "seconds": 0.11058306694030762,
+      "engine": "cwebp",
+      "path": "coffee-1.webp",
+      "bytes": 13236,
+      "sha256": "4ad4242e43c85ae89545de2cb6777dbec13c4f696e6effffab4366fd57da2fd0"
+    },
+    {
+      "id": "coffee-1",
+      "codec": "avif",
+      "source_sha256": "05b784fa809d6f44392e94b42d25e09466bd0433fc809f797509eef98afd4df0",
+      "seconds": 0.11055898666381836,
+      "engine": "avifenc",
+      "path": "coffee-1.avif",
+      "bytes": 13646,
+      "sha256": "bfcb2f7f9c84e1c9a6988aea7fe470ff9ef52fce716087e6c0ae1f519ee2785a"
+    },
+    {
+      "id": "coffee-2",
+      "codec": "webp",
+      "source_sha256": "e998bdef07947a57ebe4020834013a4bbef5816d0cb211e7a721928e339ff924",
+      "seconds": 0.11032605171203613,
+      "engine": "cwebp",
+      "path": "coffee-2.webp",
+      "bytes": 39760,
+      "sha256": "39024cfea1e0066457da987d9d3d71fd1c7ed147f48f95a1cffe668353c32a93"
+    },
+    {
+      "id": "coffee-2",
+      "codec": "avif",
+      "source_sha256": "e998bdef07947a57ebe4020834013a4bbef5816d0cb211e7a721928e339ff924",
+      "seconds": 0.10829401016235352,
+      "engine": "avifenc",
+      "path": "coffee-2.avif",
+      "bytes": 51764,
+      "sha256": "ef8e83f2d0aded48cdbd0f2271c67cdc66ff361e0bb0bf083188b926eec6aa8e"
+    },
+    {
+      "id": "coffee-3",
+      "codec": "webp",
+      "source_sha256": "2ae826da15d019254b84812506cd185c0cc009e8b7beff7c54925e4eb46660d0",
+      "seconds": 0.030026912689208984,
+      "engine": "WP_Image_Editor_Imagick",
+      "path": "coffee-3.webp",
+      "bytes": 48484,
+      "sha256": "69e737b03131019cd6b5eb8ec07a1f8be9490ed340e358ca3fa45f72aa2717e8"
+    },
+    {
+      "id": "coffee-3",
+      "codec": "avif",
+      "source_sha256": "2ae826da15d019254b84812506cd185c0cc009e8b7beff7c54925e4eb46660d0",
+      "seconds": 0.07800602912902832,
+      "engine": "WP_Image_Editor_Imagick",
+      "path": "coffee-3.avif",
+      "bytes": 54448,
+      "sha256": "d971945c3415124ae4ba76e52972da4997bcab26388f3f892a19b5f5fc6f647a"
+    },
+    {
+      "id": "clock-0",
+      "codec": "webp",
+      "source_sha256": "5bfeb16b9f7bd301913d023d0d3a2f4666ef80e9b6c1bd38de21bcf5de97deaa",
+      "seconds": 0.10835409164428711,
+      "engine": "cwebp",
+      "path": "clock-0.webp",
+      "bytes": 1372,
+      "sha256": "67550b4eacc5f68619811c025f23b8fdd54b2855a3a37505677129dcf0442445"
+    },
+    {
+      "id": "clock-0",
+      "codec": "avif",
+      "source_sha256": "5bfeb16b9f7bd301913d023d0d3a2f4666ef80e9b6c1bd38de21bcf5de97deaa",
+      "seconds": 0.10751605033874512,
+      "engine": "avifenc",
+      "path": "clock-0.avif",
+      "bytes": 3292,
+      "sha256": "addd44a548ff9288e8dbbc88d20fe89e52caa438eb86f854a96ebbf50337487d"
+    },
+    {
+      "id": "clock-1",
+      "codec": "webp",
+      "source_sha256": "74e7bd3ee689f9e4483d2f7a4796949665854969d1f42b239fe521b70964eb44",
+      "seconds": 0.11067795753479004,
+      "engine": "cwebp",
+      "path": "clock-1.webp",
+      "bytes": 1100,
+      "sha256": "773f3abdb381c999f63e54a47d332f763822ecf0fdd5e08070029b0bcba95d27"
+    },
+    {
+      "id": "clock-1",
+      "codec": "avif",
+      "source_sha256": "74e7bd3ee689f9e4483d2f7a4796949665854969d1f42b239fe521b70964eb44",
+      "seconds": 0.11077713966369629,
+      "engine": "avifenc",
+      "path": "clock-1.avif",
+      "bytes": 1929,
+      "sha256": "dea832cb8b4ae2b2245b0bdace6a17a8fbbb6476751e301ac133deac7e0ab106"
+    },
+    {
+      "id": "clock-2",
+      "codec": "webp",
+      "source_sha256": "9408f59814dcddfcfe34a9a69f6519c2844a0ce11dc947ffd8561c95ba925687",
+      "seconds": 0.1094210147857666,
+      "engine": "cwebp",
+      "path": "clock-2.webp",
+      "bytes": 1360,
+      "sha256": "e1977bfd7bfd63c9fb7b0fddeb169c8532ed27c2edcafe2ccd10111ce93c956d"
+    },
+    {
+      "id": "clock-2",
+      "codec": "avif",
+      "source_sha256": "9408f59814dcddfcfe34a9a69f6519c2844a0ce11dc947ffd8561c95ba925687",
+      "seconds": 0.10733699798583984,
+      "engine": "avifenc",
+      "path": "clock-2.avif",
+      "bytes": 2912,
+      "sha256": "bae90240343b0a750a92cefa972b99babbee2bc6cef0604dbf076acbf05049ba"
+    },
+    {
+      "id": "clock-3",
+      "codec": "webp",
+      "source_sha256": "5eee8a5da2a54953bfa10543b5bf233b825121913e52843ef704e15a89d97c03",
+      "seconds": 0.10692286491394043,
+      "engine": "cwebp",
+      "path": "clock-3.webp",
+      "bytes": 1362,
+      "sha256": "6cb2020b334ecf9db7fbaad77f3781431f13fc49afc253a73d33e6078cd7e7f6"
+    },
+    {
+      "id": "clock-3",
+      "codec": "avif",
+      "source_sha256": "5eee8a5da2a54953bfa10543b5bf233b825121913e52843ef704e15a89d97c03",
+      "seconds": 0.10842514038085938,
+      "engine": "avifenc",
+      "path": "clock-3.avif",
+      "bytes": 3256,
+      "sha256": "6a665eb41c53e5ff076dab735603d9b47d9895c7a1136b8952c00415e6294ee2"
+    },
+    {
+      "id": "brick-0",
+      "codec": "webp",
+      "source_sha256": "869cdcf49f8662822d927318167e5c917577f8381264a7018908e9c346fa5f5c",
+      "seconds": 0.1071920394897461,
+      "engine": "cwebp",
+      "path": "brick-0.webp",
+      "bytes": 15400,
+      "sha256": "02963a86d8d8616235f94583a8e9e398c1dd16f42376b1c06f288828fbff96ee"
+    },
+    {
+      "id": "brick-0",
+      "codec": "avif",
+      "source_sha256": "869cdcf49f8662822d927318167e5c917577f8381264a7018908e9c346fa5f5c",
+      "seconds": 0.11041593551635742,
+      "engine": "avifenc",
+      "path": "brick-0.avif",
+      "bytes": 22719,
+      "sha256": "532d30d1b182a970f62087da380b3936dd56f8c7b528329cce7ddbfc71b43ec1"
+    },
+    {
+      "id": "brick-1",
+      "codec": "webp",
+      "source_sha256": "95e6c264cbf60ad0ede713c3316bd70495e61b3f710404577cfc32883db20999",
+      "seconds": 0.10392403602600098,
+      "engine": "cwebp",
+      "path": "brick-1.webp",
+      "bytes": 8000,
+      "sha256": "74e9aa23066df183bc2d394b1ebfea65bc9b87790f07a616d72ed64fdb0702c5"
+    },
+    {
+      "id": "brick-1",
+      "codec": "avif",
+      "source_sha256": "95e6c264cbf60ad0ede713c3316bd70495e61b3f710404577cfc32883db20999",
+      "seconds": 0.10187482833862305,
+      "engine": "avifenc",
+      "path": "brick-1.avif",
+      "bytes": 9913,
+      "sha256": "7a4617037161d734c0a73237372c62d74b5d69df7d3ff9cf02c7dabe02261a33"
+    },
+    {
+      "id": "brick-2",
+      "codec": "webp",
+      "source_sha256": "f8425061ae4b20870138633eb61cfd8b3cf7793d8952258987df896fab3aa24c",
+      "seconds": 0.10646295547485352,
+      "engine": "cwebp",
+      "path": "brick-2.webp",
+      "bytes": 15208,
+      "sha256": "e71830e517a84cb66287dc16fed09fbdae0da9533a9120d4d7566a701fa58bb4"
+    },
+    {
+      "id": "brick-2",
+      "codec": "avif",
+      "source_sha256": "f8425061ae4b20870138633eb61cfd8b3cf7793d8952258987df896fab3aa24c",
+      "seconds": 0.10833001136779785,
+      "engine": "avifenc",
+      "path": "brick-2.avif",
+      "bytes": 21181,
+      "sha256": "638a98c8b44c3310b31677d6da91db69c60a89e445f34cd5241c95b6f42de69e"
+    },
+    {
+      "id": "brick-3",
+      "codec": "webp",
+      "source_sha256": "eb0a7c12a37ab585cdcd49560b42b4016d01f2c0b1fded2d56dbabef2709de57",
+      "seconds": 0.1039590835571289,
+      "engine": "cwebp",
+      "path": "brick-3.webp",
+      "bytes": 15438,
+      "sha256": "1352b13e12efee462b909fe1423b9a7c8f6ee5633053c63bd71c8f62bc7d24d4"
+    },
+    {
+      "id": "brick-3",
+      "codec": "avif",
+      "source_sha256": "eb0a7c12a37ab585cdcd49560b42b4016d01f2c0b1fded2d56dbabef2709de57",
+      "seconds": 0.10898089408874512,
+      "engine": "avifenc",
+      "path": "brick-3.avif",
+      "bytes": 22568,
+      "sha256": "fcc49379fc8d63e1ee4c600042e5c8062e44ccc482b426434ef3798cac838933"
+    },
+    {
+      "id": "gravel-0",
+      "codec": "webp",
+      "source_sha256": "9505caa022e86e0e0236510eac7ffea40a7ecbfacb988cb6230566f67b4b6879",
+      "seconds": 0.11049008369445801,
+      "engine": "cwebp",
+      "path": "gravel-0.webp",
+      "bytes": 79006,
+      "sha256": "2e39cfddd7f968570261c07c1a7ef9f9f53db08a2ce0c1a251496d1ca6faee2c"
+    },
+    {
+      "id": "gravel-0",
+      "codec": "avif",
+      "source_sha256": "9505caa022e86e0e0236510eac7ffea40a7ecbfacb988cb6230566f67b4b6879",
+      "seconds": 0.10059690475463867,
+      "engine": "avifenc",
+      "path": "gravel-0.avif",
+      "bytes": 84620,
+      "sha256": "8649323ed192017bd67a8e2705748b5e460a9b9fe31711b265fccbac46c51dea"
+    },
+    {
+      "id": "gravel-1",
+      "codec": "webp",
+      "source_sha256": "4230cafee8c87df79609947d4775b919fc37dbc9b214b4e5b5b5d178b41ac507",
+      "seconds": 0.11064815521240234,
+      "engine": "cwebp",
+      "path": "gravel-1.webp",
+      "bytes": 37548,
+      "sha256": "0baf50946384214d6a2a09b6ee8ffe6dcd287072b7ca02eb8d27f555cd41cedd"
+    },
+    {
+      "id": "gravel-1",
+      "codec": "avif",
+      "source_sha256": "4230cafee8c87df79609947d4775b919fc37dbc9b214b4e5b5b5d178b41ac507",
+      "seconds": 0.10938596725463867,
+      "engine": "avifenc",
+      "path": "gravel-1.avif",
+      "bytes": 29691,
+      "sha256": "487d042d437bd5653da1b7b9a833399a12ff27cebb90d9512143c00fe7e9f87e"
+    },
+    {
+      "id": "gravel-2",
+      "codec": "webp",
+      "source_sha256": "410bcc31dc9de2dc3bf9b42af40ca82fecd64ed7ccaaf7ffec2191001c62f427",
+      "seconds": 0.10953688621520996,
+      "engine": "cwebp",
+      "path": "gravel-2.webp",
+      "bytes": 76420,
+      "sha256": "ed4397f7fc9083c15bafcddcab67c284080847afb0dd52875f27bd0c5a3faf6a"
+    },
+    {
+      "id": "gravel-2",
+      "codec": "avif",
+      "source_sha256": "410bcc31dc9de2dc3bf9b42af40ca82fecd64ed7ccaaf7ffec2191001c62f427",
+      "seconds": 0.11058402061462402,
+      "engine": "avifenc",
+      "path": "gravel-2.avif",
+      "bytes": 81629,
+      "sha256": "6cf514a1c074572404695cdbd4b1a106218c4c79a17c2611f969e52199db69a6"
+    },
+    {
+      "id": "gravel-3",
+      "codec": "webp",
+      "source_sha256": "eeb25cb4718be016ee11c29c8f866ad776ed8fe29b4b72c52a42bdd39fd19c60",
+      "seconds": 0.11051297187805176,
+      "engine": "cwebp",
+      "path": "gravel-3.webp",
+      "bytes": 77320,
+      "sha256": "3a4dede28af119cb1198967feec7acb011c5795913bbd29220c54a0e92861608"
+    },
+    {
+      "id": "gravel-3",
+      "codec": "avif",
+      "source_sha256": "eeb25cb4718be016ee11c29c8f866ad776ed8fe29b4b72c52a42bdd39fd19c60",
+      "seconds": 0.11054801940917969,
+      "engine": "avifenc",
+      "path": "gravel-3.avif",
+      "bytes": 83703,
+      "sha256": "9b2ea0ecafc726c8d8c7ca9e11e3091f2d47bef24b2f1a0aec28c871c727af30"
+    },
+    {
+      "id": "eagle-0",
+      "codec": "webp",
+      "source_sha256": "7952c61542d92d632e978336f5a8e4a4e5f8bb65a945db1c41cc50f07b88721c",
+      "seconds": 0.11048507690429688,
+      "engine": "cwebp",
+      "path": "eagle-0.webp",
+      "bytes": 69734,
+      "sha256": "bef3c9409c22f4be07a1e6001e85ea8102f2d31ba6e51f451a9564a10053e066"
+    },
+    {
+      "id": "eagle-0",
+      "codec": "avif",
+      "source_sha256": "7952c61542d92d632e978336f5a8e4a4e5f8bb65a945db1c41cc50f07b88721c",
+      "seconds": 0.10785484313964844,
+      "engine": "avifenc",
+      "path": "eagle-0.avif",
+      "bytes": 98804,
+      "sha256": "c07c2a00911137afd6c657d2c6a81a147085ef5cba073e29506be46672551236"
+    },
+    {
+      "id": "eagle-1",
+      "codec": "webp",
+      "source_sha256": "943623c9ca3c2e4e00f317a2b3a100cc0fc079789db3f3781114c886d3c33927",
+      "seconds": 0.11049604415893555,
+      "engine": "cwebp",
+      "path": "eagle-1.webp",
+      "bytes": 15788,
+      "sha256": "e1e5b6e492edb40ebfddbe1e8059d754ed8eda98bdbf224d7489b5cc77722c0a"
+    },
+    {
+      "id": "eagle-1",
+      "codec": "avif",
+      "source_sha256": "943623c9ca3c2e4e00f317a2b3a100cc0fc079789db3f3781114c886d3c33927",
+      "seconds": 0.11050105094909668,
+      "engine": "avifenc",
+      "path": "eagle-1.avif",
+      "bytes": 15141,
+      "sha256": "b6cf8c79c397ab4e127625e610d6f9de0bed6835eb4723d92a440d289b544aee"
+    },
+    {
+      "id": "eagle-2",
+      "codec": "webp",
+      "source_sha256": "e05f92b7069c0153447f240387db9ac8794a4b30ad4cb9b7d3f74f761d198105",
+      "seconds": 0.11053991317749023,
+      "engine": "cwebp",
+      "path": "eagle-2.webp",
+      "bytes": 68254,
+      "sha256": "165cae3426ed4a31bd24ce8ae7d39665cfefedc6668bc8412b6c490a7390cfc6"
+    },
+    {
+      "id": "eagle-2",
+      "codec": "avif",
+      "source_sha256": "e05f92b7069c0153447f240387db9ac8794a4b30ad4cb9b7d3f74f761d198105",
+      "seconds": 0.1085960865020752,
+      "engine": "avifenc",
+      "path": "eagle-2.avif",
+      "bytes": 91621,
+      "sha256": "77ab92f272d94b2e05c28a862db7e9cb791888849824d9357e500b5d381ee5ee"
+    },
+    {
+      "id": "eagle-3",
+      "codec": "webp",
+      "source_sha256": "683f37cc260ea8949ba5a868c9c9ea00c29bd120bcf6df3ab14fe3960a933369",
+      "seconds": 0.10763812065124512,
+      "engine": "cwebp",
+      "path": "eagle-3.webp",
+      "bytes": 67046,
+      "sha256": "d904d8ef371e744d9ddc254467673537935ac60a31da661527175d5e71afa52d"
+    },
+    {
+      "id": "eagle-3",
+      "codec": "avif",
+      "source_sha256": "683f37cc260ea8949ba5a868c9c9ea00c29bd120bcf6df3ab14fe3960a933369",
+      "seconds": 0.11055588722229004,
+      "engine": "avifenc",
+      "path": "eagle-3.avif",
+      "bytes": 96226,
+      "sha256": "a2bce8e02492ed92248b16ef81d7e78e2362aa18969465494fcf05607f1dbb0c"
+    },
+    {
+      "id": "graphics-0-0",
+      "codec": "webp",
+      "source_sha256": "2527aa7d2fa844e24984773a1171d6f1eaf542ea411399082c05d7a9f6c909aa",
+      "seconds": 0.10302400588989258,
+      "engine": "cwebp",
+      "path": "graphics-0-0.webp",
+      "bytes": 9116,
+      "sha256": "354af90f480a8ca3cf7d8a50b8afcb79d2cd320bc62274d94e0c3defa3163a8c"
+    },
+    {
+      "id": "graphics-0-0",
+      "codec": "avif",
+      "source_sha256": "2527aa7d2fa844e24984773a1171d6f1eaf542ea411399082c05d7a9f6c909aa",
+      "seconds": 0.11055111885070801,
+      "engine": "avifenc",
+      "path": "graphics-0-0.avif",
+      "bytes": 10969,
+      "sha256": "46ef2789a19344e04a91f8dfbe5d2f398cf44ef7321979d66c948b59d0bceb76"
+    },
+    {
+      "id": "alpha-0-0",
+      "codec": "webp",
+      "source_sha256": "89679efb6e219c594bcf015177b3016ce4fd34e4caac636c1ced341ac99bcd0b",
+      "seconds": 0.11056280136108398,
+      "engine": "cwebp",
+      "path": "alpha-0-0.webp",
+      "bytes": 17094,
+      "sha256": "78060729048b1ce8a99edc22021e932c6d802105283f7f77eab6838ca450dd1b"
+    },
+    {
+      "id": "alpha-0-0",
+      "codec": "avif",
+      "source_sha256": "89679efb6e219c594bcf015177b3016ce4fd34e4caac636c1ced341ac99bcd0b",
+      "seconds": 0.10547208786010742,
+      "engine": "avifenc",
+      "path": "alpha-0-0.avif",
+      "bytes": 12796,
+      "sha256": "c74039eab1c802c176d3c352c5b8a26f7b34c6364d7d3c3d171adb8fc55b5726"
+    },
+    {
+      "id": "graphics-0-1",
+      "codec": "webp",
+      "source_sha256": "3b110f25ae6cd853029192aa589d39598cc15f7cb427c58787fa33aa876dd3c1",
+      "seconds": 0.11061501502990723,
+      "engine": "cwebp",
+      "path": "graphics-0-1.webp",
+      "bytes": 9116,
+      "sha256": "354af90f480a8ca3cf7d8a50b8afcb79d2cd320bc62274d94e0c3defa3163a8c"
+    },
+    {
+      "id": "graphics-0-1",
+      "codec": "avif",
+      "source_sha256": "3b110f25ae6cd853029192aa589d39598cc15f7cb427c58787fa33aa876dd3c1",
+      "seconds": 0.11056208610534668,
+      "engine": "avifenc",
+      "path": "graphics-0-1.avif",
+      "bytes": 10965,
+      "sha256": "f2a615e53a92ede1b1605c5cdaaadaf8a81074b07049f3b667d95955ad9e7792"
+    },
+    {
+      "id": "alpha-0-1",
+      "codec": "webp",
+      "source_sha256": "2bde19e91768f4016ef03aa7ce4a409e148d7f067251fbbc772dbf7d0dff8743",
+      "seconds": 0.11064982414245605,
+      "engine": "cwebp",
+      "path": "alpha-0-1.webp",
+      "bytes": 17094,
+      "sha256": "78060729048b1ce8a99edc22021e932c6d802105283f7f77eab6838ca450dd1b"
+    },
+    {
+      "id": "alpha-0-1",
+      "codec": "avif",
+      "source_sha256": "2bde19e91768f4016ef03aa7ce4a409e148d7f067251fbbc772dbf7d0dff8743",
+      "seconds": 0.10341095924377441,
+      "engine": "avifenc",
+      "path": "alpha-0-1.avif",
+      "bytes": 12792,
+      "sha256": "52e5ee53ba2e206549bd83a5bb1119d537843a1b4a1e86625cd3e1b8be4d7e18"
+    },
+    {
+      "id": "graphics-0-2",
+      "codec": "webp",
+      "source_sha256": "98215f99931e8b43fccea385345fcd89787c11e0198d84a35f64d4b8c6050fa7",
+      "seconds": 0.11060214042663574,
+      "engine": "cwebp",
+      "path": "graphics-0-2.webp",
+      "bytes": 9116,
+      "sha256": "354af90f480a8ca3cf7d8a50b8afcb79d2cd320bc62274d94e0c3defa3163a8c"
+    },
+    {
+      "id": "graphics-0-2",
+      "codec": "avif",
+      "source_sha256": "98215f99931e8b43fccea385345fcd89787c11e0198d84a35f64d4b8c6050fa7",
+      "seconds": 0.10445499420166016,
+      "engine": "avifenc",
+      "path": "graphics-0-2.avif",
+      "bytes": 10949,
+      "sha256": "d824d6dd45561ec82567a158fd5beab603d9d87c39e1202235d94da4e1fe50c1"
+    },
+    {
+      "id": "alpha-0-2",
+      "codec": "webp",
+      "source_sha256": "e430ec947410704d3bcdd3ca972e2f1d8b3567a0aa88c16ad1b0b4ca85d1a21a",
+      "seconds": 0.11060214042663574,
+      "engine": "cwebp",
+      "path": "alpha-0-2.webp",
+      "bytes": 13044,
+      "sha256": "dac345222370d84b9db6c25e233cf1ce36569c2c1a4ac83588018c95335b4351"
+    },
+    {
+      "id": "alpha-0-2",
+      "codec": "avif",
+      "source_sha256": "e430ec947410704d3bcdd3ca972e2f1d8b3567a0aa88c16ad1b0b4ca85d1a21a",
+      "seconds": 0.22062397003173828,
+      "engine": "avifenc",
+      "path": "alpha-0-2.avif",
+      "bytes": 11688,
+      "sha256": "75798724ae798df35e9f3859f202d2e2e77371e0fa51f3b4607cd18f5f6bb70d"
+    },
+    {
+      "id": "graphics-0-3",
+      "codec": "webp",
+      "source_sha256": "658104f5349663cde4d5d4ce14e89cb96b9eec27c0aaed325f024282c22a7e9b",
+      "seconds": 0.10742592811584473,
+      "engine": "cwebp",
+      "path": "graphics-0-3.webp",
+      "bytes": 9116,
+      "sha256": "354af90f480a8ca3cf7d8a50b8afcb79d2cd320bc62274d94e0c3defa3163a8c"
+    },
+    {
+      "id": "graphics-0-3",
+      "codec": "avif",
+      "source_sha256": "658104f5349663cde4d5d4ce14e89cb96b9eec27c0aaed325f024282c22a7e9b",
+      "seconds": 0.11063694953918457,
+      "engine": "avifenc",
+      "path": "graphics-0-3.avif",
+      "bytes": 10368,
+      "sha256": "b7d2e5362a34ed8e9b430c31382ade778fe17cbd37f6a319dc4debd1700bc775"
+    },
+    {
+      "id": "alpha-0-3",
+      "codec": "webp",
+      "source_sha256": "d6c18a30ede607b7bf0fd376f79966121d9b2dc9da580a3d6066875cbe3de8e2",
+      "seconds": 0.11057305335998535,
+      "engine": "cwebp",
+      "path": "alpha-0-3.webp",
+      "bytes": 20308,
+      "sha256": "b9a97e00c93f837c4bb712627115c40d12465e1cdaf29046de4dc33967c33766"
+    },
+    {
+      "id": "alpha-0-3",
+      "codec": "avif",
+      "source_sha256": "d6c18a30ede607b7bf0fd376f79966121d9b2dc9da580a3d6066875cbe3de8e2",
+      "seconds": 0.11020898818969727,
+      "engine": "avifenc",
+      "path": "alpha-0-3.avif",
+      "bytes": 16265,
+      "sha256": "bf11d65b488f1e670601475c6965beb7e656500210266023060c750c86ba5ddb"
+    },
+    {
+      "id": "graphics-1-0",
+      "codec": "webp",
+      "source_sha256": "7a017219a7b32f328d5a9873e94ef1430756fdbbffae35f550e614eaf3f27ee6",
+      "seconds": 0.10897588729858398,
+      "engine": "cwebp",
+      "path": "graphics-1-0.webp",
+      "bytes": 97850,
+      "sha256": "7f648bd015d680062ddaa911930e095a954394e092cdf08e5c92af8261452cbc"
+    },
+    {
+      "id": "graphics-1-0",
+      "codec": "avif",
+      "source_sha256": "7a017219a7b32f328d5a9873e94ef1430756fdbbffae35f550e614eaf3f27ee6",
+      "seconds": 0.10865998268127441,
+      "engine": "avifenc",
+      "path": "graphics-1-0.avif",
+      "bytes": 10048,
+      "sha256": "9df6d28f2f1f1be29fd63e426aa85c68d6e326ac7f506a95ea9cffac0770480e"
+    },
+    {
+      "id": "alpha-1-0",
+      "codec": "webp",
+      "source_sha256": "86fcca506afa73992e21f8fe8e86e5b6d2527dababb8e0ed895de935a8c3327e",
+      "seconds": 0.10889792442321777,
+      "engine": "cwebp",
+      "path": "alpha-1-0.webp",
+      "bytes": 85944,
+      "sha256": "5a3556adb0fe69687064bcc1958b51b5ae03b139df81b282ccb40e0770786109"
+    },
+    {
+      "id": "alpha-1-0",
+      "codec": "avif",
+      "source_sha256": "86fcca506afa73992e21f8fe8e86e5b6d2527dababb8e0ed895de935a8c3327e",
+      "seconds": 0.10942196846008301,
+      "engine": "avifenc",
+      "path": "alpha-1-0.avif",
+      "bytes": 11860,
+      "sha256": "8cbcf4f0165941725e046a949aef2ab5fa0d13d8247f8bf8334c851745cd1d6e"
+    },
+    {
+      "id": "graphics-1-1",
+      "codec": "webp",
+      "source_sha256": "519c3f16787dd630ba442d40ffd86933b85e0f44fcdbf6c46a21f2017f67bccd",
+      "seconds": 0.11049199104309082,
+      "engine": "cwebp",
+      "path": "graphics-1-1.webp",
+      "bytes": 97850,
+      "sha256": "7f648bd015d680062ddaa911930e095a954394e092cdf08e5c92af8261452cbc"
+    },
+    {
+      "id": "graphics-1-1",
+      "codec": "avif",
+      "source_sha256": "519c3f16787dd630ba442d40ffd86933b85e0f44fcdbf6c46a21f2017f67bccd",
+      "seconds": 0.11053800582885742,
+      "engine": "avifenc",
+      "path": "graphics-1-1.avif",
+      "bytes": 10044,
+      "sha256": "7e1000afe13e9dc9a3ed54aefb49f3aed0e511263f76bbc582dccff44d1ae25b"
+    },
+    {
+      "id": "alpha-1-1",
+      "codec": "webp",
+      "source_sha256": "77b70daf9600269e581e2781e7d48667ae8b0b2177fdffe32eee148ab5407b83",
+      "seconds": 0.10633301734924316,
+      "engine": "cwebp",
+      "path": "alpha-1-1.webp",
+      "bytes": 85944,
+      "sha256": "5a3556adb0fe69687064bcc1958b51b5ae03b139df81b282ccb40e0770786109"
+    },
+    {
+      "id": "alpha-1-1",
+      "codec": "avif",
+      "source_sha256": "77b70daf9600269e581e2781e7d48667ae8b0b2177fdffe32eee148ab5407b83",
+      "seconds": 0.10996603965759277,
+      "engine": "avifenc",
+      "path": "alpha-1-1.avif",
+      "bytes": 11856,
+      "sha256": "d9a9866a0e2f0cd136123662b8a37864806fe9e63fbd723bd6e8b28d8814e53f"
+    },
+    {
+      "id": "graphics-1-2",
+      "codec": "webp",
+      "source_sha256": "f26b10e28aa8381285006aff088e575eb7e7e10422cf8821333c5acb0ae140be",
+      "seconds": 0.10785079002380371,
+      "engine": "cwebp",
+      "path": "graphics-1-2.webp",
+      "bytes": 97850,
+      "sha256": "7f648bd015d680062ddaa911930e095a954394e092cdf08e5c92af8261452cbc"
+    },
+    {
+      "id": "graphics-1-2",
+      "codec": "avif",
+      "source_sha256": "f26b10e28aa8381285006aff088e575eb7e7e10422cf8821333c5acb0ae140be",
+      "seconds": 0.10177993774414062,
+      "engine": "avifenc",
+      "path": "graphics-1-2.avif",
+      "bytes": 10028,
+      "sha256": "90db4d2971efdcbb8282d52a9c05551329042c04357617617981b0699fc42b2b"
+    },
+    {
+      "id": "alpha-1-2",
+      "codec": "webp",
+      "source_sha256": "b4455b82eea07815f132e1f929422b5d89a6a1005996231bbf513ef7ee4893ca",
+      "seconds": 0.10897684097290039,
+      "engine": "cwebp",
+      "path": "alpha-1-2.webp",
+      "bytes": 81746,
+      "sha256": "be86a7945c886fd4e44f9e6ed05ab16c48401a15ff2ab363726aabb31c2b471f"
+    },
+    {
+      "id": "alpha-1-2",
+      "codec": "avif",
+      "source_sha256": "b4455b82eea07815f132e1f929422b5d89a6a1005996231bbf513ef7ee4893ca",
+      "seconds": 0.21342110633850098,
+      "engine": "avifenc",
+      "path": "alpha-1-2.avif",
+      "bytes": 12889,
+      "sha256": "fe603f4a6fe9419ad6624c175cd95803310c7543f98a0189af0cb057c3617f36"
+    },
+    {
+      "id": "graphics-1-3",
+      "codec": "webp",
+      "source_sha256": "e6506e0d5813ba8f0165c658c7e87e5e7691623faabf222403d61a56104b12f8",
+      "seconds": 0.11066198348999023,
+      "engine": "cwebp",
+      "path": "graphics-1-3.webp",
+      "bytes": 97850,
+      "sha256": "7f648bd015d680062ddaa911930e095a954394e092cdf08e5c92af8261452cbc"
+    },
+    {
+      "id": "graphics-1-3",
+      "codec": "avif",
+      "source_sha256": "e6506e0d5813ba8f0165c658c7e87e5e7691623faabf222403d61a56104b12f8",
+      "seconds": 0.11057209968566895,
+      "engine": "avifenc",
+      "path": "graphics-1-3.avif",
+      "bytes": 9447,
+      "sha256": "c16cc8c8c1416ca2f60fb0f0a8f49f153324bb8d8a0cb2fae4d43e8165634769"
+    },
+    {
+      "id": "alpha-1-3",
+      "codec": "webp",
+      "source_sha256": "0a1331566b7dc8a91080d75d53c029376180a80efb2c7fe18782430903bf138b",
+      "seconds": 0.11043190956115723,
+      "engine": "cwebp",
+      "path": "alpha-1-3.webp",
+      "bytes": 88348,
+      "sha256": "03c7c25657ee9df5859fd0ee84ac2009a8d4afc90f04e1dc389a1669487d3f91"
+    },
+    {
+      "id": "alpha-1-3",
+      "codec": "avif",
+      "source_sha256": "0a1331566b7dc8a91080d75d53c029376180a80efb2c7fe18782430903bf138b",
+      "seconds": 0.11042118072509766,
+      "engine": "avifenc",
+      "path": "alpha-1-3.avif",
+      "bytes": 11246,
+      "sha256": "addbc89f0db5a13c7306a33ebfd0243afe81bd5cd89e13d3bd256e2663e213b1"
+    },
+    {
+      "id": "graphics-2-0",
+      "codec": "webp",
+      "source_sha256": "7df9b8f156ebbea52edee516b9454e3d82b75bba1bb7fa42ed2bb666777b9069",
+      "seconds": 0.11045193672180176,
+      "engine": "cwebp",
+      "path": "graphics-2-0.webp",
+      "bytes": 51250,
+      "sha256": "2d9d206b15e4edc2b41175e8c2a475a1b6a9b97ac4af2fcfe0334553d56304d5"
+    },
+    {
+      "id": "graphics-2-0",
+      "codec": "avif",
+      "source_sha256": "7df9b8f156ebbea52edee516b9454e3d82b75bba1bb7fa42ed2bb666777b9069",
+      "seconds": 0.2205829620361328,
+      "engine": "avifenc",
+      "path": "graphics-2-0.avif",
+      "bytes": 18017,
+      "sha256": "48640c9be2db943e4f4cfab18ffd7682106026bfdce023c7cf9264be5f71e4c3"
+    },
+    {
+      "id": "alpha-2-0",
+      "codec": "webp",
+      "source_sha256": "97c4a25520179afe7793b044882efaf8c5ac4d2aa5d60eb3e7a2c7c7183de35a",
+      "seconds": 0.11049699783325195,
+      "engine": "cwebp",
+      "path": "alpha-2-0.webp",
+      "bytes": 53564,
+      "sha256": "5584839b058b6387f8dfb895be84b009ebcc13d1588deba85174cd74fb64efaa"
+    },
+    {
+      "id": "alpha-2-0",
+      "codec": "avif",
+      "source_sha256": "97c4a25520179afe7793b044882efaf8c5ac4d2aa5d60eb3e7a2c7c7183de35a",
+      "seconds": 0.21120786666870117,
+      "engine": "avifenc",
+      "path": "alpha-2-0.avif",
+      "bytes": 19875,
+      "sha256": "de2e4a15ffeed9eb387c7d3a3fd96bcb1fe864630cab5a2091be310e67105777"
+    },
+    {
+      "id": "graphics-2-1",
+      "codec": "webp",
+      "source_sha256": "214b74fde87cce78571bf2390f31260f011e15af228ca884464f850760d35891",
+      "seconds": 0.11055684089660645,
+      "engine": "cwebp",
+      "path": "graphics-2-1.webp",
+      "bytes": 51250,
+      "sha256": "2d9d206b15e4edc2b41175e8c2a475a1b6a9b97ac4af2fcfe0334553d56304d5"
+    },
+    {
+      "id": "graphics-2-1",
+      "codec": "avif",
+      "source_sha256": "214b74fde87cce78571bf2390f31260f011e15af228ca884464f850760d35891",
+      "seconds": 0.21102094650268555,
+      "engine": "avifenc",
+      "path": "graphics-2-1.avif",
+      "bytes": 18013,
+      "sha256": "f1d7d0ca9816984ad4ff1180b7ab5b188ffa3ec36f2b40174b18df0a0aa0cc5b"
+    },
+    {
+      "id": "alpha-2-1",
+      "codec": "webp",
+      "source_sha256": "d79760aca45e97f2c48729f5a54cacdfd9bab92bec19aafaaa4c8f53807c6168",
+      "seconds": 0.1104738712310791,
+      "engine": "cwebp",
+      "path": "alpha-2-1.webp",
+      "bytes": 53564,
+      "sha256": "5584839b058b6387f8dfb895be84b009ebcc13d1588deba85174cd74fb64efaa"
+    },
+    {
+      "id": "alpha-2-1",
+      "codec": "avif",
+      "source_sha256": "d79760aca45e97f2c48729f5a54cacdfd9bab92bec19aafaaa4c8f53807c6168",
+      "seconds": 0.2145681381225586,
+      "engine": "avifenc",
+      "path": "alpha-2-1.avif",
+      "bytes": 19871,
+      "sha256": "d553a3a115ea4306a85ea953dc2a10618b0fd5848ae8e6ee56c1ec90be417b04"
+    },
+    {
+      "id": "graphics-2-2",
+      "codec": "webp",
+      "source_sha256": "0a73ea78bab935d090cd668f10c660bed4f01c3365166113aef83d7a47abe275",
+      "seconds": 0.10981607437133789,
+      "engine": "cwebp",
+      "path": "graphics-2-2.webp",
+      "bytes": 51250,
+      "sha256": "2d9d206b15e4edc2b41175e8c2a475a1b6a9b97ac4af2fcfe0334553d56304d5"
+    },
+    {
+      "id": "graphics-2-2",
+      "codec": "avif",
+      "source_sha256": "0a73ea78bab935d090cd668f10c660bed4f01c3365166113aef83d7a47abe275",
+      "seconds": 0.21157598495483398,
+      "engine": "avifenc",
+      "path": "graphics-2-2.avif",
+      "bytes": 17997,
+      "sha256": "d5143cb8ed3825a8167eb9d83510350164aa4b62e1368dfcbda0f77a202b2310"
+    },
+    {
+      "id": "alpha-2-2",
+      "codec": "webp",
+      "source_sha256": "bf79cf941fceeb8d43a6d6034b775924fdcf78a192bc06579b403e5aab08b519",
+      "seconds": 0.11063504219055176,
+      "engine": "cwebp",
+      "path": "alpha-2-2.webp",
+      "bytes": 53180,
+      "sha256": "8bc0527c07c9d9c978785cf4fb1542feb8f99c816243fd7ced43d6f457ae878d"
+    },
+    {
+      "id": "alpha-2-2",
+      "codec": "avif",
+      "source_sha256": "bf79cf941fceeb8d43a6d6034b775924fdcf78a192bc06579b403e5aab08b519",
+      "seconds": 0.2204890251159668,
+      "engine": "avifenc",
+      "path": "alpha-2-2.avif",
+      "bytes": 24426,
+      "sha256": "afc0aecab767b40995846e32b1fae8ce77df0057a71a182574d856e14a6553c9"
+    },
+    {
+      "id": "graphics-2-3",
+      "codec": "webp",
+      "source_sha256": "0c04bdccd580b682ccab9998943b6f946ca47a2cfb0bcad58ae3fedfee08c6f6",
+      "seconds": 0.10998106002807617,
+      "engine": "cwebp",
+      "path": "graphics-2-3.webp",
+      "bytes": 51250,
+      "sha256": "2d9d206b15e4edc2b41175e8c2a475a1b6a9b97ac4af2fcfe0334553d56304d5"
+    },
+    {
+      "id": "graphics-2-3",
+      "codec": "avif",
+      "source_sha256": "0c04bdccd580b682ccab9998943b6f946ca47a2cfb0bcad58ae3fedfee08c6f6",
+      "seconds": 0.21940898895263672,
+      "engine": "avifenc",
+      "path": "graphics-2-3.avif",
+      "bytes": 17416,
+      "sha256": "87abbf0afc7cc48afae0314798b64e92563fe715dfffc6e6e7c6bb38ee734ef2"
+    },
+    {
+      "id": "alpha-2-3",
+      "codec": "webp",
+      "source_sha256": "bbefaaf21914a6531e3a2878b14b8845c6f6891b6623a35c91a71b0e39f392a3",
+      "seconds": 0.21849417686462402,
+      "engine": "cwebp",
+      "path": "alpha-2-3.webp",
+      "bytes": 54328,
+      "sha256": "c14f9fc019603209d1dc829493d8f374d58a36a746c4eaa864183edfb6e4dd26"
+    },
+    {
+      "id": "alpha-2-3",
+      "codec": "avif",
+      "source_sha256": "bbefaaf21914a6531e3a2878b14b8845c6f6891b6623a35c91a71b0e39f392a3",
+      "seconds": 0.22076988220214844,
+      "engine": "avifenc",
+      "path": "alpha-2-3.avif",
+      "bytes": 17914,
+      "sha256": "7ebd241c88c3a2d0b6f819eecbfd908810c265b4d4b61511f551555d18c79380"
+    },
+    {
+      "id": "graphics-3-0",
+      "codec": "webp",
+      "source_sha256": "9f45f23e79e8a9ef408ed7ea4d4894b970d4a6721a2ce47eeb5b29aabf47ac60",
+      "seconds": 0.10660409927368164,
+      "engine": "cwebp",
+      "path": "graphics-3-0.webp",
+      "bytes": 5400,
+      "sha256": "71f79c1c5e37085f4c315c12c654e91541881595d7ba2bf8fb437515b39d66fc"
+    },
+    {
+      "id": "graphics-3-0",
+      "codec": "avif",
+      "source_sha256": "9f45f23e79e8a9ef408ed7ea4d4894b970d4a6721a2ce47eeb5b29aabf47ac60",
+      "seconds": 0.10216999053955078,
+      "engine": "avifenc",
+      "path": "graphics-3-0.avif",
+      "bytes": 4860,
+      "sha256": "96559165b1924672e86529d3ba125db406ae0666d08ae4576f9695be57be13d2"
+    },
+    {
+      "id": "alpha-3-0",
+      "codec": "webp",
+      "source_sha256": "07113667042cc79405bdcfb8efd81825fb45647ffa169d146ef8d04b389f5af8",
+      "seconds": 0.10656189918518066,
+      "engine": "cwebp",
+      "path": "alpha-3-0.webp",
+      "bytes": 9382,
+      "sha256": "12f272d12bae87a6617e147157f939bc6d2427c1fb79c7b8cfd032f6fd9fcf16"
+    },
+    {
+      "id": "alpha-3-0",
+      "codec": "avif",
+      "source_sha256": "07113667042cc79405bdcfb8efd81825fb45647ffa169d146ef8d04b389f5af8",
+      "seconds": 0.10927700996398926,
+      "engine": "avifenc",
+      "path": "alpha-3-0.avif",
+      "bytes": 5896,
+      "sha256": "10bce193596be12d8680157fc5eceafc5c57411368b3ef8f5682f893f8d05cb8"
+    },
+    {
+      "id": "graphics-3-1",
+      "codec": "webp",
+      "source_sha256": "42854f8ff35cec6864d731898b7c05902654bfd141e916b2ada58f2b76211096",
+      "seconds": 0.11058688163757324,
+      "engine": "cwebp",
+      "path": "graphics-3-1.webp",
+      "bytes": 5400,
+      "sha256": "71f79c1c5e37085f4c315c12c654e91541881595d7ba2bf8fb437515b39d66fc"
+    },
+    {
+      "id": "graphics-3-1",
+      "codec": "avif",
+      "source_sha256": "42854f8ff35cec6864d731898b7c05902654bfd141e916b2ada58f2b76211096",
+      "seconds": 0.10511207580566406,
+      "engine": "avifenc",
+      "path": "graphics-3-1.avif",
+      "bytes": 4856,
+      "sha256": "4cea664d67e8ede37ae2d7f619bcbca5687de733e120a4af2c4b111819133117"
+    },
+    {
+      "id": "alpha-3-1",
+      "codec": "webp",
+      "source_sha256": "bd42465d5a5231ecf66e83b1fda86105d34b280aedcb127320a89c69027f97ff",
+      "seconds": 0.11057901382446289,
+      "engine": "cwebp",
+      "path": "alpha-3-1.webp",
+      "bytes": 9382,
+      "sha256": "12f272d12bae87a6617e147157f939bc6d2427c1fb79c7b8cfd032f6fd9fcf16"
+    },
+    {
+      "id": "alpha-3-1",
+      "codec": "avif",
+      "source_sha256": "bd42465d5a5231ecf66e83b1fda86105d34b280aedcb127320a89c69027f97ff",
+      "seconds": 0.10522794723510742,
+      "engine": "avifenc",
+      "path": "alpha-3-1.avif",
+      "bytes": 5892,
+      "sha256": "8ae5dce508091f16f0caa1ea31e013947e32824ff14fdcaa7039b94ae96c72a2"
+    },
+    {
+      "id": "graphics-3-2",
+      "codec": "webp",
+      "source_sha256": "e998a89735fdf3283d7ada2a2a46ad6e5a43310ba4bf748d24c75ac26c64056f",
+      "seconds": 0.1105661392211914,
+      "engine": "cwebp",
+      "path": "graphics-3-2.webp",
+      "bytes": 5400,
+      "sha256": "71f79c1c5e37085f4c315c12c654e91541881595d7ba2bf8fb437515b39d66fc"
+    },
+    {
+      "id": "graphics-3-2",
+      "codec": "avif",
+      "source_sha256": "e998a89735fdf3283d7ada2a2a46ad6e5a43310ba4bf748d24c75ac26c64056f",
+      "seconds": 0.10515999794006348,
+      "engine": "avifenc",
+      "path": "graphics-3-2.avif",
+      "bytes": 4840,
+      "sha256": "b467c166bb27321ce94e049fd9486ff470c0ee79a1e4d0db061e1db537f52467"
+    },
+    {
+      "id": "alpha-3-2",
+      "codec": "webp",
+      "source_sha256": "3b3f4687abc19ae4eb99ba2fb54298ccc681d390ce985f17fd3662ec8eaf5315",
+      "seconds": 0.10647201538085938,
+      "engine": "cwebp",
+      "path": "alpha-3-2.webp",
+      "bytes": 9286,
+      "sha256": "5fee5eb59ae1cac3d10542ea6cdab7b3b1258253fce8824617bed2d9bc9bc8f2"
+    },
+    {
+      "id": "alpha-3-2",
+      "codec": "avif",
+      "source_sha256": "3b3f4687abc19ae4eb99ba2fb54298ccc681d390ce985f17fd3662ec8eaf5315",
+      "seconds": 0.10951805114746094,
+      "engine": "avifenc",
+      "path": "alpha-3-2.avif",
+      "bytes": 7050,
+      "sha256": "7b9905e3b476d1fcb854290467bad67cac1987e6fd9260457125aa5037cdd6a9"
+    },
+    {
+      "id": "graphics-3-3",
+      "codec": "webp",
+      "source_sha256": "999a6317adc371982be0f5779fd7977be59b979efc52c19a8bfb3400fd247f31",
+      "seconds": 0.10654902458190918,
+      "engine": "cwebp",
+      "path": "graphics-3-3.webp",
+      "bytes": 5400,
+      "sha256": "71f79c1c5e37085f4c315c12c654e91541881595d7ba2bf8fb437515b39d66fc"
+    },
+    {
+      "id": "graphics-3-3",
+      "codec": "avif",
+      "source_sha256": "999a6317adc371982be0f5779fd7977be59b979efc52c19a8bfb3400fd247f31",
+      "seconds": 0.1106100082397461,
+      "engine": "avifenc",
+      "path": "graphics-3-3.avif",
+      "bytes": 4259,
+      "sha256": "3b39f9534492acd2e26b99465d9bfcfe4c41f32a8ff41576cc2f3015e34e9878"
+    },
+    {
+      "id": "alpha-3-3",
+      "codec": "webp",
+      "source_sha256": "edc657c300b8bbe4d231a52d967d42ef000de36695d6d30a8301f512bdf72cd0",
+      "seconds": 0.11052894592285156,
+      "engine": "cwebp",
+      "path": "alpha-3-3.webp",
+      "bytes": 11000,
+      "sha256": "e6cd6778a392ef6270adad06dae64d9b90c800e74234497d00e11d77d167f0c2"
+    },
+    {
+      "id": "alpha-3-3",
+      "codec": "avif",
+      "source_sha256": "edc657c300b8bbe4d231a52d967d42ef000de36695d6d30a8301f512bdf72cd0",
+      "seconds": 0.11034297943115234,
+      "engine": "avifenc",
+      "path": "alpha-3-3.avif",
+      "bytes": 6530,
+      "sha256": "186ef4cd9252c8f25f423587cabc5df3f64aabbc3ad25bd874f57c29a8a4db8d"
+    }
+  ]
+}
