@@ -24,3 +24,12 @@ rotations and reflections. PNGs include palette+tRNS and truecolor alpha; large
 inert metadata makes successful recompression smaller without changing pixels.
 Corrupt PNGs retain a valid IHDR and replace IDAT with invalid zlib bytes, so
 readable dimensions cannot stand in for successful image decoding.
+
+## Wide-gamut preservation fixtures
+
+`display_p3.icc` and `adobe_rgb_1998.icc` are matrix/TRC RGB profiles generated
+by [the offline corpus builder](../benchmark/corpus.py) with LittleCMS 2.19.
+They use D65 and the documented Display P3/sRGB transfer and Adobe RGB compatible
+563/256 gamma definitions. ICC timestamp/profile-ID fields are fixed by that
+builder; no third-party binary profile was downloaded. These profiles exercise
+retaining source pixel/profile associations, not automatic conversion to sRGB.
