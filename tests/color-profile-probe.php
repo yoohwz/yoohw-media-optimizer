@@ -302,7 +302,7 @@ try {
 		update_option( YoOhw_Media_Optimizer::OPTION_KEY, array_merge( $options, array( 'use_external_binaries' => 1 ) ) );
 		list( $id, $jpeg ) = $attach( 'flags.jpg', $fixture( 'jpeg', $profiles['display_p3'] ) );
 		list( $id, $png ) = $attach( 'flags.png', $fixture( 'rgba', $profiles['display_p3'] ) );
-		$invoke( 'optimize_jpeg_with_cjpeg', array( $jpeg, $dir . '/cjpeg-out.jpg', $options ) );
+		$invoke( 'optimize_jpeg_with_external_binary', array( $jpeg, $dir . '/cjpeg-out.jpg', $options ) );
 		$assert( ! file_exists( $dir . '/djpeg.args' ) && ! file_exists( $dir . '/cjpeg.args' ), 'Tagged JPEG reached unsafe djpeg/cjpeg conversion.' );
 		$invoke( 'optimize_png_with_external_binary', array( $png, $dir . '/png-out.png', $options ) );
 		$assert( ! file_exists( $dir . '/pngquant.args' ), 'Tagged PNG reached CMS-converting pngquant.' );
