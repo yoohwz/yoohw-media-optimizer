@@ -94,7 +94,8 @@ $decode = static function( $path ) use ( $assert ) {
 };
 $check = static function( $path, $name, $orientation = 1, $width = 96, $height = 64, $alpha = false, $tolerance = 18 ) use ( $assert, $decode, $profiles, $colors, $managed ) {
 	$native = new Imagick( $path );
-	$assert( $profiles[ $name ] === $native->getImageProfile( 'icc' ), 'Output ICC differs from source: ' . basename( $path ) );
+	$output_profiles = $native->getImageProfiles( '*', true );
+	$assert( $profiles[ $name ] === ( $output_profiles['icc'] ?? ( $output_profiles['icm'] ?? '' ) ), 'Output ICC absent/differs from source: ' . basename( $path ) . ' profile names=' . implode( ',', array_keys( $output_profiles ) ) );
 	$assert( $native->getImageOrientation() <= 1, 'Output ICC raster still has non-neutral EXIF.' );
 	$image = $decode( $path );
 	$assert( $width === imagesx( $image ) && $height === imagesy( $image ), 'Wrong color output dimensions.' );
@@ -314,7 +315,7 @@ try {
 	}
 	echo 'Color profile ' . $mode . ': PASS — ' . $count . " assertions.\n";
 } catch ( Throwable $error ) {
-	fwrite( STDERR, 'Color profile ' . $mode . ': FAIL — ' . $error->getMessage() . "\n" ); $failed = true;
+	fwrite( STDERR, 'Color profile ' . $mode . ': FAIL — ' . $error->getMessage() . "\n" . $error->getTraceAsString() . "\n" ); $failed = true;
 } finally {
 	foreach ( $filters as $registered ) { remove_filter( $registered[0], $registered[1], 999 ); }
 	update_option( YoOhw_Media_Optimizer::OPTION_KEY, $original_options );
