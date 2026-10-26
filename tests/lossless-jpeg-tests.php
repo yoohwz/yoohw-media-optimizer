@@ -85,6 +85,16 @@ return static function( $optimizer, $invoke, $assert, $test_dir, $runtime_option
 		$assert( $source_hash === hash_file( 'sha256', $path ), 'Independent sidecar generation changed the skipped JPEG.' );
 		$options['generate_webp_sidecars'] = 0;
 
+		// Encoder-success cases must be neutral: stripping Orientation=6 changes display.
+		$exif = "Exif\0\0II\x2a\0" . pack( 'Vv', 8, 1 ) . pack( 'vvVv', 0x0112, 3, 1, 1 ) . "\0\0" . pack( 'V', 0 );
+		$bytes = substr( $jpeg, 0, 2 ) . "\xff\xe1" . pack( 'n', strlen( $exif ) + 2 ) . $exif
+			. "\xff\xef" . pack( 'n', strlen( $app ) + 2 ) . $app . substr( $jpeg, 2 );
+		file_put_contents( $path, $bytes );
+		clearstatcache( true, $path );
+		$source_hash = hash_file( 'sha256', $path );
+		$source_pixels = $pixel_hash( $path );
+		delete_post_meta( $attachment_id, YoOhw_Media_Optimizer::META_KEY );
+
 		// Controlled encoders exercise success, no gain, and partial-output failure without dependencies.
 		wp_mkdir_p( $binary_dir );
 		file_put_contents( $binary_dir . '/smaller.jpg', $jpeg );

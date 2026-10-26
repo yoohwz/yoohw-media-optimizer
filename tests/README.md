@@ -40,16 +40,67 @@ incomplete modern identity, new image sizes, missing sources, restore, and
 independent original/sidecar failures. These checks do not certify concurrency, crash-safe
 replacement, filesystem fault recovery, or the full image-engine matrix.
 
-`lossless-jpeg-tests.php` is invoked by the same entry point. It checks a JPEG
-with EXIF orientation and a large APP segment, comparing file and decoded RGB
-hashes when lossless fallback is unavailable. It covers metadata policies,
-force/repeat, controlled binary success/no gain/partial failure, temporary-file
-cleanup, existing backups/savings, and the permitted resize path. Temporary
-encoder fixtures use an isolated PATH within this CLI process and are removed
-afterward. A real `jpegtran` check runs when installed in a standard search
-directory; otherwise the output explicitly records `NOT RUN`. Controlled encoder
-fixtures do not certify the real encoders. Decoded RGB equality after metadata
-stripping does not certify unchanged EXIF display orientation.
+`lossless-jpeg-tests.php` checks an EXIF Orientation=6 JPEG remains byte-identical
+when a lossless encoder is unavailable, including force and metadata policies.
+Its controlled encoder success/no-gain/partial-failure cases use Orientation=1:
+exact raw RGB equality is useful for lossless encoding but cannot by itself prove
+EXIF display identity. These checks also cover repeat fingerprints, temporary
+cleanup, backup immutability/savings and permitted resizing. A real `jpegtran`
+check runs when installed in a standard search directory; otherwise it records
+`NOT RUN`. Controlled encoders do not certify real encoder behavior.
+
+`image-quality-tests.php` launches `image-quality-probe.php` in fresh PHP child
+processes bootstrapping the same disposable WordPress installation. This keeps
+real native/PATH/fault checks independent of the optimizer's process-local binary
+lookup cache and the preceding controlled lossless encoders. The children restore
+options/filters/PATH and remove their own attachments, media and recovery backups.
+Run this suite only where these temporary mutations are appropriate.
+
+The quality fixtures are generated in PHP from four asymmetric flat-color
+quadrants, with a small valid generated sRGB ICC profile (see
+[fixture provenance](fixtures/README.md)). GD checks all EXIF orientations 1–8;
+Imagick checks rotation 6 and reflection 2 when available. Fixed expected raw
+output dimensions and quadrant ordering establish displayed identity separately
+from EXIF metadata, including rejection of non-neutral output orientation tags.
+Sidecars retain source bytes. Original width-only, height-only, bounding-box and
+no-upscale cases use displayed dimensions, selected editor identities and exact
+backup/restore bytes including EXIF/ICC. Non-neutral lossless metadata removal
+without resizing remains byte-identical and explains the skip with force on/off.
+A WordPress normalization-refusal filter must retain the old sidecar.
+
+Palette+tRNS and RGBA PNG originals compare every meaningful lossless RGBA pixel
+and composites over black and white (hidden RGB at alpha=127 is irrelevant).
+Lossy WebP/AVIF use flat-region samples: RGB/composite tolerance 25/255 and GD
+alpha tolerance 2/127. These bounded oracles are not broad perceptual or
+wide-gamut/color-management certification. Valid ICC decoding is checked with
+Imagick; exact source-profile bytes are recovered from backups/restores. No new
+output metadata-preservation policy is asserted.
+
+Neutral JPEG/palette/RGBA native checks require the actual reported `cwebp` or
+`avifenc` engine, decode its real output, and verify MIME, dimensions,
+colors/alpha and unchanged source hashes. A neutral real `jpegtran` path asserts
+selected engine, exact decoded RGB and recovery hash. Native encoders enabled on
+oriented sources still require the capable normalizing WordPress editor. Forcing
+`wp_image_editors` alone does not select Imagick for neutral WebP: direct GD is
+explicitly asserted there. AVIF uses GD decoding when available, otherwise real
+Imagick decoding converted to PNG for the same pixel oracle.
+
+Failure probes include invalid headers, a PNG with valid IHDR/dimensions but an
+undecodable IDAT body, and native-decoder rejection (GD and available Imagick).
+Forced public attachment processing must retain the failed source, recovery
+backup and old sidecars with truthful current-run failure counters. A failed
+cwebp process and a WordPress editor partial-save error verify cleanup of only
+caller-owned temporary paths; an unrelated path supplied in error data survives.
+The disabled-EXIF child (`-d disable_functions=exif_read_data`) requires safe JPEG
+failure/source-and-sidecar retention while PNG generation remains available.
+These probes do not certify filesystem crashes, codec fuzzing, arbitrary ICC
+profiles, external sidecar repair, or every encoder/version/server combination.
+
+`YOOHW_MO_REQUIRE_NATIVE_QUALITY=1` makes missing Imagick JPEG/PNG/WebP/AVIF or real
+`cwebp`, `avifenc`, `jpegtran` support a failure; an unexpected engine fallback
+also fails. The representative PHP 8.4 CI profile sets this variable. Optional
+local/support-boundary environments explicitly print `NOT RUN` with the missing
+engine/format reason, rather than claiming that coverage passed.
 
 `backup-restore-tests.php` checks source/target containment, trusted uploads-root
 aliases versus descendant symlinks, private-root/site aliases and canonical
@@ -106,9 +157,12 @@ remains a repository-owner action.
 Each regression environment uses a fresh WordPress install, MySQL 8.0, and
 WP-CLI 2.12.0, with GD required before the existing script runs. Thus its image
 optimization/backup assertions cannot silently skip because GD is absent.
+The representative PHP 8.4 profile additionally requires Imagick and real
+`cwebp`, `avifenc`, `jpegtran` quality checks. Other declared boundaries preserve
+the GD regressions and report unavailable optional quality branches explicitly.
 This suite is not PHPUnit, PHPCS, PHPCompatibility, a browser suite, or a full
-image-engine matrix. It does not certify Imagick or the full external encoder
-matrix; the optional real `jpegtran` check is limited to this lossless fixture.
+image-engine matrix; its selected native paths and quality limits are described
+above.
 
 Plugin Check scans a staged payload built with `.distignore`. Errors fail CI;
 warnings remain visible and non-blocking (`strict: false`). Only the
