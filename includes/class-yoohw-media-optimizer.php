@@ -4318,6 +4318,10 @@ Header append Vary Accept env=REDIRECT_accept
 	 * @return array|WP_Error
 	 */
 	private function optimize_jpeg_with_cjpeg( $source, $destination, $options ) {
+		$color = YoOhw_Media_Optimizer_Color::inspect( $source );
+		if ( is_wp_error( $color ) ) { return $color; }
+		if ( $color['icc'] ) { return new WP_Error( 'yoohw_mo_cjpeg_color_unsupported', __( 'cjpeg cannot retain the source color profile safely.', 'yoohw-media-optimizer' ) ); }
+
 		$cjpeg = $this->external_binary_path( 'cjpeg' );
 		$djpeg = $this->external_binary_path( 'djpeg' );
 

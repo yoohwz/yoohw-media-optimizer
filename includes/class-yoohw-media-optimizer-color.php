@@ -59,7 +59,9 @@ class YoOhw_Media_Optimizer_Color {
 				if ( ! in_array( $channels, array( 1, 3 ), true ) || $length !== 6 + $channels * 3 ) { return self::error(); }
 			}
 			if ( 0xee === $marker && 0 === strpos( $data, 'Adobe' ) && ( $length < 12 || ord( $data[11] ) > 1 ) ) { return self::error(); }
-			if ( 0xfe === $marker || ( $marker >= 0xe1 && $marker <= 0xed && ! ( 0xe2 === $marker && 0 === strpos( $data, "ICC_PROFILE\0" ) ) ) || 0xef === $marker ) { $private = true; }
+			// GD always emits this fixed encoder signature; it contains no user metadata.
+			$gd_comment = 0xfe === $marker && 1 === preg_match( '/\ACREATOR: gd-jpeg v1\.0 \(using IJG JPEG v[0-9]+\), (?:default quality|quality = [0-9]{1,3})\n\z/D', $data );
+			if ( ( 0xfe === $marker && ! $gd_comment ) || ( $marker >= 0xe1 && $marker <= 0xed && ! ( 0xe2 === $marker && 0 === strpos( $data, "ICC_PROFILE\0" ) ) ) || 0xef === $marker ) { $private = true; }
 		}
 		if ( 0xda !== $marker || ! $channels || count( $parts ) !== $total ) { return self::error(); }
 		ksort( $parts ); $icc = implode( '', $parts );
