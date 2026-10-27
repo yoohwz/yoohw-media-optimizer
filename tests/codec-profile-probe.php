@@ -218,7 +218,7 @@ try {
 						$hashes[] = hash_file( 'sha256', $path . '.' . $format );
 						$diagnostics[] = array( 'requested' => $quality, 'editor_quality' => $expected->get_quality(), 'state' => method_exists( $expected, 'quality_state' ) ? $expected->quality_state() : array(), 'chunk' => substr( file_get_contents( $path . '.' . $format ), 12, 4 ), 'bytes' => filesize( $path . '.' . $format ), 'hash' => end( $hashes ) );
 						$assert( end( $hashes ) === hash_file( 'sha256', $oracle ), 'Encoded quality differs from post-MIME oracle: ' . $engine . '/' . $format . '/' . $case . '/' . $quality );
-						$size = getimagesize( $path . '.' . $format );
+						$size = wp_getimagesize( $path . '.' . $format );
 						$assert( $mime === $size['mime'] && ( 6 === $orientation ? array( 32, 48 ) : ( 'png' === $case ? array( 16, 16 ) : array( 48, 32 ) ) ) === array( $size[0], $size[1] ), 'Quality save changed MIME/display dimensions.' );
 						$assert( hash( 'sha256', $bytes ) === hash_file( 'sha256', $path ), 'Quality save changed source bytes.' );
 						if ( 'imagick' === $engine ) {
