@@ -28,7 +28,7 @@ The shipping lossless mode uses cwebp `-lossless -q75 -m4`, unlike round1's expe
 | Alpha content | Cases | Default AVIF max alpha error /255 | Lossless-alpha max error | Median bytes / default |
 |---|---:|---:|---:|---:|
 | Synthetic alpha |16|14|0|2.207|
-| Private alpha illustration |1|14|0|1.080|
+| Private alpha illustration |1|12|0|1.080|
 
 The existing alpha profile preserves all45 PNG alpha planes exactly; AVIF color remains lossy. It also pins one job, so changes in bytes/time reflect the whole shipping profile rather than an isolated alpha flag. Keep this option when exact transparency is needed; these sizes do not justify making it universal.
 
