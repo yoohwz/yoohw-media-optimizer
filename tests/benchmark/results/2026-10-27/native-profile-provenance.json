@@ -1,0 +1,273 @@
+{
+  "schema_version": 1,
+  "run_date": "2026-10-27",
+  "scope": "Native commands only, no WordPress; source ICC/pixel encoding unchanged; no sRGB conversion",
+  "python": "3.12.14 (main, Aug 25 2026, 13:50:33) [Clang 22.1.3 ]",
+  "platform": "macOS-27.0.1-arm64-arm-64bit",
+  "pillow": "12.3.0",
+  "numpy": "2.3.5",
+  "cwebp_version": "1.6.0\nlibsharpyuv: 0.4.2",
+  "avifenc_version": "Version: 1.4.2 (dav1d [dec]:1.5.4, aom [enc/dec]:3.15.1)\nlibyuv : unavailable",
+  "corpus_manifest_sha256": "62cdac33bb4303745ef2f787bef6fc4f760f3d44a9178eaa2e40c8796c3a6c69",
+  "total_rows": 164,
+  "source_unchanged": true,
+  "icc_exact_all": true,
+  "webp_lossless_meaningful_rgba_exact_all": true,
+  "avif_lossless_alpha_exact_all": true,
+  "measurement_csv_sha256": "572e97477d327636b936ca06d499812480148edf2fd2e368650393c9896d4346",
+  "runner_sha256": "a8c7ca0b918eed19bb36dc047dc4379da18e83109209acef74692c0e3e795312",
+  "limitations": [
+    "Existing round1 corpus, not independent holdout",
+    "8bit PNG only; no PNG16 support claim",
+    "Meaningful RGB excludes alpha=0 hidden channels",
+    "Single run per profile, no throughput guarantee",
+    "Timing includes native subprocess startup; peak RSS per /usr/bin/time macOS bytes",
+    "No perceptual scoring, human visual preference, browser rendering, WP fallback/settings/lifecycle verification",
+    "Synthetic2048 is a CPU/memory example, not a production dataset"
+  ],
+  "source_corpus": "tests/benchmark/corpus.py round1-64; PNG subset 40 cases: 16 graphics +16 alpha +4 natural +4 product_detail; same existing masters, no independent holdout",
+  "summary": [
+    {
+      "group": "alpha",
+      "profile": "webp_default82",
+      "n": 16,
+      "median_bytes": 37042.0,
+      "median_encode_ms": 88.307,
+      "max_encode_ms": 106.911,
+      "max_peak_rss_bytes": 17825792,
+      "max_alpha_error": 0,
+      "max_meaningful_rgb_error": 255
+    },
+    {
+      "group": "alpha",
+      "profile": "webp_png_lossless75_m4",
+      "n": 16,
+      "median_bytes": 18708.0,
+      "median_encode_ms": 139.086,
+      "max_encode_ms": 188.196,
+      "max_peak_rss_bytes": 28246016,
+      "max_alpha_error": 0,
+      "max_meaningful_rgb_error": 0
+    },
+    {
+      "group": "alpha",
+      "profile": "avif_default82",
+      "n": 16,
+      "median_bytes": 12326.0,
+      "median_encode_ms": 87.485,
+      "max_encode_ms": 156.245,
+      "max_peak_rss_bytes": 46628864,
+      "max_alpha_error": 14,
+      "max_meaningful_rgb_error": 85
+    },
+    {
+      "group": "alpha",
+      "profile": "avif_alpha_lossless82_jobs1",
+      "n": 16,
+      "median_bytes": 31432.5,
+      "median_encode_ms": 182.269,
+      "max_encode_ms": 334.728,
+      "max_peak_rss_bytes": 40239104,
+      "max_alpha_error": 0,
+      "max_meaningful_rgb_error": 83
+    },
+    {
+      "group": "graphics",
+      "profile": "webp_default82",
+      "n": 16,
+      "median_bytes": 30490.0,
+      "median_encode_ms": 31.042,
+      "max_encode_ms": 38.032,
+      "max_peak_rss_bytes": 5226496,
+      "max_alpha_error": 0,
+      "max_meaningful_rgb_error": 241
+    },
+    {
+      "group": "graphics",
+      "profile": "webp_png_lossless75_m4",
+      "n": 16,
+      "median_bytes": 5368.0,
+      "median_encode_ms": 18.545,
+      "max_encode_ms": 191.965,
+      "max_peak_rss_bytes": 42188800,
+      "max_alpha_error": 0,
+      "max_meaningful_rgb_error": 0
+    },
+    {
+      "group": "graphics",
+      "profile": "avif_default82",
+      "n": 16,
+      "median_bytes": 10208.0,
+      "median_encode_ms": 57.648,
+      "max_encode_ms": 122.617,
+      "max_peak_rss_bytes": 36618240,
+      "max_alpha_error": 0,
+      "max_meaningful_rgb_error": 86
+    },
+    {
+      "group": "graphics",
+      "profile": "avif_alpha_lossless82_jobs1",
+      "n": 16,
+      "median_bytes": 10215.0,
+      "median_encode_ms": 89.799,
+      "max_encode_ms": 223.993,
+      "max_peak_rss_bytes": 32227328,
+      "max_alpha_error": 0,
+      "max_meaningful_rgb_error": 86
+    },
+    {
+      "group": "natural",
+      "profile": "webp_default82",
+      "n": 4,
+      "median_bytes": 33455.0,
+      "median_encode_ms": 35.241,
+      "max_encode_ms": 52.45,
+      "max_peak_rss_bytes": 6537216,
+      "max_alpha_error": 0,
+      "max_meaningful_rgb_error": 47
+    },
+    {
+      "group": "natural",
+      "profile": "webp_png_lossless75_m4",
+      "n": 4,
+      "median_bytes": 206340.0,
+      "median_encode_ms": 167.7,
+      "max_encode_ms": 199.338,
+      "max_peak_rss_bytes": 27705344,
+      "max_alpha_error": 0,
+      "max_meaningful_rgb_error": 0
+    },
+    {
+      "group": "natural",
+      "profile": "avif_default82",
+      "n": 4,
+      "median_bytes": 43996.5,
+      "median_encode_ms": 71.376,
+      "max_encode_ms": 88.917,
+      "max_peak_rss_bytes": 33800192,
+      "max_alpha_error": 0,
+      "max_meaningful_rgb_error": 45
+    },
+    {
+      "group": "natural",
+      "profile": "avif_alpha_lossless82_jobs1",
+      "n": 4,
+      "median_bytes": 44045.0,
+      "median_encode_ms": 120.655,
+      "max_encode_ms": 216.675,
+      "max_peak_rss_bytes": 27869184,
+      "max_alpha_error": 0,
+      "max_meaningful_rgb_error": 42
+    },
+    {
+      "group": "product_detail",
+      "profile": "webp_default82",
+      "n": 4,
+      "median_bytes": 28094.0,
+      "median_encode_ms": 28.996,
+      "max_encode_ms": 36.971,
+      "max_peak_rss_bytes": 4734976,
+      "max_alpha_error": 0,
+      "max_meaningful_rgb_error": 56
+    },
+    {
+      "group": "product_detail",
+      "profile": "webp_png_lossless75_m4",
+      "n": 4,
+      "median_bytes": 145737.0,
+      "median_encode_ms": 99.549,
+      "max_encode_ms": 150.828,
+      "max_peak_rss_bytes": 21299200,
+      "max_alpha_error": 0,
+      "max_meaningful_rgb_error": 0
+    },
+    {
+      "group": "product_detail",
+      "profile": "avif_default82",
+      "n": 4,
+      "median_bytes": 36472.5,
+      "median_encode_ms": 56.566,
+      "max_encode_ms": 91.196,
+      "max_peak_rss_bytes": 22888448,
+      "max_alpha_error": 0,
+      "max_meaningful_rgb_error": 53
+    },
+    {
+      "group": "product_detail",
+      "profile": "avif_alpha_lossless82_jobs1",
+      "n": 4,
+      "median_bytes": 36537.5,
+      "median_encode_ms": 112.607,
+      "max_encode_ms": 206.313,
+      "max_peak_rss_bytes": 18874368,
+      "max_alpha_error": 0,
+      "max_meaningful_rgb_error": 58
+    },
+    {
+      "group": "synthetic_cost",
+      "profile": "webp_default82",
+      "n": 1,
+      "median_bytes": 114218,
+      "median_encode_ms": 574.104,
+      "max_encode_ms": 574.104,
+      "max_peak_rss_bytes": 93437952,
+      "max_alpha_error": 0,
+      "max_meaningful_rgb_error": 236
+    },
+    {
+      "group": "synthetic_cost",
+      "profile": "webp_png_lossless75_m4",
+      "n": 1,
+      "median_bytes": 20916,
+      "median_encode_ms": 1084.545,
+      "max_encode_ms": 1084.545,
+      "max_peak_rss_bytes": 130170880,
+      "max_alpha_error": 0,
+      "max_meaningful_rgb_error": 0
+    },
+    {
+      "group": "synthetic_cost",
+      "profile": "avif_default82",
+      "n": 1,
+      "median_bytes": 396571,
+      "median_encode_ms": 426.449,
+      "max_encode_ms": 426.449,
+      "max_peak_rss_bytes": 151912448,
+      "max_alpha_error": 3,
+      "max_meaningful_rgb_error": 37
+    },
+    {
+      "group": "synthetic_cost",
+      "profile": "avif_alpha_lossless82_jobs1",
+      "n": 1,
+      "median_bytes": 398233,
+      "median_encode_ms": 1739.374,
+      "max_encode_ms": 1739.374,
+      "max_peak_rss_bytes": 141787136,
+      "max_alpha_error": 0,
+      "max_meaningful_rgb_error": 37
+    }
+  ],
+  "source_hashes": "Per-input source SHA256 is recorded in CSV and must match original manifest; all40 corpus hashes verified before and after encoding",
+  "commands": {
+    "webp_default82": "cwebp -quiet -metadata icc -q 82 SOURCE -o OUTPUT",
+    "webp_png_lossless75_m4": "cwebp -quiet -metadata icc -lossless -q 75 -m 4 SOURCE -o OUTPUT",
+    "avif_default82": "avifenc -q 82 --ignore-exif --ignore-xmp SOURCE OUTPUT",
+    "avif_alpha_lossless82_jobs1": "avifenc -q 82 --ignore-exif --ignore-xmp --minalpha 0 --maxalpha 0 --jobs 1 SOURCE OUTPUT"
+  },
+  "encoder_sha256": {
+    "cwebp": "b31070342821b6316c756e22a336a72bbde4a6e4f2a9cabb22ffd49a73cc89cf",
+    "avifenc": "f9cd38ec2804b56174344fd178ea919f9bff41ec7fc4a471f0ff9065b1b5d076"
+  },
+  "synthetic2048": {
+    "width": 2048,
+    "height": 2048,
+    "mode": "RGBA8",
+    "source_sha256": "ccdaf534dd218574734411a9f4c977c0ba10b42c64c9d2a6a287c3578ae436e4",
+    "icc_sha256": "1ff304c6f87126ca3a339ac3122e322d0449620511d73ba4737f2845ee97a955",
+    "icc_source": "corpus/images/astronaut-2.png source ICC copied unchanged; no CMS transform",
+    "generator": "run_profiles.py: NumPy checkerboard RGB0/1 by x/y div8, blue=(x+y)%256, alpha=x%256; opaque rectangle and built-in Pillow42 text"
+  },
+  "raw_measurement_csv_sha256": "aa6e9ee657c3a811e66149ef801b50deb01d83bd14f2da9a8616f28041616f4b",
+  "csv_storage_note": "Committed CSV normalizes CRLF to LF; raw receipt remains preserved. Row values are identical."
+}

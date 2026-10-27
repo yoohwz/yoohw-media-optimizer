@@ -152,6 +152,25 @@ representative CI runtime. An Imagick build without LCMS can preserve profiles
 but cannot supply the independent CMS oracle, so its optional managed checks are
 reported separately rather than passed silently.
 
+`profile-quality-tests.php` runs isolated `codec-profile-probe.php` children for
+legacy quality inheritance, independent codec routing, ordinary GD/editor paths,
+real native PNG profiles, disabled encoders and partial native failures. The
+generated RGBA8 PNG covers every alpha value, including odd 8-bit values that GD's
+7-bit alpha API cannot represent. Lossless WebP compares meaningful RGB and alpha;
+AVIF lossless alpha compares all 256 exact alpha values using `avifdec` PNG output
+or Imagick byte samples. Color remains lossy for AVIF. Tagged P3 probes retain exact
+ICC and test raw and independently color-managed samples where LCMS is available.
+
+These checks also exercise PNG16 rejection, native-only failure without silent
+lossy fallback, JPEG behavior with PNG modes enabled, unchanged original
+fingerprints, fresh/force/stale sidecars, private metadata, larger valid candidates,
+source/recovery/old-sidecar retention and owned-stage cleanup. Required native CI
+fails on missing real engines/decoders; optional branches report `NOT RUN`.
+Controlled failure/size wrappers do not certify every external encoder version or
+timeout scenario. Native cost measurements are recorded separately in the
+[round-3 probe report](benchmark/results/2026-10-27/RESULTS.md); no automatic
+content detection or perceptual-quality guarantee is implied.
+
 `backup-restore-tests.php` checks source/target containment, trusted uploads-root
 aliases versus descendant symlinks, private-root/site aliases and canonical
 overlap with external uploads (including root aliases), read-only backup

@@ -79,6 +79,16 @@ Profile-aware processing requires a capable engine. GD alone cannot retain tagge
 
 New outputs are checked before publishing or replacing an original. Backup and restore retain the exact original bytes. Previously optimized originals and fresh sidecars are not automatically re-encoded to repair historical color loss. Regenerate sidecars explicitly when needed; existing original repeat-protection remains active.
 
+= Can WebP and AVIF use different quality settings? =
+
+Yes. Each format has its own quality setting. Both start at 82; existing installations inherit their previous shared quality until separate values are saved. The same number is not an equivalent visual-quality target across codecs or image engines. Original JPEG quality remains separate.
+
+For PNG sources, optional lossless WebP uses `cwebp` at moderate fixed effort, and optional lossless AVIF alpha uses `avifenc` with one worker. WebP preserves meaningful RGB and alpha values; hidden RGB in fully transparent pixels is not guaranteed. AVIF color remains lossy at the selected AVIF quality while its alpha channel is lossless. These modes are source-format rules, not automatic graphics or photograph detection, and do not affect JPEG sources.
+
+The optional profiles require their native encoder and PNG sources of at most 8 bits per channel. If an encoder is disabled, unavailable or fails, the requested profile fails safely without silently using a lossy fallback. Existing sidecars remain intact. Supported ICC profiles and the private-metadata policy still apply. Processing can cost more CPU or produce larger files; the existing skip-larger setting still applies. No universal size saving or full perceptual-quality guarantee is implied.
+
+Changing settings does not re-encode fresh sidecars or repeat original-file optimization. Use explicit force processing to regenerate sidecars after reviewing test images. Default profiles continue to use the existing supported-engine fallbacks.
+
 = What storage is required for backup and restore? =
 
 New backups remain outside the document root in the current site's backup directory. Backup roots must not overlap the WordPress directory or uploads, including uploads configured outside WordPress. The local backup filesystem must support hard links, and original replacement requires safe rename within the upload directory. If safe publication is unavailable, the operation fails without overwriting the current original. Independent WordPress installations must use separate backup roots, including when configuring a custom backup directory.

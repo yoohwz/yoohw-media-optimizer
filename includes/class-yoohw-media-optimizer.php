@@ -109,6 +109,8 @@ class YoOhw_Media_Optimizer {
 			'use_external_binaries'  => 1,
 			'quality'                => 82,
 			'jpeg_quality'           => 82,
+			'webp_png_mode'          => 'lossy',
+			'avif_alpha_mode'        => 'default',
 			'compression_mode'       => 'balanced',
 			'metadata_policy'        => 'remove',
 			'max_width'              => 0,
@@ -317,6 +319,11 @@ class YoOhw_Media_Optimizer {
 		$options['use_external_binaries']  = empty( $options['use_external_binaries'] ) ? 0 : 1;
 		$options['skip_larger_files']      = empty( $options['skip_larger_files'] ) ? 0 : 1;
 		$options['quality']                = max( 1, min( 100, absint( $options['quality'] ) ) );
+		// Keep absent codec qualities tied to the sanitized legacy value without a migration.
+		$options['webp_quality']           = max( 1, min( 100, absint( $options['webp_quality'] ?? $options['quality'] ) ) );
+		$options['avif_quality']           = max( 1, min( 100, absint( $options['avif_quality'] ?? $options['quality'] ) ) );
+		$options['webp_png_mode']          = in_array( $options['webp_png_mode'], array( 'lossy', 'lossless' ), true ) ? $options['webp_png_mode'] : 'lossy';
+		$options['avif_alpha_mode']        = in_array( $options['avif_alpha_mode'], array( 'default', 'lossless' ), true ) ? $options['avif_alpha_mode'] : 'default';
 		$options['jpeg_quality']           = max( 1, min( 100, absint( $options['jpeg_quality'] ) ) );
 		$options['max_width']              = max( 0, absint( $options['max_width'] ) );
 		$options['max_height']             = max( 0, absint( $options['max_height'] ) );
@@ -1482,10 +1489,33 @@ Header append Vary Accept env=REDIRECT_accept
 				</label>
 			</fieldset>
 
+			<div class="yoohw-mo-field-row">
+				<label class="yoohw-mo-field">
+					<span><?php esc_html_e( 'WebP quality', 'yoohw-media-optimizer' ); ?></span>
+					<input type="number" name="webp_quality" min="1" max="100" value="<?php echo esc_attr( $options['webp_quality'] ); ?>">
+				</label>
+				<label class="yoohw-mo-field">
+					<span><?php esc_html_e( 'AVIF color quality', 'yoohw-media-optimizer' ); ?></span>
+					<input type="number" name="avif_quality" min="1" max="100" value="<?php echo esc_attr( $options['avif_quality'] ); ?>">
+				</label>
+			</div>
+			<p class="description"><?php esc_html_e( 'WebP and AVIF quality scales are different: equal numbers do not mean equal visual quality. Each keeps your previous quality setting, or 82 by default. Existing fresh sidecars are kept; use force to regenerate them.', 'yoohw-media-optimizer' ); ?></p>
+
 			<label class="yoohw-mo-field">
-				<span><?php esc_html_e( 'WebP/AVIF quality', 'yoohw-media-optimizer' ); ?></span>
-				<input type="number" name="quality" min="1" max="100" value="<?php echo esc_attr( absint( $options['quality'] ) ); ?>">
-				<em><?php esc_html_e( 'Default 82 keeps product visuals sharp while reducing transfer size.', 'yoohw-media-optimizer' ); ?></em>
+				<span><?php esc_html_e( 'PNG to WebP', 'yoohw-media-optimizer' ); ?></span>
+				<select name="webp_png_mode">
+					<option value="lossy" <?php selected( 'lossy', $options['webp_png_mode'] ); ?>><?php esc_html_e( 'Lossy (default)', 'yoohw-media-optimizer' ); ?></option>
+					<option value="lossless" <?php selected( 'lossless', $options['webp_png_mode'] ); ?>><?php esc_html_e( 'Lossless pixels (requires cwebp)', 'yoohw-media-optimizer' ); ?></option>
+				</select>
+				<em><?php esc_html_e( 'Lossless PNG pixels use fixed cwebp effort settings and ignore WebP quality. RGB hidden by fully transparent pixels may change.', 'yoohw-media-optimizer' ); ?></em>
+			</label>
+			<label class="yoohw-mo-field">
+				<span><?php esc_html_e( 'PNG to AVIF alpha', 'yoohw-media-optimizer' ); ?></span>
+				<select name="avif_alpha_mode">
+					<option value="default" <?php selected( 'default', $options['avif_alpha_mode'] ); ?>><?php esc_html_e( 'Encoder default', 'yoohw-media-optimizer' ); ?></option>
+					<option value="lossless" <?php selected( 'lossless', $options['avif_alpha_mode'] ); ?>><?php esc_html_e( 'Lossless alpha (requires avifenc)', 'yoohw-media-optimizer' ); ?></option>
+				</select>
+				<em><?php esc_html_e( 'Lossless alpha retains transparency while color still uses AVIF quality. Advanced PNG modes support up to 8 bits per channel and fail if their native encoder cannot complete; JPEG behavior is unchanged.', 'yoohw-media-optimizer' ); ?></em>
 			</label>
 
 			<button type="submit" class="button"><?php esc_html_e( 'Save settings', 'yoohw-media-optimizer' ); ?></button>
@@ -1505,6 +1535,8 @@ Header append Vary Accept env=REDIRECT_accept
 
 		check_admin_referer( 'yoohw_mo_save_settings' );
 
+		$current = $this->get_options();
+		$quality = isset( $_POST['quality'] ) ? max( 1, min( 100, absint( wp_unslash( $_POST['quality'] ) ) ) ) : $current['quality'];
 		$options = array(
 			'auto_optimize_uploads'  => empty( $_POST['auto_optimize_uploads'] ) ? 0 : 1,
 			'generate_webp_sidecars' => empty( $_POST['generate_webp_sidecars'] ) ? 0 : 1,
@@ -1513,7 +1545,11 @@ Header append Vary Accept env=REDIRECT_accept
 			'backup_originals'       => empty( $_POST['backup_originals'] ) ? 0 : 1,
 			'use_external_binaries'  => empty( $_POST['use_external_binaries'] ) ? 0 : 1,
 			'skip_larger_files'      => empty( $_POST['skip_larger_files'] ) ? 0 : 1,
-			'quality'                => isset( $_POST['quality'] ) ? max( 1, min( 100, absint( wp_unslash( $_POST['quality'] ) ) ) ) : 82,
+			'quality'                => $quality,
+			'webp_quality'           => isset( $_POST['webp_quality'] ) ? max( 1, min( 100, absint( wp_unslash( $_POST['webp_quality'] ) ) ) ) : ( isset( $_POST['quality'] ) ? $quality : $current['webp_quality'] ),
+			'avif_quality'           => isset( $_POST['avif_quality'] ) ? max( 1, min( 100, absint( wp_unslash( $_POST['avif_quality'] ) ) ) ) : ( isset( $_POST['quality'] ) ? $quality : $current['avif_quality'] ),
+			'webp_png_mode'          => isset( $_POST['webp_png_mode'] ) ? sanitize_key( wp_unslash( $_POST['webp_png_mode'] ) ) : $current['webp_png_mode'],
+			'avif_alpha_mode'        => isset( $_POST['avif_alpha_mode'] ) ? sanitize_key( wp_unslash( $_POST['avif_alpha_mode'] ) ) : $current['avif_alpha_mode'],
 			'jpeg_quality'           => isset( $_POST['jpeg_quality'] ) ? max( 1, min( 100, absint( wp_unslash( $_POST['jpeg_quality'] ) ) ) ) : 82,
 			'max_width'              => isset( $_POST['max_width'] ) ? max( 0, min( 10000, absint( wp_unslash( $_POST['max_width'] ) ) ) ) : 0,
 			'max_height'             => isset( $_POST['max_height'] ) ? max( 0, min( 10000, absint( wp_unslash( $_POST['max_height'] ) ) ) ) : 0,
@@ -1521,6 +1557,9 @@ Header append Vary Accept env=REDIRECT_accept
 			'metadata_policy'        => isset( $_POST['metadata_policy'] ) ? sanitize_key( wp_unslash( $_POST['metadata_policy'] ) ) : 'remove',
 			'delivery_mode'          => isset( $_POST['delivery_mode'] ) ? sanitize_key( wp_unslash( $_POST['delivery_mode'] ) ) : self::DELIVERY_GENERATE_ONLY,
 		);
+
+		$options['webp_png_mode']   = in_array( $options['webp_png_mode'], array( 'lossy', 'lossless' ), true ) ? $options['webp_png_mode'] : 'lossy';
+		$options['avif_alpha_mode'] = in_array( $options['avif_alpha_mode'], array( 'default', 'lossless' ), true ) ? $options['avif_alpha_mode'] : 'default';
 
 		if ( ! in_array( $options['compression_mode'], array( 'lossless', 'balanced', 'aggressive', 'custom' ), true ) ) {
 			$options['compression_mode'] = 'balanced';
@@ -3311,7 +3350,7 @@ Header append Vary Accept env=REDIRECT_accept
 
 		$existed = file_exists( $sidecar_path );
 		$tmp     = $sidecar_path . '.tmp-' . wp_generate_password( 8, false, false ) . '.webp';
-		$saved   = $this->save_webp_file( $source_path, $tmp, absint( $options['quality'] ) );
+		$saved   = $this->save_webp_file( $source_path, $tmp, $options['webp_quality'] );
 
 		if ( is_wp_error( $saved ) ) {
 			wp_delete_file( $tmp );
@@ -3375,7 +3414,7 @@ Header append Vary Accept env=REDIRECT_accept
 	private function generate_avif_sidecar( $source_path, $sidecar_path ) {
 		$options = $this->get_options();
 
-		if ( ! $this->avif_supported() ) {
+		if ( ! $this->avif_supported() && false === $this->png_sidecar_profile( $source_path, 'avif_alpha_mode' ) ) {
 			return array(
 				'status'  => 'unsupported',
 				'message' => __( 'The active image editor cannot write AVIF files and avifenc is unavailable.', 'yoohw-media-optimizer' ),
@@ -3385,7 +3424,7 @@ Header append Vary Accept env=REDIRECT_accept
 
 		$existed = file_exists( $sidecar_path );
 		$tmp     = $sidecar_path . '.tmp-' . wp_generate_password( 8, false, false ) . '.avif';
-		$saved   = $this->save_avif_file( $source_path, $tmp, absint( $options['quality'] ) );
+		$saved   = $this->save_avif_file( $source_path, $tmp, $options['avif_quality'] );
 
 		if ( is_wp_error( $saved ) ) {
 			wp_delete_file( $tmp );
@@ -3437,6 +3476,21 @@ Header append Vary Accept env=REDIRECT_accept
 			'message' => '',
 			'engine'  => $engine,
 		);
+	}
+
+	/** Resolve a requested native PNG profile without reducing high-bit-depth input. */
+	private function png_sidecar_profile( $source, $option ) {
+		if ( 'lossless' !== $this->get_options()[ $option ] ) {
+			return false;
+		}
+		$image = wp_getimagesize( $source );
+		if ( ! is_array( $image ) || IMAGETYPE_PNG !== $image[2] ) {
+			return false;
+		}
+		if ( empty( $image['bits'] ) || ! in_array( (int) $image['bits'], array( 1, 2, 4, 8 ), true ) ) {
+			return new WP_Error( 'yoohw_mo_png_profile_depth', __( 'Advanced PNG sidecar modes require a valid PNG with at most 8 bits per channel. The source was left unchanged.', 'yoohw-media-optimizer' ) );
+		}
+		return true;
 	}
 
 	/** Read JPEG display orientation without assuming an unavailable reader means upright. */
@@ -3519,6 +3573,10 @@ Header append Vary Accept env=REDIRECT_accept
 	}
 
 	private function save_webp_file_unverified( $source_path, $destination, $quality ) {
+		$profile = $this->png_sidecar_profile( $source_path, 'webp_png_mode' );
+		if ( is_wp_error( $profile ) ) {
+			return $profile;
+		}
 		$orientation = $this->jpeg_orientation( $source_path );
 		if ( is_wp_error( $orientation ) ) {
 			return $orientation;
@@ -3527,9 +3585,9 @@ Header append Vary Accept env=REDIRECT_accept
 			return $this->save_oriented_sidecar( $source_path, $destination, $quality, 'image/webp' );
 		}
 
-		$saved = $this->save_webp_file_with_cwebp( $source_path, $destination, $quality );
+		$saved = $this->save_webp_file_with_cwebp( $source_path, $destination, $quality, $profile );
 
-		if ( ! is_wp_error( $saved ) ) {
+		if ( $profile || ! is_wp_error( $saved ) ) {
 			return $saved;
 		}
 
@@ -3569,9 +3627,10 @@ Header append Vary Accept env=REDIRECT_accept
 	 * @param string $source_path Source image path.
 	 * @param string $destination Destination WebP path.
 	 * @param int    $quality WebP quality.
+	 * @param bool   $profile Use the lossless PNG profile.
 	 * @return array|WP_Error
 	 */
-	private function save_webp_file_with_cwebp( $source_path, $destination, $quality ) {
+	private function save_webp_file_with_cwebp( $source_path, $destination, $quality, $profile = false ) {
 		$binary = $this->external_binary_path( 'cwebp' );
 
 		if ( ! $binary ) {
@@ -3585,12 +3644,13 @@ Header append Vary Accept env=REDIRECT_accept
 			'-quiet',
 			'-metadata',
 			'preserve_all' === $this->get_options()['metadata_policy'] ? 'all' : 'icc',
-			'-q',
-			(string) max( 1, min( 100, absint( $quality ) ) ),
+		);
+		$encoding = $profile ? array( '-lossless', '-q', '75', '-m', '4' ) : array( '-q', (string) max( 1, min( 100, absint( $quality ) ) ) );
+		$command = array_merge( $command, $encoding, array(
 			$source_path,
 			'-o',
 			$destination,
-		);
+		) );
 		$run     = $this->run_external_binary( $command, 45 );
 
 		if ( is_wp_error( $run ) ) {
@@ -3630,6 +3690,10 @@ Header append Vary Accept env=REDIRECT_accept
 	}
 
 	private function save_avif_file_unverified( $source_path, $destination, $quality ) {
+		$profile = $this->png_sidecar_profile( $source_path, 'avif_alpha_mode' );
+		if ( is_wp_error( $profile ) ) {
+			return $profile;
+		}
 		$orientation = $this->jpeg_orientation( $source_path );
 		if ( is_wp_error( $orientation ) ) {
 			return $orientation;
@@ -3638,9 +3702,9 @@ Header append Vary Accept env=REDIRECT_accept
 			return $this->save_oriented_sidecar( $source_path, $destination, $quality, 'image/avif' );
 		}
 
-		$saved = $this->save_avif_file_with_avifenc( $source_path, $destination, $quality );
+		$saved = $this->save_avif_file_with_avifenc( $source_path, $destination, $quality, $profile );
 
-		if ( ! is_wp_error( $saved ) ) {
+		if ( $profile || ! is_wp_error( $saved ) ) {
 			return $saved;
 		}
 
@@ -3675,9 +3739,10 @@ Header append Vary Accept env=REDIRECT_accept
 	 * @param string $source_path Source image path.
 	 * @param string $destination Destination AVIF path.
 	 * @param int    $quality AVIF quality.
+	 * @param bool   $profile Use lossless PNG alpha.
 	 * @return array|WP_Error
 	 */
-	private function save_avif_file_with_avifenc( $source_path, $destination, $quality ) {
+	private function save_avif_file_with_avifenc( $source_path, $destination, $quality, $profile = false ) {
 		$binary = $this->external_binary_path( 'avifenc' );
 
 		if ( ! $binary ) {
@@ -3688,7 +3753,7 @@ Header append Vary Accept env=REDIRECT_accept
 		$privacy = 'remove' === $this->get_options()['metadata_policy'] ? array( '--ignore-exif', '--ignore-xmp' ) : array();
 
 		$run = $this->run_external_binary(
-			array_merge( array( $binary ), $privacy, array(
+			array_merge( array( $binary ), $privacy, $profile ? array( '--minalpha', '0', '--maxalpha', '0', '--jobs', '1' ) : array(), array(
 				'-q',
 				(string) max( 1, min( 100, absint( $quality ) ) ),
 				$source_path,
