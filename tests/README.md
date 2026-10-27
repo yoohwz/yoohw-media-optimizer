@@ -16,6 +16,13 @@ Run the integration regression checks against a disposable or local WordPress si
 wp eval-file wp-content/plugins/yoohw-media-optimizer/tests/regression-tests.php
 ```
 
+Run this adversarial suite with Thumbnail Manager skipped when both are
+installed (`wp --skip-plugins=thumbnail-manager eval-file ...`). Its source guard
+intentionally refuses unsafe raw attachment pointers that the standalone restore
+fixtures must install. Use the separate both-plugin cooperation smoke for real
+Repair/Force handoff behavior; a refused fixture precondition is not restore
+failure evidence.
+
 The script creates temporary media files and an attachment, verifies picture
 fallbacks, sidecar path containment, idempotent original optimization, and private
 backup placement, then restores plugin options and removes its test attachment,
@@ -274,6 +281,27 @@ multihost filesystem or browser certification. Browser pause/reload/nonce flows
 require separate evidence. The native mutex currently requires POSIX `flock`.
 
 ## GitHub Actions
+
+`thumbnail-manager-tests.php` runs synthetic counterpart fixtures only when the
+real Thumbnail Manager handoff API is absent. It checks read-only source preview,
+auto-hook suppression, active-job exclusion, external token ownership, exact
+sidecar selection with original optimization globally enabled, same-time rebuild
+and running-item retry, unchanged source/metadata, untouched and selected legacy
+tracking provenance, empty evidence, bounded import progress, failed page-write
+retry, invalid queue kind, completed-run scope, owner/site and unavailable-source
+rejection, plus raw full/companion/traversal/symlink vetoes. Fixtures restore
+settings/queue/user and remove their temporary users, attachments and media.
+Queue-only discard checks cover unavailable source evidence, owner/site/run
+identity, capability, native ownership, media/tracking retention, standalone
+queue reuse, normal-queue protection and late discarded requests. The native
+admin-post discard nonce/authorization transport requires separate HTTP evidence.
+
+Use a disposable site with Thumbnail Manager skipped for this synthetic suite.
+An active real counterpart prints `NOT RUN` for these fixtures. The companion
+Thumbnail Manager cooperation smoke supplies real completed Repair/Force report
+evidence and cross-plugin runtime checks. Synthetic source APIs do not certify
+the real report authority, AJAX nonce/capability transport, browser UI or
+cross-process TM/MO contention; record those checks separately.
 
 `Media Optimizer CI` runs on pull requests, pushes to `main`, and manual dispatch.
 Draft PRs run one representative regression environment (declared Tested up to /

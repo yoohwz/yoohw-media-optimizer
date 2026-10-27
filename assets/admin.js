@@ -52,6 +52,8 @@
 		}
 
 		var startButton = form.querySelector('[data-yoohw-mo-start]');
+		var startLabel = startButton && startButton.getAttribute('data-yoohw-mo-start-label') || config.strings.start;
+		var handoffField = form.querySelector('[name="yotm_job"]');
 		var canStart = !startButton || !startButton.disabled;
 		var stopButton = form.querySelector('[data-yoohw-mo-stop]');
 		var progress = form.querySelector('[data-yoohw-mo-progress]');
@@ -420,14 +422,15 @@
 
 		function setRunningState(nextRunning) {
 			running = nextRunning;
+			var completedHandoff = handoffField && runId && startNew && processedTotal >= totalFound;
 			var forceField = form.querySelector('[name="force"]');
 			if (forceField) {
 				forceField.disabled = nextRunning || !startNew;
 			}
 
 			if (startButton) {
-				startButton.disabled = nextRunning || !canStart;
-				setButtonContent(startButton, nextRunning ? 'dashicons-update' : 'dashicons-controls-play', nextRunning ? config.strings.runningButton : (startNew ? config.strings.start : config.strings.resume));
+				startButton.disabled = nextRunning || !canStart || !!completedHandoff;
+				setButtonContent(startButton, nextRunning ? 'dashicons-update' : 'dashicons-controls-play', completedHandoff ? config.strings.complete : (nextRunning ? config.strings.runningButton : (startNew ? startLabel : config.strings.resume)));
 			}
 
 			setHidden(stopButton, !nextRunning);
@@ -452,6 +455,9 @@
 			data.append('limit', String(limit));
 			data.append('run_id', runId);
 			data.append('start', startNew ? '1' : '0');
+			if (handoffField) {
+				data.append('yotm_job', handoffField.value);
+			}
 
 			if (startNew && forceField && forceField.checked) {
 				data.append('force', '1');
@@ -604,6 +610,11 @@
 				setText(progressNote, config.strings.paused + (serverNote ? ' ' + serverNote : ''));
 				setText(currentNode, formatTemplate(config.strings.processedOf, [formatNumber(processedTotal), formatNumber(totalFound)]));
 				setProgressState('paused');
+			} else if (handoffField && processedTotal >= totalFound) {
+				setHidden(progress, false);
+				setProgress(100, config.strings.complete);
+				setText(currentNode, config.strings.complete);
+				setProgressState('complete');
 			}
 		}
 		setRunningState(false);

@@ -28,6 +28,7 @@ class YoOhw_Media_Optimizer {
 	const META_SCHEMA            = 3;
 	const DELIVERY_GENERATE_ONLY = 'generate_only';
 	const DELIVERY_HTML          = 'html';
+	const THUMBNAIL_MANAGER_API  = 1;
 
 	/**
 	 * Singleton instance.
@@ -141,6 +142,7 @@ class YoOhw_Media_Optimizer {
 		add_action( 'admin_post_yoohw_mo_restore_backups', array( $this, 'handle_restore_backups' ) );
 		add_action( 'admin_post_yoohw_mo_build_queue', array( $this, 'handle_build_queue' ) );
 		add_action( 'admin_post_yoohw_mo_process_queue', array( $this, 'handle_process_queue' ) );
+		add_action( 'admin_post_yoohw_mo_discard_thumbnail_manager', array( $this, 'handle_discard_thumbnail_manager' ) );
 		add_action( 'wp_ajax_yoohw_mo_optimize_batch', array( $this, 'handle_ajax_optimize_batch' ) );
 		add_action( 'wp_ajax_yoohw_mo_test_delivery', array( $this, 'handle_ajax_test_delivery' ) );
 
@@ -492,6 +494,9 @@ class YoOhw_Media_Optimizer {
 	 * @return array
 	 */
 	public function optimize_generated_metadata( $metadata, $attachment_id ) {
+		if ( function_exists( 'yotm_optimizer_mutation_active' ) && yotm_optimizer_mutation_active() ) {
+			return $metadata;
+		}
 		$options = $this->get_options();
 		$attachment_id = absint( $attachment_id );
 
@@ -524,6 +529,10 @@ class YoOhw_Media_Optimizer {
 	public function render_page() {
 		if ( ! current_user_can( self::CAPABILITY ) ) {
 			wp_die( esc_html__( 'You do not have permission to manage media optimization.', 'yoohw-media-optimizer' ) );
+		}
+		if ( $this->get_query_arg( 'yotm_job' ) ) {
+			$this->render_thumbnail_manager_handoff();
+			return;
 		}
 
 		$options = $this->get_options();
@@ -1308,28 +1317,40 @@ Header append Vary Accept env=REDIRECT_accept
 	 * @param array $progress Persisted queue progress.
 	 * @return void
 	 */
-	private function render_batch_form( $progress ) {
+	private function render_batch_form( $progress, $handoff = '' ) {
+		if ( ! $handoff ) {
+			$this->render_thumbnail_manager_discard_form();
+		}
+		if ( ! $handoff && ! empty( $progress['handoffUrl'] ) ) {
+			echo '<p><a class="button button-primary" href="' . esc_url( $progress['handoffUrl'] ) . '">' . esc_html__( 'Open the scoped Thumbnail Manager run', 'yoohw-media-optimizer' ) . '</a></p>';
+			return;
+		}
+		$options = $this->get_options();
+		$can_run = $handoff ? ( ! empty( $options['generate_webp_sidecars'] ) && $this->webp_generation_supported() ) || ( ! empty( $options['generate_avif_sidecars'] ) && $this->avif_supported() ) : $this->can_run_any_optimization();
+		$complete = $handoff && ! empty( $progress['runId'] ) && ! $progress['hasMore'] && $progress['processedTotal'] >= $progress['found'];
+		$can_run = $can_run && ! $complete;
 		?>
 		<form class="yoohw-mo-batch-form" method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" data-yoohw-mo-batch-form>
 			<input type="hidden" name="action" value="yoohw_mo_optimize_batch">
 			<input type="hidden" name="limit" value="<?php echo esc_attr( self::UI_BATCH_LIMIT ); ?>">
 			<input type="hidden" name="run_id" value="<?php echo esc_attr( $progress['runId'] ); ?>">
 			<input type="hidden" name="start" value="<?php echo $progress['hasMore'] ? '0' : '1'; ?>">
+			<?php if ( $handoff ) : ?><input type="hidden" name="yotm_job" value="<?php echo esc_attr( $handoff ); ?>"><?php endif; ?>
 			<?php wp_nonce_field( 'yoohw_mo_optimize_batch' ); ?>
 
 			<div class="yoohw-mo-optimize-console">
 				<div class="yoohw-mo-optimize-console-main">
 					<span class="dashicons dashicons-images-alt2" aria-hidden="true"></span>
 					<div>
-						<h3><?php esc_html_e( 'Media library optimizer', 'yoohw-media-optimizer' ); ?></h3>
-						<p><?php esc_html_e( 'Runs in small automatic batches and keeps the browser updated until the library is complete.', 'yoohw-media-optimizer' ); ?></p>
+						<h3><?php echo esc_html( $handoff ? __( 'Thumbnail Manager handoff', 'yoohw-media-optimizer' ) : __( 'Media library optimizer', 'yoohw-media-optimizer' ) ); ?></h3>
+						<p><?php echo esc_html( $handoff ? __( 'Rebuilds sidecars only for the exact generated files in this saved result. Original optimization is disabled.', 'yoohw-media-optimizer' ) : __( 'Runs in small automatic batches and keeps the browser updated until the library is complete.', 'yoohw-media-optimizer' ) ); ?></p>
 					</div>
 				</div>
 
 				<div class="yoohw-mo-batch-actions">
-					<button type="submit" class="button button-primary button-hero" data-yoohw-mo-start <?php disabled( ! $this->can_run_any_optimization() ); ?>>
+					<button type="submit" class="button button-primary button-hero" data-yoohw-mo-start data-yoohw-mo-start-label="<?php echo esc_attr( $handoff ? __( 'Run exact-file optimization', 'yoohw-media-optimizer' ) : __( 'Start optimizing', 'yoohw-media-optimizer' ) ); ?>" <?php disabled( ! $can_run ); ?>>
 						<span class="dashicons dashicons-controls-play" aria-hidden="true"></span>
-						<?php echo esc_html( $progress['hasMore'] ? __( 'Resume optimizing', 'yoohw-media-optimizer' ) : __( 'Start optimizing', 'yoohw-media-optimizer' ) ); ?>
+						<?php echo esc_html( $complete ? __( 'Optimization complete', 'yoohw-media-optimizer' ) : ( $progress['hasMore'] ? __( 'Resume optimizing', 'yoohw-media-optimizer' ) : ( $handoff ? __( 'Run exact-file optimization', 'yoohw-media-optimizer' ) : __( 'Start optimizing', 'yoohw-media-optimizer' ) ) ) ); ?>
 					</button>
 					<button type="button" class="button button-hero" data-yoohw-mo-stop hidden>
 						<span class="dashicons dashicons-controls-pause" aria-hidden="true"></span>
@@ -1338,6 +1359,7 @@ Header append Vary Accept env=REDIRECT_accept
 				</div>
 			</div>
 
+			<?php if ( ! $handoff ) : ?>
 			<details class="yoohw-mo-advanced-options">
 				<summary><?php esc_html_e( 'Advanced options', 'yoohw-media-optimizer' ); ?></summary>
 				<label class="yoohw-mo-check">
@@ -1345,12 +1367,13 @@ Header append Vary Accept env=REDIRECT_accept
 					<span><?php esc_html_e( 'Force rebuild existing modern sidecars', 'yoohw-media-optimizer' ); ?></span>
 				</label>
 			</details>
+			<?php endif; ?>
 
 			<div class="yoohw-mo-progress" data-yoohw-mo-progress <?php echo empty( $progress['runId'] ) ? 'hidden' : ''; ?> aria-live="polite">
 				<div class="yoohw-mo-progress-head">
 					<div class="yoohw-mo-progress-title">
 						<span class="yoohw-mo-progress-pulse" aria-hidden="true"></span>
-						<strong data-yoohw-mo-progress-title><?php esc_html_e( 'Ready to optimize', 'yoohw-media-optimizer' ); ?></strong>
+						<strong data-yoohw-mo-progress-title><?php echo esc_html( $complete ? __( 'Optimization complete', 'yoohw-media-optimizer' ) : __( 'Ready to optimize', 'yoohw-media-optimizer' ) ); ?></strong>
 					</div>
 					<span data-yoohw-mo-progress-percent><?php echo esc_html( $progress['percent'] ); ?>%</span>
 				</div>
@@ -1358,7 +1381,7 @@ Header append Vary Accept env=REDIRECT_accept
 					<span data-yoohw-mo-progress-fill style="width: <?php echo esc_attr( $progress['percent'] ); ?>%"></span>
 				</div>
 				<div class="yoohw-mo-progress-meta">
-					<span data-yoohw-mo-current><?php esc_html_e( 'Waiting to start', 'yoohw-media-optimizer' ); ?></span>
+					<span data-yoohw-mo-current><?php echo esc_html( $complete ? __( 'Optimization complete', 'yoohw-media-optimizer' ) : __( 'Waiting to start', 'yoohw-media-optimizer' ) ); ?></span>
 					<span><?php esc_html_e( 'Elapsed', 'yoohw-media-optimizer' ); ?> <strong data-yoohw-mo-elapsed>0s</strong></span>
 					<span><?php esc_html_e( 'ETA', 'yoohw-media-optimizer' ); ?> <strong data-yoohw-mo-eta>-</strong></span>
 				</div>
@@ -1627,7 +1650,8 @@ Header append Vary Accept env=REDIRECT_accept
 		if ( ! empty( $result['error'] ) ) {
 			wp_die( esc_html( $result['message'] ), '', array( 'response' => absint( $result['httpStatus'] ) ) );
 		}
-		wp_safe_redirect( add_query_arg( array( 'yoohw_mo_notice' => 'batch_done', 'tab' => 'optimize', 'processed' => $result['processedTotal'], 'created' => $result['created'], 'existing' => $result['existing'], 'skipped' => $result['skipped'], 'failed' => $result['failed'], 'originalOptimized' => $result['originalOptimized'], 'originalSkipped' => $result['originalSkipped'], 'originalFailed' => $result['originalFailed'] ), $this->admin_page_url() ) );
+		$redirect = ! empty( $result['handoffUrl'] ) ? $result['handoffUrl'] : add_query_arg( array( 'yoohw_mo_notice' => 'batch_done', 'tab' => 'optimize', 'processed' => $result['processedTotal'], 'created' => $result['created'], 'existing' => $result['existing'], 'skipped' => $result['skipped'], 'failed' => $result['failed'], 'originalOptimized' => $result['originalOptimized'], 'originalSkipped' => $result['originalSkipped'], 'originalFailed' => $result['originalFailed'] ), $this->admin_page_url() );
+		wp_safe_redirect( $redirect );
 		exit;
 	}
 
@@ -1655,6 +1679,9 @@ Header append Vary Accept env=REDIRECT_accept
 		$start = ! empty( $request['start'] );
 		$force = isset( $request['force'] ) ? (bool) $request['force'] : null;
 		$limit = isset( $request['limit'] ) ? absint( $request['limit'] ) : self::UI_BATCH_LIMIT;
+		if ( ! empty( $request['yotm_job'] ) ) {
+			return $this->run_thumbnail_manager_batch( sanitize_text_field( $request['yotm_job'] ), $run_id, $start, $limit );
+		}
 		return $this->run_browser_batch( $run_id, $start, $force, $limit );
 	}
 
@@ -2554,6 +2581,9 @@ Header append Vary Accept env=REDIRECT_accept
 	public function build_queue() {
 		return $this->with_mutation_lock( function () {
 			$queue = $this->adopt_queue( $this->get_queue() );
+			if ( isset( $queue['handoff'] ) && $this->queue_has_more( $queue ) ) {
+				throw new RuntimeException( 'Finish the scoped Thumbnail Manager run before building a library queue.', 409 );
+			}
 			if ( ! $this->queue_has_more( $queue ) ) {
 				$queue = $this->new_queue();
 			}
@@ -2588,6 +2618,9 @@ Header append Vary Accept env=REDIRECT_accept
 	}
 
 	private function queue_has_more( $queue ) {
+		if ( ! empty( $queue['handoff'] ) && (int) $queue['handoff']['next_page'] <= (int) $queue['handoff']['pages'] ) {
+			return true;
+		}
 		foreach ( $queue['items'] as $item ) {
 			if ( in_array( $item['status'] ?? 'pending', array( 'pending', 'running' ), true ) ) {
 				return true;
@@ -2600,6 +2633,10 @@ Header append Vary Accept env=REDIRECT_accept
 	public function process_queue_batch( $limit = self::DEFAULT_LIMIT, $force = null ) {
 		return $this->with_mutation_lock( function () use ( $limit, $force ) {
 			$queue = $this->adopt_queue( $this->get_queue() );
+			if ( 'thumbnail_manager' === ( $queue['kind'] ?? '' ) ) {
+				$this->assert_thumbnail_manager_queue( $queue );
+				return $this->process_queue_owned( $queue, $limit );
+			}
 			$this->bind_queue_force( $queue, $force );
 			$this->save_queue( $queue );
 			return $this->process_queue_owned( $queue, $limit );
@@ -2610,6 +2647,9 @@ Header append Vary Accept env=REDIRECT_accept
 	public function run_browser_batch( $run_id, $start, $force, $limit = self::UI_BATCH_LIMIT ) {
 		return $this->with_mutation_lock( function () use ( $run_id, $start, $force, $limit ) {
 			$queue = $this->get_queue();
+			if ( 'thumbnail_manager' === ( $queue['kind'] ?? '' ) ) {
+				throw new RuntimeException( 'Resume this scoped run from its Thumbnail Manager handoff preview.', 409 );
+			}
 			$existing_id = $queue['run_id'] ?? '';
 			if ( $run_id && ( ! $existing_id || ! hash_equals( $existing_id, (string) $run_id ) ) ) {
 				throw new RuntimeException( 'This optimization run has been replaced. Reload the page.', 409 );
@@ -2631,6 +2671,322 @@ Header append Vary Accept env=REDIRECT_accept
 		} );
 	}
 
+	/** Discard controls remain available when the source report/plugin is unavailable. */
+	private function render_thumbnail_manager_discard_form() {
+		try {
+			$queue = $this->get_queue();
+		} catch ( RuntimeException $error ) {
+			return;
+		}
+		if ( 'thumbnail_manager' !== ( $queue['kind'] ?? '' ) || ! current_user_can( self::CAPABILITY ) || get_current_user_id() !== $queue['handoff']['owner'] || get_current_blog_id() !== $queue['handoff']['site'] || empty( $queue['run_id'] ) ) {
+			return;
+		}
+		?>
+		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+			<input type="hidden" name="action" value="yoohw_mo_discard_thumbnail_manager">
+			<input type="hidden" name="run_id" value="<?php echo esc_attr( $queue['run_id'] ); ?>">
+			<?php wp_nonce_field( 'yoohw_mo_discard_thumbnail_manager' ); ?>
+			<p><?php esc_html_e( 'Discard this scoped queue to start another run. Existing sidecars, originals, backups and the Thumbnail Manager report are preserved.', 'yoohw-media-optimizer' ); ?></p>
+			<p><button type="submit" class="button"><?php esc_html_e( 'Discard scoped run', 'yoohw-media-optimizer' ); ?></button></p>
+		</form>
+		<?php
+	}
+
+	public function handle_discard_thumbnail_manager() {
+		if ( ! current_user_can( self::CAPABILITY ) ) {
+			wp_die( esc_html__( 'You do not have permission to manage media optimization.', 'yoohw-media-optimizer' ), '', array( 'response' => 403 ) );
+		}
+		check_admin_referer( 'yoohw_mo_discard_thumbnail_manager' );
+		$run_id = isset( $_POST['run_id'] ) ? sanitize_text_field( wp_unslash( $_POST['run_id'] ) ) : '';
+		$this->require_admin_mutation_result( $this->discard_thumbnail_manager_queue( $run_id ) );
+		wp_safe_redirect( add_query_arg( 'tab', 'optimize', $this->admin_page_url() ) );
+		exit;
+	}
+
+	/** Queue-only reset under the existing mutex; no source API or media operation. */
+	public function discard_thumbnail_manager_queue( $run_id ) {
+		return $this->with_mutation_lock( function () use ( $run_id ) {
+			$queue = $this->get_queue();
+			if ( ! current_user_can( self::CAPABILITY ) || ! get_current_user_id() || 'thumbnail_manager' !== ( $queue['kind'] ?? '' ) || get_current_user_id() !== $queue['handoff']['owner'] || get_current_blog_id() !== $queue['handoff']['site'] || ! is_string( $run_id ) || ! $run_id || ! hash_equals( (string) ( $queue['run_id'] ?? '' ), $run_id ) ) {
+				throw new RuntimeException( 'Only this scoped run\'s owner can discard its exact current run ID.', 403 );
+			}
+			$this->save_queue( array( 'created_at' => '', 'updated_at' => current_time( 'mysql' ), 'items' => array() ) );
+			return array( 'discarded' => 1 );
+		}, true );
+	}
+
+	/** Native, read-only preview of one bounded saved-result page. */
+	private function render_thumbnail_manager_handoff() {
+		$token = $this->get_query_arg( 'yotm_job' );
+		$page = max( 1, absint( $this->get_query_arg( 'yotm_page' ) ) );
+		echo '<div class="wrap yoohw-mo-wrap yoohw-mo-handoff"><h1>' . esc_html__( 'Thumbnail Manager handoff', 'yoohw-media-optimizer' ) . '</h1>';
+		echo '<p><a href="' . esc_url( $this->admin_page_url() ) . '">' . esc_html__( 'Media Optimizer', 'yoohw-media-optimizer' ) . '</a></p>';
+		$this->render_thumbnail_manager_discard_form();
+		try {
+			$source = $this->thumbnail_manager_source( $token, $page );
+			$queue = $this->get_queue();
+			$same = isset( $queue['handoff'] ) && hash_equals( (string) $queue['handoff']['token'], $token );
+			if ( $same ) { $this->assert_thumbnail_manager_queue( $queue ); }
+			$options = $this->get_options();
+			echo '<section class="yoohw-mo-card"><h2>' . esc_html( $source['scope_label'] ) . '</h2>';
+			echo '<p><a href="' . esc_url( $source['source_url'] ) . '">' . esc_html__( 'Back to the saved Thumbnail Manager report', 'yoohw-media-optimizer' ) . '</a></p>';
+			echo '<p>' . esc_html__( 'Preview only. Run explicitly to rebuild WebP/AVIF sidecars for these exact generated files. Original files, unrelated sizes and attachment metadata are preserved.', 'yoohw-media-optimizer' ) . '</p>';
+			echo '<p>' . esc_html__( 'Current Media Optimizer settings apply when each batch runs; this preview does not freeze codec settings.', 'yoohw-media-optimizer' ) . '</p>';
+			echo '<p>' . esc_html( sprintf( /* translators: 1: WebP quality or disabled, 2: AVIF quality or disabled, 3: batch size. */ __( 'WebP: %1$s. AVIF: %2$s. Up to %3$d images per batch. Larger-output skipping follows your settings; originals are always disabled.', 'yoohw-media-optimizer' ), $options['generate_webp_sidecars'] ? $options['webp_quality'] : __( 'disabled', 'yoohw-media-optimizer' ), $options['generate_avif_sidecars'] ? $options['avif_quality'] : __( 'disabled', 'yoohw-media-optimizer' ), self::UI_BATCH_LIMIT ) ) . '</p>';
+			if ( ! $same && $this->queue_has_more( $queue ) ) {
+				echo '<p class="notice notice-warning">' . esc_html__( 'Another optimization queue is unfinished. Finish that run before starting this handoff.', 'yoohw-media-optimizer' ) . '</p>';
+			} elseif ( (int) $source['total'] > 0 ) {
+				$progress = $same ? $this->queue_progress( $queue ) : $this->queue_progress( array( 'items' => array() ) );
+				$this->render_batch_form( $progress, $token );
+			}
+			echo '<p><a class="button" href="' . esc_url( add_query_arg( array( 'yotm_job' => $token, 'yotm_page' => $page ), $this->admin_page_url() ) ) . '">' . esc_html__( 'Refresh per-image results', 'yoohw-media-optimizer' ) . '</a></p>';
+			echo '<table class="widefat striped"><thead><tr><th>' . esc_html__( 'Image', 'yoohw-media-optimizer' ) . '</th><th>' . esc_html__( 'Exact generated files', 'yoohw-media-optimizer' ) . '</th><th>' . esc_html__( 'Result', 'yoohw-media-optimizer' ) . '</th></tr></thead><tbody>';
+			foreach ( $source['items'] as $item ) {
+				$id = absint( $item['attachment_id'] ?? 0 );
+				$saved = $same ? ( $queue['items'][ $id ] ?? array() ) : array();
+				echo '<tr><td>' . esc_html( $item['title'] ?? '' ) . ' (#' . esc_html( $id ) . ')</td><td>';
+				foreach ( $item['files'] as $file ) {
+					echo '<p><code>' . esc_html( $file['size'] ) . '</code> — <code>' . esc_html( $file['path'] ) . '</code></p>';
+				}
+				if ( ! $item['files'] ) { echo esc_html__( 'No exact generated-file evidence; this item will be skipped.', 'yoohw-media-optimizer' ); }
+				echo '</td><td>' . esc_html( $saved['status'] ?? __( 'Not run', 'yoohw-media-optimizer' ) ) . '<p>' . esc_html( $saved['message'] ?? '' ) . '</p>';
+				foreach ( $saved['files'] ?? array() as $file ) {
+					echo '<p><code>' . esc_html( $file['source'] ) . '</code><br>' . esc_html( 'WebP: ' . $file['status'] . ' ' . $file['message'] . ' AVIF: ' . $file['avif_status'] . ' ' . $file['avif_message'] ) . '</p>';
+				}
+				echo '</td></tr>';
+			}
+			echo '</tbody></table><p>' . esc_html( sprintf( /* translators: 1: current page, 2: page count, 3: selected image count. */ __( 'Page %1$d of %2$d. Selected images: %3$d.', 'yoohw-media-optimizer' ), $page, max( 1, $source['pages'] ), $source['total'] ) ) . '</p>';
+			foreach ( array( $page - 1 => __( 'Previous page', 'yoohw-media-optimizer' ), $page + 1 => __( 'Next page', 'yoohw-media-optimizer' ) ) as $target => $label ) {
+				if ( $target > 0 && $target <= $source['pages'] ) { echo '<a class="button" href="' . esc_url( add_query_arg( array( 'yotm_job' => $token, 'yotm_page' => $target ), $this->admin_page_url() ) ) . '">' . esc_html( $label ) . '</a> '; }
+			}
+			echo '</section>';
+		} catch ( RuntimeException $error ) {
+			echo '<div class="notice notice-error"><p>' . esc_html( $error->getMessage() ) . '</p></div>';
+		}
+		echo '</div>';
+	}
+
+	/** Read only server-owned TM evidence; browser input is an identifier. */
+	private function thumbnail_manager_source( $token, $page = 1, $attachment_id = 0 ) {
+		if ( ! current_user_can( self::CAPABILITY ) || ! get_current_user_id() ) {
+			throw new RuntimeException( 'An authorized signed-in user is required for a Thumbnail Manager handoff.', 403 );
+		}
+		if ( ! function_exists( 'yotm_optimizer_handoff' ) || ! function_exists( 'yotm_optimizer_active_job' ) ) {
+			throw new RuntimeException( 'Activate a compatible Thumbnail Manager to reopen this saved result.', 409 );
+		}
+		$source = yotm_optimizer_handoff( $token, $page, $attachment_id );
+		if ( is_wp_error( $source ) ) {
+			throw new RuntimeException( esc_html( $source->get_error_message() ), 409 );
+		}
+		if ( ! is_array( $source ) || 1 !== ( $source['schema'] ?? null ) || ! is_string( $source['job_token'] ?? null ) || ! hash_equals( (string) $token, $source['job_token'] ) || ! is_array( $source['items'] ?? null ) || count( $source['items'] ) > 100 || ! is_int( $source['total'] ?? null ) || ! is_int( $source['pages'] ?? null ) || ! is_int( $source['page'] ?? null ) || ! is_string( $source['source_url'] ?? null ) || ! is_string( $source['scope_label'] ?? null ) || $source['total'] < 0 || $source['pages'] < 0 || ( $source['total'] > 0 && $source['pages'] < 1 ) || $source['page'] !== (int) $page || $source['page'] > max( 1, $source['pages'] ) ) {
+			throw new RuntimeException( 'The saved Thumbnail Manager result is invalid or incompatible.', 409 );
+		}
+		return $source;
+	}
+
+	private function assert_thumbnail_manager_queue( $queue ) {
+		$source = $queue['handoff'] ?? array();
+		if ( ! current_user_can( self::CAPABILITY ) || ! get_current_user_id() || (int) ( $source['owner'] ?? 0 ) !== get_current_user_id() || (int) ( $source['site'] ?? 0 ) !== get_current_blog_id() || empty( $source['token'] ) || ! isset( $source['next_page'], $source['pages'], $source['total'] ) || (int) $source['next_page'] < 1 || (int) $source['pages'] < 0 || (int) $source['total'] < 0 || (int) $source['next_page'] > (int) $source['pages'] + 1 ) {
+			throw new RuntimeException( 'This scoped run belongs to another user/site or has invalid provenance. Reopen its Thumbnail Manager result.', 403 );
+		}
+		$current = $this->thumbnail_manager_source( $source['token'] );
+		if ( (int) $current['pages'] !== (int) $source['pages'] || (int) $current['total'] !== (int) $source['total'] ) {
+			throw new RuntimeException( 'The saved Thumbnail Manager selection changed. Reopen the source report.', 409 );
+		}
+	}
+
+	/** Starting and resuming a handoff can never create a library snapshot. */
+	public function run_thumbnail_manager_batch( $token, $run_id, $start, $limit = self::UI_BATCH_LIMIT ) {
+		return $this->with_mutation_lock( function () use ( $token, $run_id, $start, $limit ) {
+			$queue = $this->get_queue();
+			if ( isset( $queue['handoff'] ) && hash_equals( (string) ( $queue['handoff']['token'] ?? '' ), (string) $token ) ) {
+				$this->assert_thumbnail_manager_queue( $queue );
+				if ( ! $run_id || ! hash_equals( (string) $queue['run_id'], (string) $run_id ) ) {
+					throw new RuntimeException( 'The scoped optimization run ID changed. Reload this preview.', 409 );
+				}
+			} else {
+				if ( ! $start || $run_id || $this->queue_has_more( $queue ) ) {
+					throw new RuntimeException( 'Another optimization run is unfinished or this preview is stale. Finish it and reload.', 409 );
+				}
+				$source = $this->thumbnail_manager_source( $token );
+				$queue = array( 'kind' => 'thumbnail_manager', 'run_id' => wp_generate_uuid4(), 'force' => true, 'totals' => $this->empty_queue_totals(), 'created_at' => current_time( 'mysql' ), 'updated_at' => current_time( 'mysql' ), 'items' => array(), 'handoff' => array( 'token' => (string) $token, 'owner' => get_current_user_id(), 'site' => get_current_blog_id(), 'source_url' => $source['source_url'], 'scope_label' => $source['scope_label'], 'pages' => (int) $source['pages'], 'total' => (int) $source['total'], 'next_page' => 1 ) );
+				$this->save_queue( $queue );
+			}
+			return $this->process_queue_owned( $queue, $limit );
+		} );
+	}
+
+	/** One bounded page and its cursor commit in the same verified option write. */
+	private function import_thumbnail_manager_page( &$queue ) {
+		$context = $queue['handoff'];
+		if ( $context['next_page'] > $context['pages'] ) {
+			return;
+		}
+		$source = $this->thumbnail_manager_source( $context['token'], $context['next_page'] );
+		if ( (int) $source['pages'] !== $context['pages'] || (int) $source['total'] !== $context['total'] ) {
+			throw new RuntimeException( 'The saved Thumbnail Manager selection changed.', 409 );
+		}
+		foreach ( $source['items'] as $item ) {
+			$id = absint( $item['attachment_id'] ?? 0 );
+			if ( ! $id || isset( $queue['items'][ $id ] ) || ! is_array( $item['files'] ?? null ) ) {
+				throw new RuntimeException( 'The saved Thumbnail Manager page contains invalid or duplicate items.', 409 );
+			}
+			$queue['items'][ $id ] = array( 'id' => $id, 'status' => 'pending', 'title' => (string) ( $item['title'] ?? '' ), 'message' => '', 'updated_at' => current_time( 'mysql' ) );
+		}
+		++$queue['handoff']['next_page'];
+		if ( count( $queue['items'] ) > $context['total'] || ( $queue['handoff']['next_page'] > $context['pages'] && count( $queue['items'] ) !== $context['total'] ) ) {
+			throw new RuntimeException( 'The saved Thumbnail Manager selection count changed.', 409 );
+		}
+		$this->save_queue( $queue );
+	}
+
+	/** Validate an exact current size against raw metadata and protected sources. */
+	private function thumbnail_manager_files( $attachment_id, $files ) {
+		global $wpdb;
+		$rows = $wpdb->get_results( $wpdb->prepare( "SELECT meta_key, meta_value FROM {$wpdb->postmeta} WHERE post_id = %d AND meta_key IN ('_wp_attached_file','_wp_attachment_metadata','_wp_attachment_backup_sizes')", $attachment_id ), ARRAY_A );
+		if ( $wpdb->last_error ) {
+			throw new RuntimeException( 'Could not read authoritative attachment metadata.' );
+		}
+		$raw = array();
+		foreach ( $rows as $row ) {
+			if ( isset( $raw[ $row['meta_key'] ] ) ) {
+				throw new RuntimeException( 'Attachment metadata is ambiguous.' );
+			}
+			$raw[ $row['meta_key'] ] = maybe_unserialize( $row['meta_value'] );
+		}
+		$metadata = $raw['_wp_attachment_metadata'] ?? null;
+		$full = $raw['_wp_attached_file'] ?? null;
+		if ( ! is_string( $full ) || '' === $full || ! is_array( $metadata ) || ! is_string( $metadata['file'] ?? null ) || '' === $metadata['file'] || ! is_array( $metadata['sizes'] ?? null ) || ! $this->is_supported_attachment( $attachment_id ) ) {
+			throw new RuntimeException( 'Current generated-size metadata is unavailable.' );
+		}
+		$base = dirname( $full );
+		$base = '.' === $base ? '' : $base . '/';
+		$protected = array( $full, $metadata['file'] );
+		foreach ( array( 'original_image', 'source_image', 'thumb', 'animated_video', 'animated_video_poster' ) as $key ) {
+			if ( isset( $metadata[ $key ] ) ) {
+				if ( ! is_string( $metadata[ $key ] ) ) { throw new RuntimeException( 'A protected source reference is invalid.' ); }
+				$protected[] = $base . $metadata[ $key ];
+			}
+		}
+		if ( isset( $raw['_wp_attachment_backup_sizes'] ) ) {
+			if ( ! is_array( $raw['_wp_attachment_backup_sizes'] ) ) { throw new RuntimeException( 'Attachment backup references are invalid.' ); }
+			foreach ( $raw['_wp_attachment_backup_sizes'] as $backup ) {
+				if ( ! is_array( $backup ) || ! is_string( $backup['file'] ?? null ) ) { throw new RuntimeException( 'An attachment backup reference is invalid.' ); }
+				$protected[] = $base . $backup['file'];
+			}
+		}
+		$validated = array();
+		$aliases = function_exists( 'yotm_media_source_aliases' ) ? yotm_media_source_aliases( $attachment_id ) : array();
+		if ( is_wp_error( $aliases ) || ! is_array( $aliases ) ) {
+			throw new RuntimeException( 'Current protected-source aliases are unavailable.' );
+		}
+		foreach ( $files as $file ) {
+			if ( ! is_array( $file ) || ! is_string( $file['size'] ?? null ) ) {
+				throw new RuntimeException( 'The exact generated-file descriptor is invalid.' );
+			}
+			$size = $file['size'] ?? '';
+			$relative = $file['path'] ?? '';
+			$hash = $file['sha256'] ?? '';
+			$size_file = $metadata['sizes'][ $size ]['file'] ?? '';
+			$path = is_string( $relative ) ? $this->upload_relative_to_path( $relative ) : '';
+			if ( ! is_string( $size ) || ! $size || 'full' === $size || ! is_string( $relative ) || ! is_string( $hash ) || ! preg_match( '/^[a-f0-9]{64}$/', $hash ) || ! is_string( $size_file ) || wp_basename( $size_file ) !== $size_file || $relative !== $base . $size_file || in_array( $relative, $protected, true ) || ! $path || $relative !== $this->relative_upload_path_for_storage( $path ) || ! is_file( $path ) || ! is_readable( $path ) || ! $this->is_supported_source_path( $path ) || ! hash_equals( $hash, $this->file_hash( $path ) ) ) {
+				throw new RuntimeException( 'An exact generated file changed, is protected, or is outside safe uploads storage.' );
+			}
+			foreach ( $aliases as $alias ) {
+				if ( 'generated' !== ( $alias['source_kind'] ?? '' ) && wp_normalize_path( realpath( $path ) ) === ( $alias['path'] ?? '' ) ) {
+					throw new RuntimeException( 'The selected generated path is also a protected source alias.' );
+				}
+			}
+			if ( function_exists( 'yotm_media_source_path_is_authoritative' ) && false !== yotm_media_source_path_is_authoritative( $path ) ) {
+				throw new RuntimeException( 'The selected path is protected or its site-wide source ownership is unknown. Run a new Thumbnail Manager check before optimizing it.' );
+			}
+			$validated[ $relative ] = array( 'label' => $size, 'path' => $path, 'sha256' => $hash );
+		}
+		return array_values( $validated );
+	}
+
+	/** No attachment expansion, original optimization, or attachment metadata write. */
+	private function optimize_thumbnail_manager_item( $queue, $attachment_id ) {
+		$result = array( 'files' => array(), 'summary' => array(), 'message' => '' );
+		try {
+			$source = $this->thumbnail_manager_source( $queue['handoff']['token'], 1, $attachment_id );
+			if ( 1 !== count( $source['items'] ) || $attachment_id !== (int) ( $source['items'][0]['attachment_id'] ?? 0 ) || ! is_array( $source['items'][0]['files'] ?? null ) ) {
+				throw new RuntimeException( 'Exact generated-file evidence is unavailable for this attachment.' );
+			}
+			if ( ! $source['items'][0]['files'] ) {
+				$result['message'] = 'No exact generated-file evidence is available; nothing was expanded or optimized.';
+				return $result;
+			}
+			$files = $this->thumbnail_manager_files( $attachment_id, $source['items'][0]['files'] );
+			$options = $this->get_options();
+			$options['optimize_originals'] = 0;
+			$previous = get_post_meta( $attachment_id, self::META_KEY, true );
+			if ( ! empty( $previous ) && ( ! is_array( $previous ) || ! is_array( $previous['files'] ?? null ) ) ) {
+				throw new RuntimeException( 'Existing optimizer tracking is invalid; recovery history was preserved.' );
+			}
+			$tracking = is_array( $previous ) ? $previous : array( 'attachment_id' => $attachment_id, 'schema' => self::META_SCHEMA, 'version' => YOOHW_MEDIA_OPTIMIZER_VERSION, 'options' => array( 'optimize_originals' => 0 ), 'files' => array() );
+			$tracked = array();
+			foreach ( is_array( $tracking['files'] ?? null ) ? $tracking['files'] : array() as $row ) {
+				if ( ! is_array( $row ) || ! is_string( $row['source'] ?? null ) || '' === $row['source'] || isset( $tracked[ $row['source'] ] ) ) {
+					throw new RuntimeException( 'Existing optimizer file tracking is ambiguous; recovery history was preserved.' );
+				}
+				$tracked[ $row['source'] ] = $row;
+			}
+			foreach ( $files as $file ) {
+				$this->mutation_checkpoint();
+				if ( ! hash_equals( $file['sha256'], $this->file_hash( $file['path'] ) ) ) {
+					throw new RuntimeException( 'The generated source changed before encoding.' );
+				}
+				$key = $this->relative_upload_path_for_storage( $file['path'] );
+				$row = $this->optimize_file( $file, true, $options );
+				$result['files'][] = $row;
+				foreach ( array( 'status' => '', 'avif_status' => 'avif_' ) as $field => $prefix ) {
+					$status = $prefix . $row[ $field ];
+					$result['summary'][ $status ] = ( $result['summary'][ $status ] ?? 0 ) + 1;
+				}
+				// Only sidecar fields change. Retain private original history and its option provenance.
+				$merged = $row;
+				$prior = $tracked[ $key ] ?? array();
+				$prior['_tracking_options'] = is_array( $tracking['options'] ?? null ) ? $tracking['options'] : array();
+				foreach ( array( 'backup_path', 'original_input_hash', 'optimized_hash', 'original_options_fingerprint' ) as $field ) {
+					if ( isset( $prior[ $field ] ) ) { $merged[ $field ] = $prior[ $field ]; }
+				}
+				$current_hash = $this->file_hash( $file['path'] );
+				$previous_status = sanitize_key( $prior['original_status'] ?? '' );
+				$prior_options = is_array( $tracking['options'] ?? null ) ? $tracking['options'] : array();
+				if ( $current_hash && in_array( $previous_status, array( 'optimized', 'existing', 'no_change', 'skipped_larger' ), true ) && $this->legacy_original_tracking_matches( $prior, $prior_options, $file['path'] ) ) {
+					$prior_options['jpeg_quality'] = absint( $options['jpeg_quality'] ?? 82 );
+					$prior['optimized_hash'] = $current_hash;
+					$merged['optimized_hash'] = $current_hash;
+					$merged['original_options_fingerprint'] = $this->original_options_fingerprint( $prior_options );
+				}
+				if ( $current_hash && ! empty( $prior['optimized_hash'] ) && hash_equals( (string) $prior['optimized_hash'], $current_hash ) ) {
+					foreach ( array( 'original_status', 'original_message', 'original_size', 'saved_bytes', 'saved_percent', 'engine', 'mode', 'metadata_policy' ) as $field ) {
+						if ( isset( $prior[ $field ] ) ) { $merged[ $field ] = $prior[ $field ]; }
+					}
+				} elseif ( $current_hash && 'restored' === $previous_status ) {
+					$merged['original_status'] = 'restored';
+				}
+				foreach ( array( 'label', 'source', 'source_size', 'source_mtime', 'sidecar', 'webp_sidecar', 'sidecar_size', 'webp_size', 'webp_engine', 'avif_sidecar', 'avif_size', 'avif_engine', 'status', 'message', 'avif_status', 'avif_message' ) as $field ) {
+					$merged[ $field ] = $row[ $field ];
+				}
+				$tracked[ $key ] = $merged;
+			}
+			$tracking['files'] = array_values( $tracked );
+			$tracking['updated_at'] = current_time( 'mysql' );
+			$this->mutation_checkpoint();
+			update_post_meta( $attachment_id, self::META_KEY, $tracking );
+			if ( get_post_meta( $attachment_id, self::META_KEY, true ) !== $tracking ) {
+				throw new RuntimeException( 'Could not persist exact-file optimizer tracking.' );
+			}
+			$this->invalidate_savings_cache( $attachment_id );
+		} catch ( RuntimeException $error ) {
+			$result['summary']['failed'] = ( $result['summary']['failed'] ?? 0 ) + 1;
+			$result['message'] = $error->getMessage();
+		}
+		return $result;
+	}
+
 	private function bind_queue_force( &$queue, $force ) {
 		if ( null === $queue['force'] ) {
 			$queue['force'] = (bool) $force;
@@ -2640,6 +2996,11 @@ Header append Vary Accept env=REDIRECT_accept
 	}
 
 	private function process_queue_owned( $queue, $limit ) {
+		$handoff = 'thumbnail_manager' === ( $queue['kind'] ?? '' );
+		if ( $handoff ) {
+			$this->assert_thumbnail_manager_queue( $queue );
+			$this->import_thumbnail_manager_page( $queue );
+		}
 		$limit = max( 1, min( 200, absint( $limit ) ) );
 		$started = microtime( true );
 		$processed = 0;
@@ -2656,7 +3017,13 @@ Header append Vary Accept env=REDIRECT_accept
 			$queue['items'][ $id ]['status'] = 'running';
 			$queue['items'][ $id ]['updated_at'] = current_time( 'mysql' );
 			$this->save_queue( $queue );
-			if ( ! $this->is_supported_attachment( $id ) ) {
+			if ( $handoff ) {
+				$optimized = $this->optimize_thumbnail_manager_item( $queue, absint( $id ) );
+				$summary = $optimized['summary'];
+				$terminal = empty( $optimized['files'] ) && empty( $summary['failed'] ) ? 'skipped' : ( ! empty( $summary['failed'] ) || ! empty( $summary['avif_failed'] ) ? 'failed' : 'done' );
+				$queue['items'][ $id ]['files'] = $optimized['files'];
+				$queue['items'][ $id ]['message'] = $optimized['message'] ?? '';
+			} elseif ( ! $this->is_supported_attachment( $id ) ) {
 				$summary = array();
 				$terminal = 'skipped';
 			} else {
@@ -2676,7 +3043,9 @@ Header append Vary Accept env=REDIRECT_accept
 				}
 			}
 			$queue['items'][ $id ]['status'] = $terminal;
-			$queue['items'][ $id ]['message'] = 'failed' === $terminal ? 'File operations failed.' : '';
+			if ( ! $handoff ) {
+				$queue['items'][ $id ]['message'] = 'failed' === $terminal ? 'File operations failed.' : '';
+			}
 			$queue['items'][ $id ]['updated_at'] = current_time( 'mysql' );
 			$queue['updated_at'] = current_time( 'mysql' );
 			$this->save_queue( $queue );
@@ -2686,11 +3055,17 @@ Header append Vary Accept env=REDIRECT_accept
 
 	private function queue_progress( $queue ) {
 		$status = $this->summarize_queue( $queue );
-		$total = $status['total'];
-		$processed = $total - $status['pending'] - $status['running'];
+		$total = isset( $queue['handoff'] ) ? (int) $queue['handoff']['total'] : $status['total'];
+		$processed = $status['total'] - $status['pending'] - $status['running'];
 		$totals = array_merge( $this->empty_queue_totals(), $queue['totals'] ?? array() );
 		$result = array( 'runId' => $queue['run_id'] ?? '', 'force' => (bool) ( $queue['force'] ?? false ), 'found' => $total, 'processedTotal' => $processed, 'percent' => $total ? round( 100 * $processed / $total, 1 ) : 100, 'hasMore' => $this->queue_has_more( $queue ), 'legacyTotalsUnknown' => ! empty( $queue['legacy_totals_unknown'] ), 'skippedItems' => $status['skipped'], 'created' => $totals['created'], 'existing' => $totals['existing'], 'skipped' => $totals['skipped'], 'failed' => $totals['failed'], 'originalOptimized' => $totals['original_optimized'], 'originalSkipped' => $totals['original_skipped'], 'originalFailed' => $totals['original_failed'] );
 		$result['note'] = ! empty( $queue['legacy_totals_unknown'] ) ? __( 'File-operation totals from before this queue was upgraded are unavailable.', 'yoohw-media-optimizer' ) : '';
+		if ( isset( $queue['handoff'] ) ) {
+			$result['note'] = __( 'Thumbnail Manager handoff: only its exact generated files are rebuilt. Original optimization is disabled. Reload this preview to inspect per-image results.', 'yoohw-media-optimizer' );
+			if ( (int) $queue['handoff']['owner'] === get_current_user_id() && (int) $queue['handoff']['site'] === get_current_blog_id() ) {
+				$result['handoffUrl'] = add_query_arg( 'yotm_job', $queue['handoff']['token'], $this->admin_page_url() );
+			}
+		}
 		if ( $status['skipped'] ) {
 			$result['note'] .= ' ' . sprintf( /* translators: %d: unavailable snapshot attachments. */ __( '%d snapshot attachment(s) no longer available were skipped.', 'yoohw-media-optimizer' ), $status['skipped'] );
 		}
@@ -2699,14 +3074,63 @@ Header append Vary Accept env=REDIRECT_accept
 
 	private function browser_queue_progress() {
 		try {
-			return $this->queue_progress( $this->get_queue() );
+			$queue = $this->get_queue();
+			$token = $this->get_query_arg( 'yotm_job' );
+			if ( $token && ( ! isset( $queue['handoff'] ) || ! hash_equals( (string) $queue['handoff']['token'], $token ) ) ) {
+				$queue = array( 'items' => array() );
+			}
+			return $this->queue_progress( $queue );
 		} catch ( RuntimeException $error ) {
 			return array_merge( $this->queue_progress( array( 'items' => array() ) ), $this->mutation_error( $error->getMessage() ) );
 		}
 	}
 
+	/** Begin a TM-owned scope without bypassing native or token ownership. */
+	public function begin_thumbnail_manager_mutation() {
+		return $this->acquire_queue_lock( true );
+	}
+
+	/** Check ownership before TM publishes or removes live media. */
+	public function checkpoint_thumbnail_manager_mutation( $token ) {
+		if ( ! is_string( $token ) || ! $this->mutation_token || ! hash_equals( $this->mutation_token, $token ) ) {
+			return new WP_Error( 'yoohw_mo_mutation_stopped', 'Media mutation ownership was lost.' );
+		}
+		try {
+			$this->mutation_checkpoint();
+			return true;
+		} catch ( RuntimeException $error ) {
+			return new WP_Error( 'yoohw_mo_mutation_stopped', $error->getMessage() );
+		}
+	}
+
+	/** Release only this scope's token; never unlink the shared lockfile. */
+	public function end_thumbnail_manager_mutation( $token ) {
+		if ( ! is_string( $token ) || ! $this->release_queue_lock( $token ) ) {
+			return new WP_Error( 'yoohw_mo_mutation_stopped', 'Could not verify media mutation ownership at completion.' );
+		}
+		return true;
+	}
+
+	/** Read TM's existing authority while holding the same native mutex. */
+	private function assert_thumbnail_manager_idle() {
+		if ( function_exists( 'yotm_optimizer_active_job' ) ) {
+			$active = yotm_optimizer_active_job();
+		} elseif ( function_exists( 'yotm_job_find_destructive_lock' ) ) {
+			$ready = function_exists( 'yotm_job_storage_ready' ) ? yotm_job_storage_ready() : false;
+			if ( true !== $ready ) {
+				throw new RuntimeException( 'Thumbnail Manager storage is unavailable. Resolve it before optimizing media.', 503 );
+			}
+			$active = yotm_job_find_destructive_lock();
+		} else {
+			return;
+		}
+		if ( false !== $active ) {
+			throw new RuntimeException( esc_html( is_wp_error( $active ) ? $active->get_error_message() : 'Thumbnail Manager has active media maintenance. Finish or recover that job before optimizing media.' ), 409 );
+		}
+	}
+
 	/** A single descriptor is held through encoding, publication and persistence. */
-	private function acquire_queue_lock() {
+	private function acquire_queue_lock( $thumbnail_manager = false ) {
 		if ( is_resource( $this->mutation_handle ) || DIRECTORY_SEPARATOR !== '/' || ! function_exists( 'flock' ) ) {
 			return new WP_Error( 'yoohw_mo_queue_locked', 'Media mutation locking is busy or unavailable.', array( 'status' => is_resource( $this->mutation_handle ) ? 409 : 503 ) );
 		}
@@ -2742,6 +3166,9 @@ Header append Vary Accept env=REDIRECT_accept
 		$this->mutation_token = wp_generate_uuid4();
 		try {
 			$this->check_lockfile();
+			if ( ! $thumbnail_manager ) {
+				$this->assert_thumbnail_manager_idle();
+			}
 			$existing = $this->fresh_option( self::QUEUE_LOCK_OPTION, array() );
 			if ( $existing && ( ! is_array( $existing ) || empty( $existing['native'] ) ) && ( ! is_array( $existing ) || time() - absint( $existing['acquired_at'] ?? time() ) <= 1800 ) ) {
 				throw new RuntimeException( 'A legacy queue worker may still be running.', 409 );
@@ -2823,8 +3250,8 @@ Header append Vary Accept env=REDIRECT_accept
 		return array( 'httpStatus' => $status, 'locked' => 409 === $status ? 1 : 0, 'error' => 'yoohw_mo_mutation_stopped', 'message' => $message, 'processed' => 0, 'done' => 0, 'queued' => 0, 'restored' => 0, 'deleted' => 0, 'failed' => 1, 'summary' => array( 'failed' => 1 ) );
 	}
 
-	private function with_mutation_lock( $callback ) {
-		$token = $this->acquire_queue_lock();
+	private function with_mutation_lock( $callback, $thumbnail_manager = false ) {
+		$token = $this->acquire_queue_lock( $thumbnail_manager );
 		if ( is_wp_error( $token ) ) {
 			return $this->mutation_error( $token->get_error_message(), $token->get_error_data()['status'] ?? 500 );
 		}
@@ -2938,6 +3365,15 @@ Header append Vary Accept env=REDIRECT_accept
 				throw new RuntimeException( 'The persisted optimization queue is invalid.' );
 			}
 			$queue = array( 'created_at' => '', 'updated_at' => '', 'items' => array() );
+		}
+		if ( ( array_key_exists( 'handoff', $queue ) && 'thumbnail_manager' !== ( $queue['kind'] ?? '' ) ) || ( array_key_exists( 'kind', $queue ) && 'thumbnail_manager' !== $queue['kind'] ) || ( 'thumbnail_manager' === ( $queue['kind'] ?? '' ) && ! is_array( $queue['handoff'] ?? null ) ) ) {
+			throw new RuntimeException( 'The persisted optimization queue scope is invalid.', 409 );
+		}
+		if ( isset( $queue['handoff'] ) ) {
+			$source = $queue['handoff'];
+			if ( ! is_string( $source['token'] ?? null ) || '' === $source['token'] || ! is_int( $source['owner'] ?? null ) || ! is_int( $source['site'] ?? null ) || ! is_int( $source['next_page'] ?? null ) || ! is_int( $source['pages'] ?? null ) || ! is_int( $source['total'] ?? null ) || $source['next_page'] < 1 || $source['pages'] < 0 || $source['total'] < 0 || $source['next_page'] > $source['pages'] + 1 || count( $queue['items'] ) > $source['total'] || ( $source['next_page'] > $source['pages'] && count( $queue['items'] ) !== $source['total'] ) ) {
+				throw new RuntimeException( 'The persisted Thumbnail Manager import scope is invalid.', 409 );
+			}
 		}
 		return $queue;
 	}
