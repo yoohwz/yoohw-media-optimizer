@@ -243,11 +243,22 @@ try {
 		update_option( YoOhw_Media_Optimizer::OPTION_KEY, array_merge( $options, array( 'auto_optimize_uploads' => 0 ) ) );
 		$small_threshold = static function() { return 64; }; add_filter( 'big_image_size_threshold', $small_threshold, 1000 );
 		try {
+			// Older core versions intentionally do not scale PNG uploads. Compare
+			// the actual parent lifecycle rather than assuming this feature exists.
+			remove_filter( 'wp_image_editors', array( $optimizer, 'thumbnail_image_editors' ), PHP_INT_MAX );
+			try {
+				list( $baseline_id, $baseline_path ) = $attach( 'scaled-parent.png', $fixture( 'rgba', $profiles['display_p3'] ) );
+				wp_generate_attachment_metadata( $baseline_id, $baseline_path );
+				$parent_scales_png = get_attached_file( $baseline_id ) !== $baseline_path;
+			} finally { add_filter( 'wp_image_editors', array( $optimizer, 'thumbnail_image_editors' ), PHP_INT_MAX ); }
 			list( $id, $path ) = $attach( 'scaled-p3.png', $fixture( 'rgba', $profiles['display_p3'] ) ); $hash = hash_file( 'sha256', $path );
 			$metadata = wp_generate_attachment_metadata( $id, $path );
 			$scaled = get_attached_file( $id ); $dims = wp_getimagesize( $scaled );
-			$assert( $scaled !== $path && basename( $path ) === $metadata['original_image'] && $hash === hash_file( 'sha256', $path ), 'Core scaled image replaced/lost the upload master.' );
-			$check( $scaled, 'display_p3', 1, $dims[0], $dims[1], 'rgba', 2 ); $privacy( $scaled );
+			$assert( $parent_scales_png === ( $scaled !== $path ) && $hash === hash_file( 'sha256', $path ), 'Core PNG scaling changed parent behavior or the upload master.' );
+			if ( $parent_scales_png ) {
+				$assert( basename( $path ) === $metadata['original_image'], 'Scaled image lost its original reference.' );
+				$check( $scaled, 'display_p3', 1, $dims[0], $dims[1], 'rgba', 2 ); $privacy( $scaled );
+			} else { echo "Core PNG scaling: NOT RUN — this WordPress parent retains PNG uploads at their original size.\n"; }
 		} finally { remove_filter( 'big_image_size_threshold', $small_threshold, 1000 ); }
 		class YoOhw_MO_Thumbnail_Fault extends YoOhw_Media_Optimizer_Thumbnail_Imagick {
 			public function drop_profile() { $this->image->removeImageProfile( 'icc' ); }

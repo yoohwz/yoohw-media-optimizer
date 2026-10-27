@@ -151,7 +151,10 @@ bounded PNG decompression and header/segment budgets.
 
 The `thumbnail` child exercises real `wp_generate_attachment_metadata()` with the
 standard Imagick editor: sRGB/P3/Adobe RGB PNGs, RGB/RGBA/palette+tRNS, soft and
-cropped sizes, auto-off/auto-on sidecars, regeneration and core scaling. Exact
+cropped sizes, auto-off/auto-on sidecars, regeneration and core scaling where
+the parent WordPress version scales PNGs. Older core versions retaining PNG
+upload dimensions are characterized against their unwrapped editor; their
+positive scaled-PNG branch is explicitly NOT RUN. Exact
 serialized ICC, raw and independent LCMS samples, alpha, private chunks and master
 hashes are asserted. Untagged PNG/JPEG parent output, custom/GD order and the own
 optimizer adapter are characterized separately. Malformed/loaded-mismatched ICC,
