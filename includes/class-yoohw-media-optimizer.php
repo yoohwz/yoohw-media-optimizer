@@ -142,6 +142,7 @@ class YoOhw_Media_Optimizer {
 		add_action( 'admin_post_yoohw_mo_restore_backups', array( $this, 'handle_restore_backups' ) );
 		add_action( 'admin_post_yoohw_mo_build_queue', array( $this, 'handle_build_queue' ) );
 		add_action( 'admin_post_yoohw_mo_process_queue', array( $this, 'handle_process_queue' ) );
+		add_action( 'admin_post_yoohw_mo_discard_thumbnail_manager', array( $this, 'handle_discard_thumbnail_manager' ) );
 		add_action( 'wp_ajax_yoohw_mo_optimize_batch', array( $this, 'handle_ajax_optimize_batch' ) );
 		add_action( 'wp_ajax_yoohw_mo_test_delivery', array( $this, 'handle_ajax_test_delivery' ) );
 
@@ -1317,6 +1318,9 @@ Header append Vary Accept env=REDIRECT_accept
 	 * @return void
 	 */
 	private function render_batch_form( $progress, $handoff = '' ) {
+		if ( ! $handoff ) {
+			$this->render_thumbnail_manager_discard_form();
+		}
 		if ( ! $handoff && ! empty( $progress['handoffUrl'] ) ) {
 			echo '<p><a class="button button-primary" href="' . esc_url( $progress['handoffUrl'] ) . '">' . esc_html__( 'Open the scoped Thumbnail Manager run', 'yoohw-media-optimizer' ) . '</a></p>';
 			return;
@@ -1342,7 +1346,7 @@ Header append Vary Accept env=REDIRECT_accept
 				</div>
 
 				<div class="yoohw-mo-batch-actions">
-					<button type="submit" class="button button-primary button-hero" data-yoohw-mo-start <?php disabled( ! $can_run ); ?>>
+					<button type="submit" class="button button-primary button-hero" data-yoohw-mo-start data-yoohw-mo-start-label="<?php echo esc_attr( $handoff ? __( 'Run exact-file optimization', 'yoohw-media-optimizer' ) : __( 'Start optimizing', 'yoohw-media-optimizer' ) ); ?>" <?php disabled( ! $can_run ); ?>>
 						<span class="dashicons dashicons-controls-play" aria-hidden="true"></span>
 						<?php echo esc_html( $progress['hasMore'] ? __( 'Resume optimizing', 'yoohw-media-optimizer' ) : ( $handoff ? __( 'Run exact-file optimization', 'yoohw-media-optimizer' ) : __( 'Start optimizing', 'yoohw-media-optimizer' ) ) ); ?>
 					</button>
@@ -2665,12 +2669,57 @@ Header append Vary Accept env=REDIRECT_accept
 		} );
 	}
 
+	/** Discard controls remain available when the source report/plugin is unavailable. */
+	private function render_thumbnail_manager_discard_form() {
+		try {
+			$queue = $this->get_queue();
+		} catch ( RuntimeException $error ) {
+			return;
+		}
+		if ( 'thumbnail_manager' !== ( $queue['kind'] ?? '' ) || ! current_user_can( self::CAPABILITY ) || get_current_user_id() !== $queue['handoff']['owner'] || get_current_blog_id() !== $queue['handoff']['site'] || empty( $queue['run_id'] ) ) {
+			return;
+		}
+		?>
+		<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+			<input type="hidden" name="action" value="yoohw_mo_discard_thumbnail_manager">
+			<input type="hidden" name="run_id" value="<?php echo esc_attr( $queue['run_id'] ); ?>">
+			<?php wp_nonce_field( 'yoohw_mo_discard_thumbnail_manager' ); ?>
+			<p><?php esc_html_e( 'Discard this scoped queue to start another run. Existing sidecars, originals, backups and the Thumbnail Manager report are preserved.', 'yoohw-media-optimizer' ); ?></p>
+			<p><button type="submit" class="button"><?php esc_html_e( 'Discard scoped run', 'yoohw-media-optimizer' ); ?></button></p>
+		</form>
+		<?php
+	}
+
+	public function handle_discard_thumbnail_manager() {
+		if ( ! current_user_can( self::CAPABILITY ) ) {
+			wp_die( esc_html__( 'You do not have permission to manage media optimization.', 'yoohw-media-optimizer' ), '', array( 'response' => 403 ) );
+		}
+		check_admin_referer( 'yoohw_mo_discard_thumbnail_manager' );
+		$run_id = isset( $_POST['run_id'] ) ? sanitize_text_field( wp_unslash( $_POST['run_id'] ) ) : '';
+		$this->require_admin_mutation_result( $this->discard_thumbnail_manager_queue( $run_id ) );
+		wp_safe_redirect( add_query_arg( 'tab', 'optimize', $this->admin_page_url() ) );
+		exit;
+	}
+
+	/** Queue-only reset under the existing mutex; no source API or media operation. */
+	public function discard_thumbnail_manager_queue( $run_id ) {
+		return $this->with_mutation_lock( function () use ( $run_id ) {
+			$queue = $this->get_queue();
+			if ( ! current_user_can( self::CAPABILITY ) || ! get_current_user_id() || 'thumbnail_manager' !== ( $queue['kind'] ?? '' ) || get_current_user_id() !== $queue['handoff']['owner'] || get_current_blog_id() !== $queue['handoff']['site'] || ! is_string( $run_id ) || ! $run_id || ! hash_equals( (string) ( $queue['run_id'] ?? '' ), $run_id ) ) {
+				throw new RuntimeException( 'Only this scoped run\'s owner can discard its exact current run ID.', 403 );
+			}
+			$this->save_queue( array( 'created_at' => '', 'updated_at' => current_time( 'mysql' ), 'items' => array() ) );
+			return array( 'discarded' => 1 );
+		}, true );
+	}
+
 	/** Native, read-only preview of one bounded saved-result page. */
 	private function render_thumbnail_manager_handoff() {
 		$token = $this->get_query_arg( 'yotm_job' );
 		$page = max( 1, absint( $this->get_query_arg( 'yotm_page' ) ) );
 		echo '<div class="wrap yoohw-mo-wrap yoohw-mo-handoff"><h1>' . esc_html__( 'Thumbnail Manager handoff', 'yoohw-media-optimizer' ) . '</h1>';
 		echo '<p><a href="' . esc_url( $this->admin_page_url() ) . '">' . esc_html__( 'Media Optimizer', 'yoohw-media-optimizer' ) . '</a></p>';
+		$this->render_thumbnail_manager_discard_form();
 		try {
 			$source = $this->thumbnail_manager_source( $token, $page );
 			$queue = $this->get_queue();
@@ -3199,8 +3248,8 @@ Header append Vary Accept env=REDIRECT_accept
 		return array( 'httpStatus' => $status, 'locked' => 409 === $status ? 1 : 0, 'error' => 'yoohw_mo_mutation_stopped', 'message' => $message, 'processed' => 0, 'done' => 0, 'queued' => 0, 'restored' => 0, 'deleted' => 0, 'failed' => 1, 'summary' => array( 'failed' => 1 ) );
 	}
 
-	private function with_mutation_lock( $callback ) {
-		$token = $this->acquire_queue_lock();
+	private function with_mutation_lock( $callback, $thumbnail_manager = false ) {
+		$token = $this->acquire_queue_lock( $thumbnail_manager );
 		if ( is_wp_error( $token ) ) {
 			return $this->mutation_error( $token->get_error_message(), $token->get_error_data()['status'] ?? 500 );
 		}

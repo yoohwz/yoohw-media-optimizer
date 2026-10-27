@@ -125,6 +125,12 @@ changed source files or metadata, missing evidence and an inactive counterpart
 fail closed without falling back to a whole-library run. Original backup and
 repeat-optimization history is retained when sidecar tracking is updated.
 
+If the report expires or Thumbnail Manager becomes unavailable, the run's owner
+can choose Discard scoped run from Media Optimizer or the handoff preview. This
+explicit queue-only action preserves every file, backup and source report, and
+allows a new standalone or scoped run. It remains available without the source
+plugin; a late request for the discarded run cannot resume it.
+
 Both plugins keep their standalone workflows. Their compatible versions share
 the optimizer's native mutation mutex: active Thumbnail Manager maintenance
 blocks optimizer writes between batches, and optimizer work blocks new

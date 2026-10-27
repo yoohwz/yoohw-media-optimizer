@@ -16,6 +16,13 @@ Run the integration regression checks against a disposable or local WordPress si
 wp eval-file wp-content/plugins/yoohw-media-optimizer/tests/regression-tests.php
 ```
 
+Run this adversarial suite with Thumbnail Manager skipped when both are
+installed (`wp --skip-plugins=thumbnail-manager eval-file ...`). Its source guard
+intentionally refuses unsafe raw attachment pointers that the standalone restore
+fixtures must install. Use the separate both-plugin cooperation smoke for real
+Repair/Force handoff behavior; a refused fixture precondition is not restore
+failure evidence.
+
 The script creates temporary media files and an attachment, verifies picture
 fallbacks, sidecar path containment, idempotent original optimization, and private
 backup placement, then restores plugin options and removes its test attachment,
@@ -284,6 +291,10 @@ tracking provenance, empty evidence, bounded import progress, failed page-write
 retry, invalid queue kind, completed-run scope, owner/site and unavailable-source
 rejection, plus raw full/companion/traversal/symlink vetoes. Fixtures restore
 settings/queue/user and remove their temporary users, attachments and media.
+Queue-only discard checks cover unavailable source evidence, owner/site/run
+identity, capability, native ownership, media/tracking retention, standalone
+queue reuse, normal-queue protection and late discarded requests. The native
+admin-post discard nonce/authorization transport requires separate HTTP evidence.
 
 Use a disposable site with Thumbnail Manager skipped for this synthetic suite.
 An active real counterpart prints `NOT RUN` for these fixtures. The companion

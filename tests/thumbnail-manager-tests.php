@@ -192,6 +192,33 @@ return static function( $optimizer, $invoke, $assert ) {
 		++$wrong_site['handoff']['site'];
 		update_option( YoOhw_Media_Optimizer::QUEUE_OPTION, $wrong_site, false );
 		$assert( ! empty( $optimizer->process_queue_batch( 1 )['error'] ), 'A handoff resumed under another site identity.' );
+		$assert( ! empty( $optimizer->discard_thumbnail_manager_queue( $first_empty['runId'] )['error'] ), 'A handoff was discarded under another site identity.' );
+		$wrong_site['handoff']['site'] = get_current_blog_id();
+		update_option( YoOhw_Media_Optimizer::QUEUE_OPTION, $wrong_site, false );
+		$GLOBALS['yoohw_mo_tm_fixture']['unavailable'] = true;
+		$before_discard = get_option( YoOhw_Media_Optimizer::QUEUE_OPTION );
+		$assert( ! empty( $optimizer->discard_thumbnail_manager_queue( 'wrong-run' )['error'] ) && $before_discard === get_option( YoOhw_Media_Optimizer::QUEUE_OPTION ), 'A stale run ID discarded a scoped queue.' );
+		wp_set_current_user( $users[1] );
+		$assert( ! empty( $optimizer->discard_thumbnail_manager_queue( $first_empty['runId'] )['error'] ), 'Another owner discarded a scoped queue.' );
+		wp_set_current_user( 0 );
+		$assert( ! empty( $optimizer->discard_thumbnail_manager_queue( $first_empty['runId'] )['error'] ), 'An unauthenticated caller discarded a scoped queue.' );
+		wp_set_current_user( $users[0] );
+		$GLOBALS['yoohw_mo_tm_fixture']['busy'] = true;
+		$token = $optimizer->begin_thumbnail_manager_mutation();
+		$assert( is_string( $token ) && ! empty( $optimizer->discard_thumbnail_manager_queue( $first_empty['runId'] )['locked'] ), 'Queue discard bypassed an active native mutex owner.' );
+		$optimizer->end_thumbnail_manager_mutation( $token );
+		$token = '';
+		$sidecar_before_discard = hash_file( 'sha256', $selected . '.webp' );
+		$tracking_before_discard = get_post_meta( $id, YoOhw_Media_Optimizer::META_KEY, true );
+		$discarded = $optimizer->discard_thumbnail_manager_queue( $first_empty['runId'] );
+		$assert( empty( $discarded['error'] ) && 1 === $discarded['discarded'] && ! isset( get_option( YoOhw_Media_Optimizer::QUEUE_OPTION )['handoff'] ), 'Unavailable source evidence prevented an authorized queue-only discard.' );
+		$assert( $sidecar_before_discard === hash_file( 'sha256', $selected . '.webp' ) && $tracking_before_discard === get_post_meta( $id, YoOhw_Media_Optimizer::META_KEY, true ) && $metadata === get_post_meta( $id, '_wp_attachment_metadata', true ), 'Discard changed media or attachment tracking.' );
+		$GLOBALS['yoohw_mo_tm_fixture']['busy'] = false;
+		$normal = $optimizer->build_queue();
+		$assert( empty( $normal['error'] ) && ! isset( get_option( YoOhw_Media_Optimizer::QUEUE_OPTION )['kind'] ), 'Discard did not restore the standalone library queue workflow.' );
+		$normal_queue = get_option( YoOhw_Media_Optimizer::QUEUE_OPTION );
+		$assert( ! empty( $optimizer->discard_thumbnail_manager_queue( $normal['runId'] )['error'] ) && $normal_queue === get_option( YoOhw_Media_Optimizer::QUEUE_OPTION ), 'Scoped discard removed a normal library queue.' );
+		$assert( ! empty( $optimizer->run_thumbnail_manager_batch( 'fixture-saved-result', $first_empty['runId'], false, 1 )['error'] ) && $normal_queue === get_option( YoOhw_Media_Optimizer::QUEUE_OPTION ), 'A late discarded handoff replaced a new standalone queue.' );
 	} finally {
 		if ( $token ) { $optimizer->end_thumbnail_manager_mutation( $token ); }
 		$GLOBALS['yoohw_mo_tm_fixture'] = array();

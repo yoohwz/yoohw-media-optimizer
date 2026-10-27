@@ -1,3 +1,7 @@
+.yoohw-mo-handoff [hidden] {
+	display: none !important;
+}
+
 .yoohw-mo-handoff table {
 	table-layout: fixed;
 	width: 100%;
