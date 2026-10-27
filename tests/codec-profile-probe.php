@@ -198,7 +198,7 @@ try {
 						$bytes = substr( $bytes, 0, 2 ) . "\xff\xe2" . pack( 'n', strlen( $body ) + 2 ) . $body . substr( $bytes, 2 );
 					}
 					list( $id, $path ) = $attach( $engine . '-' . $format . '-' . $case . ( 'png' === $case ? '.png' : '.jpg' ), $bytes );
-					$hashes = array();
+					$hashes = $diagnostics = array();
 					foreach ( array( 23, 89 ) as $quality ) {
 						$changes = array( 'generate_webp_sidecars' => 'webp' === $format ? 1 : 0, 'generate_avif_sidecars' => 'avif' === $format ? 1 : 0, 'webp_quality' => 'webp' === $format ? $quality : 47, 'avif_quality' => 'avif' === $format ? $quality : 47 );
 						$result = $run( $id, $changes ); $check_hooks(); $file = $result['files'][0];
@@ -213,6 +213,7 @@ try {
 						$oracle = $dir . '/expected-' . $engine . '-' . $format . '-' . $case . '-' . $quality . '.' . $format;
 						$assert( ! is_wp_error( $expected->save( $oracle, $mime ) ), 'Real quality oracle cannot save.' );
 						$hashes[] = hash_file( 'sha256', $path . '.' . $format );
+						$diagnostics[] = array( 'requested' => $quality, 'editor_quality' => $expected->get_quality(), 'chunk' => substr( file_get_contents( $path . '.' . $format ), 12, 4 ), 'bytes' => filesize( $path . '.' . $format ), 'hash' => end( $hashes ) );
 						$assert( end( $hashes ) === hash_file( 'sha256', $oracle ), 'Encoded quality differs from post-MIME oracle: ' . $engine . '/' . $format . '/' . $case . '/' . $quality );
 						$size = getimagesize( $path . '.' . $format );
 						$assert( $mime === $size['mime'] && ( 6 === $orientation ? array( 32, 48 ) : ( 'png' === $case ? array( 16, 16 ) : array( 48, 32 ) ) ) === array( $size[0], $size[1] ), 'Quality save changed MIME/display dimensions.' );
@@ -226,7 +227,7 @@ try {
 						$fresh = $run( $id, array_merge( $changes, array( 'webp_quality' => 51, 'avif_quality' => 52 ) ), false );
 						$assert( 'existing' === $fresh['files'][0][$status] && end( $hashes ) === hash_file( 'sha256', $path . '.' . $format ), 'Quality change replayed a fresh sidecar.' );
 					}
-					$assert( $hashes[0] !== $hashes[1], 'Different qualities produced identical real editor output: ' . $engine . '/' . $format . '/' . $case );
+					$assert( $hashes[0] !== $hashes[1], 'Different qualities produced identical real editor output: ' . $engine . '/' . $format . '/' . $case . ' ' . wp_json_encode( array( 'php' => PHP_VERSION, 'wordpress' => get_bloginfo( 'version' ), 'imagick' => phpversion( 'imagick' ), 'library' => class_exists( 'Imagick' ) ? Imagick::getVersion() : array(), 'encodes' => $diagnostics ) ) );
 				}
 			}
 		}
