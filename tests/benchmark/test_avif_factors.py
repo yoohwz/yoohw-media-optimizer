@@ -41,6 +41,17 @@ class FactorsTests(unittest.TestCase):
         with self.assertRaises(FileExistsError):
             F.prepare(self.manifest, self.out)
 
+    def test_opaque_preparation_does_not_invent_an_alpha_plane(self):
+        image = Image.new('RGB', (16, 12), (1, 2, 3))
+        image.save(self.source, icc_profile=self.icc)
+        self.row['sha256'] = F.digest(self.source)
+        self.manifest.write_text(json.dumps({'images': [self.row]}))
+        path = F.prepare(self.manifest, self.out)
+        row = json.loads(path.read_text())['images'][0]
+        with Image.open(self.out / row['path']) as result:
+            self.assertEqual(result.mode, 'RGB')
+            self.assertEqual(result.convert('RGBA').getpixel((0, 0)), (1, 2, 3, 255))
+
     def test_stale_source_and_overlap_do_not_create_output(self):
         self.source.write_bytes(b'changed')
         with self.assertRaisesRegex(ValueError, 'hash mismatch'):

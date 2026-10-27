@@ -83,7 +83,7 @@ class MeasureTests(unittest.TestCase):
         for data in invalids:
             self.save(data)
             with self.subTest(data=data), self.assertRaises((ValueError, FileNotFoundError)):
-                measure.measure(self.manifest, output, self.receipt, sys.executable, 'unused')
+                measure.measure(self.manifest, output, self.receipt, sys.executable, sys.executable)
             self.assertFalse(output.exists())
         self.save()
         self.source.write_bytes(b'mutated')
@@ -92,7 +92,7 @@ class MeasureTests(unittest.TestCase):
 
     def test_output_overlap_and_symlink_escape_refused(self):
         with self.assertRaisesRegex(ValueError, 'overlaps'):
-            measure.measure(self.manifest, self.corpus / 'scores', self.receipt, sys.executable, 'unused')
+            measure.measure(self.manifest, self.corpus / 'scores', self.receipt, sys.executable, sys.executable)
         outside = self.root / 'outside.avif'
         outside.write_bytes(self.avif.read_bytes())
         self.avif.unlink()
@@ -115,10 +115,21 @@ class MeasureTests(unittest.TestCase):
         self.assertIsNone(scores['opaque_rgb_mae'])
         self.assertEqual(Image.open(self.root / 'fixed-alpha.png').getchannel('A').tobytes(), reference.getchannel('A').tobytes())
 
+    def test_explicit_failed_receipt_or_error_row_is_rejected(self):
+        for change in ['execution', 'row']:
+            data = json.loads(json.dumps(self.data))
+            if change == 'execution':
+                data['execution_ok'] = False
+            else:
+                data['rows'][0]['error'] = 'partial encoder failure'
+            self.save(data)
+            with self.assertRaises(ValueError):
+                measure.validate_receipt(self.manifest, self.receipt)
+
     def test_success_pipeline_records_common_decoder_and_receipt_cost(self):
         with Image.open(self.source) as image:
             image.save(self.avif, format='AVIF', quality=82)
-        self.row.update(sha256=digest(self.avif), bytes=self.avif.stat().st_size)
+        self.row.update(sha256=digest(self.avif), bytes=self.avif.stat().st_size, encode_process={'peak_rss_bytes': 1024})
         self.save()
         output = self.root / 'scores'
         def process(args, _timeout):
@@ -128,12 +139,12 @@ class MeasureTests(unittest.TestCase):
                     image.save(args[-1], format='PNG')
             return dict(stdout=INFO, stderr='', returncode=0, timed_out=False)
         with patch.object(measure, 'run_process', side_effect=process), patch.object(measure, 'metric_score', return_value=dict(ssimulacra2_worst=99)):
-            self.assertEqual(measure.measure(self.manifest, output, self.receipt, sys.executable, 'mock'), 0)
+            self.assertEqual(measure.measure(self.manifest, output, self.receipt, sys.executable, sys.executable), 0)
         report = json.loads((output / 'results.json').read_text())
         row = report['rows'][0]
         self.assertTrue(report['execution_ok'])
         self.assertEqual(row['seconds'], .02)
-        self.assertIsNone(row['encode_peak_rss_bytes'])
+        self.assertEqual(row['encode_peak_rss_bytes'], 1024)
         self.assertEqual(len(row['decoded_rgba_sha256']), 64)
         self.assertEqual(row['actual_decoded_metadata']['Matrix Coeffs.'], '6')
         self.assertTrue((output / 'a' / '420_default' / 'fixed-alpha.png').is_file())
@@ -144,7 +155,7 @@ class MeasureTests(unittest.TestCase):
             return dict(stdout=INFO, stderr='', returncode=7, timed_out=False)
         output = self.root / 'scores'
         with patch.object(measure, 'run_process', side_effect=process):
-            self.assertEqual(measure.measure(self.manifest, output, self.receipt, sys.executable, 'unused'), 1)
+            self.assertEqual(measure.measure(self.manifest, output, self.receipt, sys.executable, sys.executable), 1)
         report = json.loads((output / 'results.json').read_text())
         self.assertFalse(report['execution_ok'])
         self.assertFalse(report['source_hashes_unchanged'])
@@ -155,7 +166,7 @@ class MeasureTests(unittest.TestCase):
         process = dict(stdout=INFO, stderr='', returncode=0, timed_out=False)
         output = self.root / 'scores'
         with patch.object(measure, 'run_process', return_value=process):
-            self.assertEqual(measure.measure(self.manifest, output, self.receipt, sys.executable, 'unused'), 1)
+            self.assertEqual(measure.measure(self.manifest, output, self.receipt, sys.executable, sys.executable), 1)
         report = json.loads((output / 'results.json').read_text())
         self.assertFalse(report['execution_ok'])
         self.assertTrue(report['source_hashes_unchanged'])

@@ -46,6 +46,8 @@ def prepare(manifest, output):
                 rgba = image.convert('RGBA')
                 # Start a fresh image so private text/EXIF/XMP do not survive.
                 clean = Image.frombytes('RGBA', rgba.size, rgba.tobytes())
+                if rgba.getchannel('A').getextrema() == (255, 255):
+                    clean = clean.convert('RGB')
                 target = out / 'images' / (entry['id'] + '.png')
                 clean.save(target, icc_profile=icc or None)
                 with Image.open(target) as saved:
@@ -54,11 +56,11 @@ def prepare(manifest, output):
                     assert not saved.getexif() and not saved.info.get('xmp')
                 row = {k: v for k, v in entry.items() if k not in ('source', 'path', 'sha256', 'reference_path', 'reference_sha256')}
                 row.update(path=target.relative_to(out).as_posix(), sha256=digest(target),
-                           original_source_sha256=entry['sha256'], mode='RGBA',
+                           original_source_sha256=entry['sha256'], mode=clean.mode,
                            width=rgba.width, height=rgba.height, orientation=1,
                            rgba_sha256=hashlib.sha256(rgba.tobytes()).hexdigest(),
                            icc_sha256=hashlib.sha256(icc).hexdigest() if icc else None,
-                           preparation='8-bit RGBA serialization; original source encoding pixels and ICC unchanged; privacy stripped')
+                           preparation='8-bit RGB/RGBA serialization;  original source encoding pixels and ICC unchanged; privacy stripped')
                 rows.append(row)
     finally:
         if digest(manifest) != manifest_hash or any(digest(Path(e['source'])) != e['sha256'] for e in entries):
@@ -87,9 +89,9 @@ def encode(manifest, output, backend, executable, timeout=120):
     entries = read_manifest(manifest)
     for entry in entries:
         with Image.open(entry['source']) as image:
-            if image.format != 'PNG' or image.mode != 'RGBA' or max(image.size) > 1600 or image.getexif().get(274, 1) != 1:
-                raise ValueError('expected prepared neutral RGBA PNG at most1600px')
-            if hashlib.sha256(image.tobytes()).hexdigest() != entry.get('rgba_sha256'):
+            if image.format != 'PNG' or image.mode not in ('RGB', 'RGBA') or max(image.size) > 1600 or image.getexif().get(274, 1) != 1:
+                raise ValueError('expected prepared neutral RGB/RGBA PNG at most1600px')
+            if hashlib.sha256(image.convert('RGBA').tobytes()).hexdigest() != entry.get('rgba_sha256'):
                 raise ValueError('prepared pixel identity mismatch')
     tool = Path(shutil.which(executable) or executable).resolve(strict=True)
     mh, th = digest(manifest), digest(tool)

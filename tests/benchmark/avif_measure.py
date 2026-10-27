@@ -35,6 +35,8 @@ def validate_receipt(manifest, receipt, label=None):
     images, data = read_manifest(manifest), json.loads(receipt.read_text())
     if not isinstance(data, dict) or data.get('manifest_sha256') != digest(manifest) or data.get('source_hashes_unchanged') is not True:
         raise ValueError('stale receipt manifest or source hashes')
+    if data.get('execution_ok') is False:
+        raise ValueError('receipt records a failed execution')
     if 'rows' in data:
         rows, profiles = data['rows'], data.get('expected_profiles')
     else:
@@ -43,6 +45,10 @@ def validate_receipt(manifest, receipt, label=None):
         rows = [dict(row, profile=label) for row in data['images'] if isinstance(row, dict) and row.get('codec') == 'avif']
         if any(not isinstance(row, dict) for row in data['images']):
             raise ValueError('receipt row must be an object')
+        for row in rows:
+            control = row.get('test_instrumentation', {}).get('avif_chroma')
+            if control in ('420', '444'):
+                row['requested_chroma'] = control
         profiles = [label]
     if not isinstance(rows, list) or not isinstance(profiles, list) or not profiles or any(not isinstance(p, str) or not re.fullmatch(r'[A-Za-z0-9_-]+', p) for p in profiles) or len(set(profiles)) != len(profiles):
         raise ValueError('expected nonempty unique profile and row arrays')
@@ -53,6 +59,8 @@ def validate_receipt(manifest, receipt, label=None):
             raise ValueError('receipt row must be an object')
         if not isinstance(row.get('id'), str) or not isinstance(row.get('profile'), str):
             raise ValueError('invalid receipt id/profile')
+        if row.get('error'):
+            raise ValueError('receipt contains an encoding error')
         key = (row['id'], row['profile'])
         if key not in expected or key in seen or row.get('source_sha256') != sources[key[0]]['sha256']:
             raise ValueError('duplicate, unexpected, or stale receipt row')
@@ -110,13 +118,15 @@ def measure(manifest, output, receipt, avifdec, metric, label=None):
     images, rows = validate_receipt(manifest, receipt, label)
     inputs = {str(path): digest(path) for path in [manifest, receipt] + [Path(entry['source']) for entry in images] + [Path(row['encoded_path']) for row in rows]}
     sources = {entry['id']: entry for entry in images}
-    decoder_hash = digest(shutil.which(avifdec) or avifdec)
+    decoder_path, metric_path = Path(shutil.which(avifdec) or avifdec), Path(shutil.which(metric) or metric)
+    decoder_hash, metric_hash = digest(decoder_path), digest(metric_path)
+    inputs.update({str(decoder_path): decoder_hash, str(metric_path): metric_hash})
     output.mkdir(mode=0o700)
     decoder_flags = ['-j', '1', '-d', '8', '--upsampling', 'bilinear']
-    report = dict(manifest_sha256=inputs[str(manifest)], receipt_sha256=inputs[str(receipt)], rows=[], execution_ok=False, decoder_flags=decoder_flags, decoder_sha256=decoder_hash)
+    report = dict(manifest_sha256=inputs[str(manifest)], receipt_sha256=inputs[str(receipt)], rows=[], execution_ok=False, decoder_flags=decoder_flags, decoder_sha256=decoder_hash, metric_sha256=metric_hash, scorer_sha256=digest(Path(__file__)), common_runner_sha256=digest(Path(__file__).with_name('run.py')))
     try:
         for encoded in rows:
-            row = dict(encoded, status='error', requested_label=encoded['profile'], encode_peak_rss_bytes=encoded.get('enc_process', {}).get('peak_rss_bytes') if isinstance(encoded.get('enc_process'), dict) else None)
+            row = dict(encoded, status='error', requested_label=encoded['profile'], encode_peak_rss_bytes=encoded.get('encode_process', {}).get('peak_rss_bytes') if isinstance(encoded.get('encode_process'), dict) else None)
             report['rows'].append(row)
             directory = output / encoded['id'] / encoded['profile']
             directory.mkdir(parents=True)
