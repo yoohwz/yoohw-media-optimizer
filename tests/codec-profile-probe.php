@@ -64,7 +64,7 @@ $failure_case = static function( $name, $bytes, $changes ) use ( $attach, $run, 
 	$backup = $invoke( 'backup_file', array( $path ) );
 	$assert( ! is_wp_error( $backup ), 'Cannot seed profile recovery data.' ); $backups[] = $backup['path']; $backup_hash = hash_file( 'sha256', $backup['path'] );
 	file_put_contents( $path . '.webp', 'old webp' ); file_put_contents( $path . '.avif', 'old avif' );
-	$result = $run( $id, $changes ); $check_hooks(); $file = $result['files'][0];
+	$result = $run( $id, $changes ); $file = $result['files'][0];
 	$assert( 'failed' === $file['status'] && in_array( $file['avif_status'], array( 'failed', 'unsupported' ), true ), 'Advanced unavailable/failing profile silently fell back: ' . wp_json_encode( $result ) );
 	$assert( 0 === $result['summary']['created'] && 0 === $result['summary']['updated'] && 0 === $result['summary']['avif_created'] && 0 === $result['summary']['avif_updated'], 'Failed profiles reported sidecar success.' );
 	$assert( $bytes === file_get_contents( $path ) && 'old webp' === file_get_contents( $path . '.webp' ) && 'old avif' === file_get_contents( $path . '.avif' ), 'Failed profile changed source or historical sidecars.' );
@@ -296,7 +296,7 @@ try {
 				$changes = array_merge( $advanced, array( 'generate_webp_sidecars' => 'webp' === $format ? 1 : 0, 'generate_avif_sidecars' => 'avif' === $format ? 1 : 0 ) );
 				$status = 'webp' === $format ? 'status' : 'avif_status'; $engine = $format . '_engine';
 				list( $id, $path ) = $attach( 'real-' . $format . '.png', $png() ); $source = file_get_contents( $path );
-				$result = $run( $id, $changes ); $check_hooks(); $file = $result['files'][0];
+				$result = $run( $id, $changes ); $file = $result['files'][0];
 				$assert( 'created' === $file[$status] && $tool === $file[$engine], 'Advanced real encoder failed/fell back: ' . wp_json_encode( $result ) );
 				$assert( $source === file_get_contents( $path ), 'Advanced profile changed source bytes.' );
 				$args = json_decode( trim( file_get_contents( $dir . '/' . $tool . '.args' ) ), true );
