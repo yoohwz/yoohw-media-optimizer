@@ -62,8 +62,10 @@ options/filters/PATH and remove their own attachments, media and recovery backup
 Run this suite only where these temporary mutations are appropriate.
 
 The quality fixtures are generated in PHP from four asymmetric flat-color
-quadrants, with a small valid generated sRGB ICC profile (see
-[fixture provenance](fixtures/README.md)). GD checks all EXIF orientations 1–8;
+quadrants (see [fixture provenance](fixtures/README.md)). General GD/orientation
+fixtures are untagged so GD coverage stays independent of ICC support; the native
+preserve-all lossless case explicitly embeds the generated sRGB profile. GD
+checks all EXIF orientations 1–8;
 Imagick checks rotation 6 and reflection 2 when available. Fixed expected raw
 output dimensions and quadrant ordering establish displayed identity separately
 from EXIF metadata, including rejection of non-neutral output orientation tags.
@@ -79,7 +81,8 @@ Lossy WebP/AVIF use flat-region samples: RGB/composite tolerance 25/255 and GD
 alpha tolerance 2/127. These bounded oracles are not broad perceptual or
 wide-gamut/color-management certification. Valid ICC decoding is checked with
 Imagick; exact source-profile bytes are recovered from backups/restores. No new
-output metadata-preservation policy is asserted.
+output metadata-preservation policy is asserted by those general quality probes;
+the dedicated color-profile suite below checks the new profile/privacy contract.
 
 Neutral JPEG/palette/RGBA native checks require the actual reported `cwebp` or
 `avifenc` engine, decode its real output, and verify MIME, dimensions,
@@ -112,6 +115,42 @@ profiles, external sidecar repair, or every encoder/version/server combination.
 also fails. The representative PHP 8.4 CI profile sets this variable. Optional
 local/support-boundary environments explicitly print `NOT RUN` with the missing
 engine/format reason, rather than claiming that coverage passed.
+
+`color-profile-tests.php` runs fresh `color-profile-probe.php` children for GD,
+Imagick, native encoders, malformed/failing sources, successful-but-stripped native
+output and controlled optional-tool argument checks. Committed generated sRGB,
+Display P3 and Adobe RGB compatible profiles cover RGB JPEG, valid split APP2,
+palette+tRNS and RGBA PNG, EXIF rotation/reflection, resize, exact recovery bytes,
+private metadata removal and preserve-all. Both exact ICC and raw pixel samples
+are checked. Color-managed samples use hardcoded independent Pillow/LittleCMS
+reference values; a deliberately converted-and-mislabelled P3 fixture must fail
+the oracle. Lossy tolerance is bounded to those flat samples, not a perceptual or
+full gamut certification.
+
+Matching original fingerprints and fresh historical sidecars stay unchanged.
+Tagged GD-only, malformed/split/duplicate/over-limit profiles, channel mismatch,
+CMYK and unsupported gamma cases retain source, recovery bytes and old sidecars
+with truthful counters. Fault editors/native executables that lose ICC cannot
+publish their successful-but-invalid output or leak owned stages. Native-strip
+isolates WebP so legitimate original/AVIF work cannot masquerade as a failed
+operation. Controlled optional executables prove flag/bypass policy, not real
+jpegoptim/pngquant/oxipng/optipng image fidelity.
+
+The independent managed-color oracle additionally requires LCMS in Imagick.
+Unavailable optional editor/CMS/native branches print `NOT RUN`; the required
+native profile fails instead of skipping them. Matching ICC bytes alone cannot
+prove correct pixel/profile association. The bounded reader supports RGB
+matrix/TRC ICC v2/v4 with XYZ PCS; it does not certify arbitrary ICC conformance,
+LUT/GRAY/CMYK conversion or HDR. Profile inspection uses 1 MiB ICC limits,
+bounded PNG decompression and header/segment budgets.
+
+Some ImageMagick PNG writers emit a duplicate ICC text profile despite privacy
+exclusions (observed on Local ImageMagick 7.1.1-15). Strict output verification
+rejects these candidates, leaving media unchanged; no PNG container rewrite or
+metadata bypass is used. Successful tagged PNG/privacy paths are required in the
+representative CI runtime. An Imagick build without LCMS can preserve profiles
+but cannot supply the independent CMS oracle, so its optional managed checks are
+reported separately rather than passed silently.
 
 `backup-restore-tests.php` checks source/target containment, trusted uploads-root
 aliases versus descendant symlinks, private-root/site aliases and canonical

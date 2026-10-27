@@ -9,6 +9,8 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
+require_once __DIR__ . '/class-yoohw-media-optimizer-color.php';
+
 /**
  * Generates modern sidecar files for WordPress media.
  */
@@ -1460,10 +1462,10 @@ Header append Vary Accept env=REDIRECT_accept
 			<label class="yoohw-mo-field">
 				<span><?php esc_html_e( 'Metadata policy', 'yoohw-media-optimizer' ); ?></span>
 			<select name="metadata_policy">
-					<option value="remove" <?php selected( 'remove', $options['metadata_policy'] ); ?>><?php esc_html_e( 'Remove metadata when re-encoding', 'yoohw-media-optimizer' ); ?></option>
+					<option value="remove" <?php selected( 'remove', $options['metadata_policy'] ); ?>><?php esc_html_e( 'Remove private metadata; retain color profiles', 'yoohw-media-optimizer' ); ?></option>
 					<option value="preserve_all" <?php selected( 'preserve_all', $options['metadata_policy'] ); ?>><?php esc_html_e( 'Preserve all metadata when possible', 'yoohw-media-optimizer' ); ?></option>
 				</select>
-				<em><?php esc_html_e( 'Metadata preservation depends on the active GD/Imagick editor; backups keep the untouched original.', 'yoohw-media-optimizer' ); ?></em>
+				<em><?php esc_html_e( 'Supported color profiles are retained. Files are left unchanged when their colors cannot be preserved safely. Backups keep the untouched original.', 'yoohw-media-optimizer' ); ?></em>
 			</label>
 
 			<fieldset class="yoohw-mo-field yoohw-mo-radio-field">
@@ -3451,9 +3453,35 @@ Header append Vary Accept env=REDIRECT_accept
 		return $orientation >= 1 && $orientation <= 8 ? $orientation : new WP_Error( 'yoohw_mo_exif_orientation', __( 'The JPEG orientation cannot be normalized safely.', 'yoohw-media-optimizer' ) );
 	}
 
+	/** Select the normal WordPress editor with a narrow Imagick save adapter. */
+	private function color_image_editor( $source, $args = array() ) {
+		$filter = static function ( $editors ) {
+			if ( ! in_array( 'WP_Image_Editor_Imagick', $editors, true ) ) { return $editors; }
+			// WordPress loads its editor base classes before applying this filter.
+			require_once __DIR__ . '/class-yoohw-media-optimizer-imagick.php';
+			return array_map( static function ( $editor ) { return 'WP_Image_Editor_Imagick' === $editor ? 'YoOhw_Media_Optimizer_Imagick' : $editor; }, $editors );
+		};
+		add_filter( 'wp_image_editors', $filter, PHP_INT_MAX );
+		try { return wp_get_image_editor( $source, $args ); }
+		finally { remove_filter( 'wp_image_editors', $filter, PHP_INT_MAX ); }
+	}
+
+	/** Strip privacy metadata in memory before the one save; never inject an ICC. */
+	private function save_color_editor( $editor, $source, $destination, $mime, $options ) {
+		$color = YoOhw_Media_Optimizer_Color::inspect( $source );
+		if ( is_wp_error( $color ) ) { return $color; }
+		if ( $editor instanceof YoOhw_Media_Optimizer_Imagick ) {
+			$prepared = $editor->prepare_color( $color['icc'], 'remove' === $options['metadata_policy'] );
+			if ( is_wp_error( $prepared ) ) { return $prepared; }
+		} elseif ( $color['icc'] ) {
+			return new WP_Error( 'yoohw_mo_color_editor', __( 'The active image editor cannot preserve this color profile. The source was left unchanged.', 'yoohw-media-optimizer' ) );
+		}
+		return $editor->save( $destination, $mime );
+	}
+
 	/** Normalize pixels through the existing editor instead of dropping the orientation tag. */
 	private function save_oriented_sidecar( $source, $destination, $quality, $mime ) {
-		$editor = wp_get_image_editor( $source, array( 'mime_type' => $mime ) );
+		$editor = $this->color_image_editor( $source, array( 'mime_type' => $mime ) );
 		if ( is_wp_error( $editor ) ) {
 			return $editor;
 		}
@@ -3462,7 +3490,7 @@ Header append Vary Accept env=REDIRECT_accept
 			return is_wp_error( $rotated ) ? $rotated : new WP_Error( 'yoohw_mo_exif_rotation', __( 'The image editor could not normalize JPEG display orientation.', 'yoohw-media-optimizer' ) );
 		}
 		$editor->set_quality( $quality );
-		$saved = $editor->save( $destination, $mime );
+		$saved = $this->save_color_editor( $editor, $source, $destination, $mime, $this->get_options() );
 		if ( ! is_wp_error( $saved ) ) {
 			$saved['engine'] = get_class( $editor );
 		}
@@ -3478,6 +3506,19 @@ Header append Vary Accept env=REDIRECT_accept
 	 * @return array|WP_Error
 	 */
 	private function save_webp_file( $source_path, $destination, $quality ) {
+		$color = YoOhw_Media_Optimizer_Color::inspect( $source_path );
+		if ( is_wp_error( $color ) ) { return $color; }
+		$saved = $this->save_webp_file_unverified( $source_path, $destination, $quality );
+		if ( is_wp_error( $saved ) ) { return $saved; }
+		if ( ! empty( $saved['path'] ) && $destination !== $saved['path'] ) {
+			return new WP_Error( 'yoohw_mo_color_output_path', __( 'The image editor returned an unexpected output path.', 'yoohw-media-optimizer' ) );
+		}
+		$verified = YoOhw_Media_Optimizer_Color::verify( $source_path, $destination, 'image/webp', 'remove' === $this->get_options()['metadata_policy'] );
+		if ( is_wp_error( $verified ) ) { wp_delete_file( $destination ); return $verified; }
+		return $saved;
+	}
+
+	private function save_webp_file_unverified( $source_path, $destination, $quality ) {
 		$orientation = $this->jpeg_orientation( $source_path );
 		if ( is_wp_error( $orientation ) ) {
 			return $orientation;
@@ -3492,13 +3533,16 @@ Header append Vary Accept env=REDIRECT_accept
 			return $saved;
 		}
 
-		$saved = $this->save_webp_file_with_gd( $source_path, $destination, $quality );
+		$color = YoOhw_Media_Optimizer_Color::inspect( $source_path );
+		$saved = ! is_wp_error( $color ) && ! $color['icc']
+			? $this->save_webp_file_with_gd( $source_path, $destination, $quality )
+			: new WP_Error( 'yoohw_mo_gd_unavailable', 'GD cannot retain ICC profiles.' );
 
 		if ( ! is_wp_error( $saved ) || 'yoohw_mo_gd_unavailable' !== $saved->get_error_code() ) {
 			return $saved;
 		}
 
-		$editor = wp_get_image_editor( $source_path );
+		$editor = $this->color_image_editor( $source_path );
 
 		if ( is_wp_error( $editor ) ) {
 			return $editor;
@@ -3508,7 +3552,7 @@ Header append Vary Accept env=REDIRECT_accept
 			$editor->set_quality( $quality );
 		}
 
-		$saved = $editor->save( $destination, 'image/webp' );
+		$saved = $this->save_color_editor( $editor, $source_path, $destination, 'image/webp', $this->get_options() );
 
 		if ( is_wp_error( $saved ) ) {
 			return $saved;
@@ -3539,6 +3583,8 @@ Header append Vary Accept env=REDIRECT_accept
 		$command = array(
 			$binary,
 			'-quiet',
+			'-metadata',
+			'preserve_all' === $this->get_options()['metadata_policy'] ? 'all' : 'icc',
 			'-q',
 			(string) max( 1, min( 100, absint( $quality ) ) ),
 			$source_path,
@@ -3571,6 +3617,19 @@ Header append Vary Accept env=REDIRECT_accept
 	 * @return array|WP_Error
 	 */
 	private function save_avif_file( $source_path, $destination, $quality ) {
+		$color = YoOhw_Media_Optimizer_Color::inspect( $source_path );
+		if ( is_wp_error( $color ) ) { return $color; }
+		$saved = $this->save_avif_file_unverified( $source_path, $destination, $quality );
+		if ( is_wp_error( $saved ) ) { return $saved; }
+		if ( ! empty( $saved['path'] ) && $destination !== $saved['path'] ) {
+			return new WP_Error( 'yoohw_mo_color_output_path', __( 'The image editor returned an unexpected output path.', 'yoohw-media-optimizer' ) );
+		}
+		$verified = YoOhw_Media_Optimizer_Color::verify( $source_path, $destination, 'image/avif', 'remove' === $this->get_options()['metadata_policy'] );
+		if ( is_wp_error( $verified ) ) { wp_delete_file( $destination ); return $verified; }
+		return $saved;
+	}
+
+	private function save_avif_file_unverified( $source_path, $destination, $quality ) {
 		$orientation = $this->jpeg_orientation( $source_path );
 		if ( is_wp_error( $orientation ) ) {
 			return $orientation;
@@ -3589,7 +3648,7 @@ Header append Vary Accept env=REDIRECT_accept
 			return new WP_Error( 'yoohw_mo_avif_unavailable', __( 'AVIF support is unavailable.', 'yoohw-media-optimizer' ) );
 		}
 
-		$editor = wp_get_image_editor( $source_path );
+		$editor = $this->color_image_editor( $source_path );
 
 		if ( is_wp_error( $editor ) ) {
 			return $editor;
@@ -3599,7 +3658,7 @@ Header append Vary Accept env=REDIRECT_accept
 			$editor->set_quality( $quality );
 		}
 
-		$saved = $editor->save( $destination, 'image/avif' );
+		$saved = $this->save_color_editor( $editor, $source_path, $destination, 'image/avif', $this->get_options() );
 
 		if ( is_wp_error( $saved ) ) {
 			return $saved;
@@ -3626,15 +3685,15 @@ Header append Vary Accept env=REDIRECT_accept
 		}
 
 		wp_mkdir_p( dirname( $destination ) );
+		$privacy = 'remove' === $this->get_options()['metadata_policy'] ? array( '--ignore-exif', '--ignore-xmp' ) : array();
 
 		$run = $this->run_external_binary(
-			array(
-				$binary,
+			array_merge( array( $binary ), $privacy, array(
 				'-q',
 				(string) max( 1, min( 100, absint( $quality ) ) ),
 				$source_path,
 				$destination,
-			),
+			) ),
 			120
 		);
 
@@ -3662,6 +3721,10 @@ Header append Vary Accept env=REDIRECT_accept
 	 * @return array|WP_Error
 	 */
 	private function save_webp_file_with_gd( $source_path, $destination, $quality ) {
+		$color = YoOhw_Media_Optimizer_Color::inspect( $source_path );
+		if ( is_wp_error( $color ) ) { return $color; }
+		if ( $color['icc'] ) { return new WP_Error( 'yoohw_mo_color_editor', 'GD cannot retain ICC profiles.' ); }
+
 		if ( ! function_exists( 'imagewebp' ) ) {
 			return new WP_Error( 'yoohw_mo_gd_unavailable', __( 'GD WebP support is unavailable.', 'yoohw-media-optimizer' ) );
 		}
@@ -3816,6 +3879,11 @@ Header append Vary Accept env=REDIRECT_accept
 			return $result;
 		}
 
+		$color = YoOhw_Media_Optimizer_Color::inspect( $path );
+		if ( is_wp_error( $color ) ) {
+			$result['status'] = 'failed'; $result['message'] = $color->get_error_message(); return $result;
+		}
+
 		$orientation = $this->jpeg_orientation( $path );
 		if ( is_wp_error( $orientation ) ) {
 			$result['status'] = 'failed';
@@ -3866,7 +3934,7 @@ Header append Vary Accept env=REDIRECT_accept
 		}
 
 		if ( ! $saved_path ) {
-			$editor = wp_get_image_editor( $path );
+			$editor = $this->color_image_editor( $path );
 
 			if ( is_wp_error( $editor ) ) {
 				$result['status']  = 'failed';
@@ -3913,13 +3981,17 @@ Header append Vary Accept env=REDIRECT_accept
 			$extension = strtolower( pathinfo( $path, PATHINFO_EXTENSION ) );
 			$mime      = $this->mime_for_path( $path );
 			$tmp       = trailingslashit( dirname( $path ) ) . '.' . wp_basename( $path ) . '.yoohw-mo-' . wp_generate_password( 8, false, false ) . '.' . $extension;
-			$saved     = $editor->save( $tmp, $mime );
+			$saved     = $this->save_color_editor( $editor, $path, $tmp, $mime, $options );
 
 			if ( is_wp_error( $saved ) ) {
 				wp_delete_file( $tmp );
 				$result['status']  = 'failed';
 				$result['message'] = $saved->get_error_message();
 				return $result;
+			}
+
+			if ( ! empty( $saved['path'] ) && $tmp !== $saved['path'] ) {
+				wp_delete_file( $tmp ); $result['status'] = 'failed'; $result['message'] = __( 'The image editor returned an unexpected output path.', 'yoohw-media-optimizer' ); return $result;
 			}
 
 			$saved_path = ! empty( $saved['path'] ) ? $saved['path'] : $tmp;
@@ -3939,6 +4011,11 @@ Header append Vary Accept env=REDIRECT_accept
 			$result['status']  = 'failed';
 			$result['message'] = __( 'Optimized file was not created by the image editor.', 'yoohw-media-optimizer' );
 			return $result;
+		}
+
+		$verified = YoOhw_Media_Optimizer_Color::verify( $path, $saved_path, $this->mime_for_path( $path ), 'remove' === $metadata_policy );
+		if ( is_wp_error( $verified ) ) {
+			wp_delete_file( $saved_path ); $result['status'] = 'failed'; $result['message'] = $verified->get_error_message(); return $result;
 		}
 
 		$optimized_size = (int) filesize( $saved_path );
@@ -4122,6 +4199,9 @@ Header append Vary Accept env=REDIRECT_accept
 	 * @return array|WP_Error
 	 */
 	private function optimize_jpeg_with_external_binary( $source, $destination, $options, $allow_lossy = true ) {
+		$color = YoOhw_Media_Optimizer_Color::inspect( $source );
+		if ( is_wp_error( $color ) ) { return $color; }
+
 		if ( ! $allow_lossy ) {
 			$options['compression_mode'] = 'lossless';
 		}
@@ -4134,7 +4214,7 @@ Header append Vary Accept env=REDIRECT_accept
 			$candidates[] = 'jpegoptim';
 		}
 
-		if ( 'lossless' !== $mode && $this->external_binary_available( 'cjpeg' ) && $this->external_binary_available( 'djpeg' ) ) {
+		if ( ! $color['icc'] && 'lossless' !== $mode && $this->external_binary_available( 'cjpeg' ) && $this->external_binary_available( 'djpeg' ) ) {
 			$candidates[] = 'cjpeg';
 		}
 
@@ -4158,6 +4238,8 @@ Header append Vary Accept env=REDIRECT_accept
 			}
 
 			if ( ! is_wp_error( $result ) ) {
+				$verified = YoOhw_Media_Optimizer_Color::verify( $source, $destination, 'image/jpeg', 'remove' === $options['metadata_policy'] );
+				if ( is_wp_error( $verified ) ) { wp_delete_file( $destination ); $last_error = $verified; continue; }
 				clearstatcache( true, $source );
 				clearstatcache( true, $destination );
 
@@ -4205,6 +4287,7 @@ Header append Vary Accept env=REDIRECT_accept
 		);
 
 		$command[] = 'remove' === $metadata_policy ? '--strip-all' : '--strip-none';
+		if ( 'remove' === $metadata_policy ) { $command[] = '--keep-icc'; }
 
 		if ( 'lossless' !== $mode ) {
 			$command[] = '--max=' . $this->jpeg_quality_for_mode( $mode, absint( $options['jpeg_quality'] ?? 82 ) );
@@ -4237,6 +4320,10 @@ Header append Vary Accept env=REDIRECT_accept
 	 * @return array|WP_Error
 	 */
 	private function optimize_jpeg_with_cjpeg( $source, $destination, $options ) {
+		$color = YoOhw_Media_Optimizer_Color::inspect( $source );
+		if ( is_wp_error( $color ) ) { return $color; }
+		if ( $color['icc'] ) { return new WP_Error( 'yoohw_mo_cjpeg_color_unsupported', __( 'cjpeg cannot retain the source color profile safely.', 'yoohw-media-optimizer' ) ); }
+
 		$cjpeg = $this->external_binary_path( 'cjpeg' );
 		$djpeg = $this->external_binary_path( 'djpeg' );
 
@@ -4318,7 +4405,7 @@ Header append Vary Accept env=REDIRECT_accept
 			return new WP_Error( 'yoohw_mo_jpegtran_unavailable', __( 'jpegtran is unavailable.', 'yoohw-media-optimizer' ) );
 		}
 
-		$copy_mode = 'remove' === sanitize_key( $options['metadata_policy'] ?? 'remove' ) ? 'none' : 'all';
+		$copy_mode = 'remove' === sanitize_key( $options['metadata_policy'] ?? 'remove' ) ? 'icc' : 'all';
 		$command   = array(
 			$binary,
 			'-copy',
@@ -4354,12 +4441,15 @@ Header append Vary Accept env=REDIRECT_accept
 	 * @return array|WP_Error
 	 */
 	private function optimize_png_with_external_binary( $source, $destination, $options ) {
+		$color = YoOhw_Media_Optimizer_Color::inspect( $source );
+		if ( is_wp_error( $color ) ) { return $color; }
+
 		$mode          = sanitize_key( $options['compression_mode'] ?? 'balanced' );
 		$engine        = '';
 		$lossy_done    = false;
 		$lossless_done = false;
 
-		if ( 'lossless' !== $mode && $this->external_binary_available( 'pngquant' ) ) {
+		if ( ! $color['icc'] && 'lossless' !== $mode && $this->external_binary_available( 'pngquant' ) ) {
 			$quality = $this->pngquant_quality_for_mode( $mode, absint( $options['jpeg_quality'] ?? 82 ) );
 			$run     = $this->run_external_binary(
 				array(
@@ -4401,7 +4491,7 @@ Header append Vary Accept env=REDIRECT_accept
 
 			if ( 'remove' === sanitize_key( $options['metadata_policy'] ?? 'remove' ) ) {
 				$command[] = '--strip';
-				$command[] = 'all';
+				$command[] = 'tEXt,zTXt,iTXt,eXIf';
 			}
 
 			$command[] = $destination;
@@ -4440,6 +4530,9 @@ Header append Vary Accept env=REDIRECT_accept
 		if ( ! file_exists( $destination ) ) {
 			return new WP_Error( 'yoohw_mo_png_missing_output', __( 'PNG external optimizer did not create an output file.', 'yoohw-media-optimizer' ) );
 		}
+
+		$verified = YoOhw_Media_Optimizer_Color::verify( $source, $destination, 'image/png', 'remove' === $options['metadata_policy'] );
+		if ( is_wp_error( $verified ) ) { wp_delete_file( $destination ); return $verified; }
 
 		return array(
 			'path'   => $destination,

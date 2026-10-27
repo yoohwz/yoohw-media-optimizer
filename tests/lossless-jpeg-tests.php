@@ -97,7 +97,16 @@ return static function( $optimizer, $invoke, $assert, $test_dir, $runtime_option
 
 		// Controlled encoders exercise success, no gain, and partial-output failure without dependencies.
 		wp_mkdir_p( $binary_dir );
-		file_put_contents( $binary_dir . '/smaller.jpg', $jpeg );
+		// The controlled successful encoder must model remove policy, including GD's COM.
+		$clean_jpeg = substr( $jpeg, 0, 2 );
+		$offset = 2;
+		while ( $offset + 4 <= strlen( $jpeg ) && 0xda !== ord( $jpeg[ $offset + 1 ] ) ) {
+			$length = 2 + unpack( 'n', substr( $jpeg, $offset + 2, 2 ) )[1];
+			if ( 0xfe !== ord( $jpeg[ $offset + 1 ] ) ) { $clean_jpeg .= substr( $jpeg, $offset, $length ); }
+			$offset += $length;
+		}
+		$clean_jpeg .= substr( $jpeg, $offset );
+		file_put_contents( $binary_dir . '/smaller.jpg', $clean_jpeg );
 		file_put_contents( $binary_dir . '/jpegoptim', <<<'SH'
 #!/bin/sh
 directory=${0%/*}

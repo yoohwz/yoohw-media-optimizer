@@ -69,7 +69,15 @@ Without resizing, lossless JPEG optimization uses optional `jpegoptim` or `jpegt
 
 Oriented JPEG sidecars are normalized by a capable WordPress image editor before encoding, and original resize limits apply to displayed dimensions. Safe JPEG encoding requires an available PHP EXIF reader and successful orientation normalization. If either is unavailable, the source and existing sidecars are retained with an explanatory failure; PNG processing remains available.
 
-A lossless JPEG with nontrivial orientation is left unchanged when metadata removal is requested without resizing, including force runs. This keeps its appearance intact rather than stripping the orientation tag without a lossless display transform. Previously generated files are not automatically migrated or repaired; regenerate sidecars explicitly when needed. Backups and restore preserve the original bytes, including EXIF and ICC metadata. Metadata preservation in re-encoded output remains engine-dependent.
+A lossless JPEG with nontrivial orientation is left unchanged when metadata removal is requested without resizing, including force runs. This keeps its appearance intact rather than stripping the orientation tag without a lossless display transform. Previously generated files are not automatically migrated or repaired; regenerate sidecars explicitly when needed. Backups and restore preserve the original bytes, including EXIF and ICC metadata. Other metadata preservation in re-encoded output remains engine-dependent; supported color profiles are retained separately from private metadata.
+
+= How are image colors and ICC profiles handled? =
+
+Supported RGB JPEG and PNG images retain their source ICC profile and color encoding, including supported sRGB, Display P3 and Adobe RGB compatible profiles. The plugin does not automatically convert wide-gamut images to sRGB. Removing private metadata keeps the color profile needed to interpret the pixels.
+
+Profile-aware processing requires a capable engine. GD alone cannot retain tagged images in this workflow; unsupported or malformed profiles, CMYK/YCCK sources and unverified color declarations are left unchanged with an explanatory result. Tagged AVIF output requires an available Imagick verifier. RGB matrix/TRC ICC v2/v4 profiles are supported; this is not full ICC, HDR or CMYK conversion support.
+
+New outputs are checked before publishing or replacing an original. Backup and restore retain the exact original bytes. Previously optimized originals and fresh sidecars are not automatically re-encoded to repair historical color loss. Regenerate sidecars explicitly when needed; existing original repeat-protection remains active.
 
 = What storage is required for backup and restore? =
 
