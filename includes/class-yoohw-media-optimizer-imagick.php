@@ -4,6 +4,18 @@
  */
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 class YoOhw_Media_Optimizer_Imagick extends WP_Image_Editor_Imagick {
+	/** Request AVIF color detail without claiming support in every delegate build. */
+	public function request_avif444() {
+		try {
+			if ( true !== $this->image->setOption( 'heic:chroma', '444' ) ) {
+				return new WP_Error( 'yoohw_mo_avif_chroma', __( 'The image editor could not request AVIF 4:4:4. The source was left unchanged.', 'yoohw-media-optimizer' ) );
+			}
+			return true;
+		} catch ( Throwable $e ) {
+			return new WP_Error( 'yoohw_mo_avif_chroma', $e->getMessage() );
+		}
+	}
+
 	/** Check the loaded profile before stripping private metadata in memory. */
 	public function prepare_color( $icc, $remove_private ) {
 		try {
