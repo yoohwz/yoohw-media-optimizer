@@ -168,6 +168,9 @@ try {
 			require_once dirname( __DIR__ ) . '/includes/class-yoohw-media-optimizer-imagick.php';
 			class YoOhw_MO_Quality_Oracle_Imagick extends YoOhw_Media_Optimizer_Imagick {
 				public $requested_quality;
+				public function quality_state() {
+					return array( 'image' => $this->image->getImageCompressionQuality(), 'wand' => $this->image->getCompressionQuality(), 'format' => $this->image->getImageFormat(), 'lossless' => $this->image->getOption( 'webp:lossless' ), 'near_lossless' => $this->image->getOption( 'webp:near-lossless' ) );
+				}
 				protected function get_output_format( $filename = null, $mime_type = null ) {
 					$output = parent::get_output_format( $filename, $mime_type );
 					$this->set_quality( $this->requested_quality );
@@ -213,7 +216,7 @@ try {
 						$oracle = $dir . '/expected-' . $engine . '-' . $format . '-' . $case . '-' . $quality . '.' . $format;
 						$assert( ! is_wp_error( $expected->save( $oracle, $mime ) ), 'Real quality oracle cannot save.' );
 						$hashes[] = hash_file( 'sha256', $path . '.' . $format );
-						$diagnostics[] = array( 'requested' => $quality, 'editor_quality' => $expected->get_quality(), 'chunk' => substr( file_get_contents( $path . '.' . $format ), 12, 4 ), 'bytes' => filesize( $path . '.' . $format ), 'hash' => end( $hashes ) );
+						$diagnostics[] = array( 'requested' => $quality, 'editor_quality' => $expected->get_quality(), 'state' => method_exists( $expected, 'quality_state' ) ? $expected->quality_state() : array(), 'chunk' => substr( file_get_contents( $path . '.' . $format ), 12, 4 ), 'bytes' => filesize( $path . '.' . $format ), 'hash' => end( $hashes ) );
 						$assert( end( $hashes ) === hash_file( 'sha256', $oracle ), 'Encoded quality differs from post-MIME oracle: ' . $engine . '/' . $format . '/' . $case . '/' . $quality );
 						$size = getimagesize( $path . '.' . $format );
 						$assert( $mime === $size['mime'] && ( 6 === $orientation ? array( 32, 48 ) : ( 'png' === $case ? array( 16, 16 ) : array( 48, 32 ) ) ) === array( $size[0], $size[1] ), 'Quality save changed MIME/display dimensions.' );
