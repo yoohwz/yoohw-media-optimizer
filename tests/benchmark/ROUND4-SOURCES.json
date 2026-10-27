@@ -1,0 +1,38 @@
+{
+  "verified_date": "2026-10-27",
+  "sources": [
+    {
+      "id": "product35",
+      "file": "product35.jpg",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/f/f0/Product_photography_35.jpg",
+      "sha256": "3ebb5c9f625be35eb2f798b36afb87f7654df06f8eed0ec3a76140580955f9f8",
+      "author": "Robertgombos",
+      "license": "CC-BY-SA-4.0",
+      "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Product_photography_35.jpg",
+      "group": "public_product"
+    },
+    {
+      "id": "hopetoun",
+      "file": "hopetoun.jpg",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/3/36/Hopetoun_falls.jpg",
+      "sha256": "5619a95628ab5a3a6f12ee9fc284abe7c9dd64910052543d831af0f167386b14",
+      "author": "DAVID ILIFF",
+      "license": "CC-BY-SA-3.0",
+      "license_url": "https://creativecommons.org/licenses/by-sa/3.0/",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Hopetoun_falls.jpg",
+      "group": "camera_photo"
+    },
+    {
+      "id": "gull",
+      "file": "gull.jpg",
+      "url": "https://upload.wikimedia.org/wikipedia/commons/9/9a/Gull_portrait_ca_usa.jpg",
+      "sha256": "524368d286d63cd02c319b7447a664f15d434fec594f1849fc9b73de68d40f14",
+      "author": "Dschwen",
+      "license": "CC-BY-2.5",
+      "license_url": "https://creativecommons.org/licenses/by/2.5/",
+      "source_page": "https://commons.wikimedia.org/wiki/File:Gull_portrait_ca_usa.jpg",
+      "group": "camera_photo"
+    }
+  ]
+}

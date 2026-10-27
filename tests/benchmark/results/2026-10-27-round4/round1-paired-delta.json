@@ -1,0 +1,1026 @@
+[
+  {
+    "id": "astronaut-0",
+    "codec": "webp",
+    "group": "natural",
+    "score_delta": 0.0,
+    "bytes_delta": 614,
+    "bytes_ratio": 1.0174620328764006
+  },
+  {
+    "id": "astronaut-0",
+    "codec": "avif",
+    "group": "natural",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "astronaut-1",
+    "codec": "webp",
+    "group": "natural",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "astronaut-1",
+    "codec": "avif",
+    "group": "natural",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "astronaut-2",
+    "codec": "webp",
+    "group": "natural",
+    "score_delta": 1.455041940000001,
+    "bytes_delta": 610,
+    "bytes_ratio": 1.0186658506731947
+  },
+  {
+    "id": "astronaut-2",
+    "codec": "avif",
+    "group": "natural",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "astronaut-3",
+    "codec": "webp",
+    "group": "natural",
+    "score_delta": 14.028103720000004,
+    "bytes_delta": 594,
+    "bytes_ratio": 1.0177748518762344
+  },
+  {
+    "id": "astronaut-3",
+    "codec": "avif",
+    "group": "natural",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "chelsea-0",
+    "codec": "webp",
+    "group": "natural",
+    "score_delta": 0.0,
+    "bytes_delta": 614,
+    "bytes_ratio": 1.0327396822011303
+  },
+  {
+    "id": "chelsea-0",
+    "codec": "avif",
+    "group": "natural",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "chelsea-1",
+    "codec": "webp",
+    "group": "natural",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "chelsea-1",
+    "codec": "avif",
+    "group": "natural",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "chelsea-2",
+    "codec": "webp",
+    "group": "natural",
+    "score_delta": 0.5671925400000077,
+    "bytes_delta": 610,
+    "bytes_ratio": 1.0328770076533362
+  },
+  {
+    "id": "chelsea-2",
+    "codec": "avif",
+    "group": "natural",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "chelsea-3",
+    "codec": "webp",
+    "group": "natural",
+    "score_delta": 4.412178150000003,
+    "bytes_delta": 594,
+    "bytes_ratio": 1.0324200414801878
+  },
+  {
+    "id": "chelsea-3",
+    "codec": "avif",
+    "group": "natural",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "camera-0",
+    "codec": "webp",
+    "group": "natural",
+    "score_delta": -3.6517122700000044,
+    "bytes_delta": -6066,
+    "bytes_ratio": 0.851882599990233
+  },
+  {
+    "id": "camera-0",
+    "codec": "avif",
+    "group": "natural",
+    "score_delta": -0.08379463999999359,
+    "bytes_delta": -166,
+    "bytes_ratio": 0.996636884863956
+  },
+  {
+    "id": "camera-1",
+    "codec": "webp",
+    "group": "natural",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "camera-1",
+    "codec": "avif",
+    "group": "natural",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "camera-2",
+    "codec": "webp",
+    "group": "natural",
+    "score_delta": 0.0,
+    "bytes_delta": 610,
+    "bytes_ratio": 1.0184792487125114
+  },
+  {
+    "id": "camera-2",
+    "codec": "avif",
+    "group": "natural",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "camera-3",
+    "codec": "webp",
+    "group": "natural",
+    "score_delta": 6.863368500000007,
+    "bytes_delta": 594,
+    "bytes_ratio": 1.0181263350625571
+  },
+  {
+    "id": "camera-3",
+    "codec": "avif",
+    "group": "natural",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "coffee-0",
+    "codec": "webp",
+    "group": "product_detail",
+    "score_delta": 0.0,
+    "bytes_delta": 614,
+    "bytes_ratio": 1.014480449035423
+  },
+  {
+    "id": "coffee-0",
+    "codec": "avif",
+    "group": "product_detail",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "coffee-1",
+    "codec": "webp",
+    "group": "product_detail",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "coffee-1",
+    "codec": "avif",
+    "group": "product_detail",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "coffee-2",
+    "codec": "webp",
+    "group": "product_detail",
+    "score_delta": 1.6302256499999999,
+    "bytes_delta": 610,
+    "bytes_ratio": 1.0153420523138832
+  },
+  {
+    "id": "coffee-2",
+    "codec": "avif",
+    "group": "product_detail",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "coffee-3",
+    "codec": "webp",
+    "group": "product_detail",
+    "score_delta": -3.4578156599999943,
+    "bytes_delta": -8278,
+    "bytes_ratio": 0.8292632621070869
+  },
+  {
+    "id": "coffee-3",
+    "codec": "avif",
+    "group": "product_detail",
+    "score_delta": -0.003990290000004393,
+    "bytes_delta": -226,
+    "bytes_ratio": 0.9958492506611814
+  },
+  {
+    "id": "clock-0",
+    "codec": "webp",
+    "group": "product_detail",
+    "score_delta": 0.0,
+    "bytes_delta": 614,
+    "bytes_ratio": 1.4475218658892128
+  },
+  {
+    "id": "clock-0",
+    "codec": "avif",
+    "group": "product_detail",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "clock-1",
+    "codec": "webp",
+    "group": "product_detail",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "clock-1",
+    "codec": "avif",
+    "group": "product_detail",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "clock-2",
+    "codec": "webp",
+    "group": "product_detail",
+    "score_delta": 0.0,
+    "bytes_delta": 610,
+    "bytes_ratio": 1.4485294117647058
+  },
+  {
+    "id": "clock-2",
+    "codec": "avif",
+    "group": "product_detail",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "clock-3",
+    "codec": "webp",
+    "group": "product_detail",
+    "score_delta": 0.07131683000000066,
+    "bytes_delta": 594,
+    "bytes_ratio": 1.4361233480176212
+  },
+  {
+    "id": "clock-3",
+    "codec": "avif",
+    "group": "product_detail",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "brick-0",
+    "codec": "webp",
+    "group": "product_detail",
+    "score_delta": 0.0,
+    "bytes_delta": 614,
+    "bytes_ratio": 1.0398701298701298
+  },
+  {
+    "id": "brick-0",
+    "codec": "avif",
+    "group": "product_detail",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "brick-1",
+    "codec": "webp",
+    "group": "product_detail",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "brick-1",
+    "codec": "avif",
+    "group": "product_detail",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "brick-2",
+    "codec": "webp",
+    "group": "product_detail",
+    "score_delta": 0.0,
+    "bytes_delta": 610,
+    "bytes_ratio": 1.040110468174645
+  },
+  {
+    "id": "brick-2",
+    "codec": "avif",
+    "group": "product_detail",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "brick-3",
+    "codec": "webp",
+    "group": "product_detail",
+    "score_delta": 0.9972651499999898,
+    "bytes_delta": 594,
+    "bytes_ratio": 1.0384764865915275
+  },
+  {
+    "id": "brick-3",
+    "codec": "avif",
+    "group": "product_detail",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "gravel-0",
+    "codec": "webp",
+    "group": "product_detail",
+    "score_delta": 0.0,
+    "bytes_delta": 614,
+    "bytes_ratio": 1.0077715616535452
+  },
+  {
+    "id": "gravel-0",
+    "codec": "avif",
+    "group": "product_detail",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "gravel-1",
+    "codec": "webp",
+    "group": "product_detail",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "gravel-1",
+    "codec": "avif",
+    "group": "product_detail",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "gravel-2",
+    "codec": "webp",
+    "group": "product_detail",
+    "score_delta": 0.0,
+    "bytes_delta": 610,
+    "bytes_ratio": 1.00798220361162
+  },
+  {
+    "id": "gravel-2",
+    "codec": "avif",
+    "group": "product_detail",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "gravel-3",
+    "codec": "webp",
+    "group": "product_detail",
+    "score_delta": 1.6627914100000112,
+    "bytes_delta": 594,
+    "bytes_ratio": 1.0076823590274184
+  },
+  {
+    "id": "gravel-3",
+    "codec": "avif",
+    "group": "product_detail",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "eagle-0",
+    "codec": "webp",
+    "group": "natural",
+    "score_delta": 0.0,
+    "bytes_delta": 614,
+    "bytes_ratio": 1.0088048871425703
+  },
+  {
+    "id": "eagle-0",
+    "codec": "avif",
+    "group": "natural",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "eagle-1",
+    "codec": "webp",
+    "group": "natural",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "eagle-1",
+    "codec": "avif",
+    "group": "natural",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "eagle-2",
+    "codec": "webp",
+    "group": "natural",
+    "score_delta": 0.0,
+    "bytes_delta": 610,
+    "bytes_ratio": 1.008937205145486
+  },
+  {
+    "id": "eagle-2",
+    "codec": "avif",
+    "group": "natural",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "eagle-3",
+    "codec": "webp",
+    "group": "natural",
+    "score_delta": 7.965628370000005,
+    "bytes_delta": 594,
+    "bytes_ratio": 1.0088595889389373
+  },
+  {
+    "id": "eagle-3",
+    "codec": "avif",
+    "group": "natural",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "graphics-0-0",
+    "codec": "webp",
+    "group": "graphics",
+    "score_delta": 0.0,
+    "bytes_delta": 614,
+    "bytes_ratio": 1.0673541026766125
+  },
+  {
+    "id": "graphics-0-0",
+    "codec": "avif",
+    "group": "graphics",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "alpha-0-0",
+    "codec": "webp",
+    "group": "alpha",
+    "score_delta": 0.0,
+    "bytes_delta": 596,
+    "bytes_ratio": 1.0348660348660348
+  },
+  {
+    "id": "alpha-0-0",
+    "codec": "avif",
+    "group": "alpha",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "graphics-0-1",
+    "codec": "webp",
+    "group": "graphics",
+    "score_delta": 6.948252760000003,
+    "bytes_delta": 610,
+    "bytes_ratio": 1.0669153137340939
+  },
+  {
+    "id": "graphics-0-1",
+    "codec": "avif",
+    "group": "graphics",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "alpha-0-1",
+    "codec": "webp",
+    "group": "alpha",
+    "score_delta": 10.604759380000004,
+    "bytes_delta": 592,
+    "bytes_ratio": 1.0346320346320346
+  },
+  {
+    "id": "alpha-0-1",
+    "codec": "avif",
+    "group": "alpha",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "graphics-0-2",
+    "codec": "webp",
+    "group": "graphics",
+    "score_delta": 14.934953810000003,
+    "bytes_delta": 594,
+    "bytes_ratio": 1.0651601579640193
+  },
+  {
+    "id": "graphics-0-2",
+    "codec": "avif",
+    "group": "graphics",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "alpha-0-2",
+    "codec": "webp",
+    "group": "alpha",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "alpha-0-2",
+    "codec": "avif",
+    "group": "alpha",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "graphics-0-3",
+    "codec": "webp",
+    "group": "graphics",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "graphics-0-3",
+    "codec": "avif",
+    "group": "graphics",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "alpha-0-3",
+    "codec": "webp",
+    "group": "alpha",
+    "score_delta": 0.0,
+    "bytes_delta": 596,
+    "bytes_ratio": 1.0293480401812094
+  },
+  {
+    "id": "alpha-0-3",
+    "codec": "avif",
+    "group": "alpha",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "graphics-1-0",
+    "codec": "webp",
+    "group": "graphics",
+    "score_delta": 0.0,
+    "bytes_delta": 614,
+    "bytes_ratio": 1.0062749105774145
+  },
+  {
+    "id": "graphics-1-0",
+    "codec": "avif",
+    "group": "graphics",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "alpha-1-0",
+    "codec": "webp",
+    "group": "alpha",
+    "score_delta": 0.0,
+    "bytes_delta": 596,
+    "bytes_ratio": 1.0069347482081354
+  },
+  {
+    "id": "alpha-1-0",
+    "codec": "avif",
+    "group": "alpha",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "graphics-1-1",
+    "codec": "webp",
+    "group": "graphics",
+    "score_delta": 0.8217447899999968,
+    "bytes_delta": 610,
+    "bytes_ratio": 1.0062340316811447
+  },
+  {
+    "id": "graphics-1-1",
+    "codec": "avif",
+    "group": "graphics",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "alpha-1-1",
+    "codec": "webp",
+    "group": "alpha",
+    "score_delta": -1.0855945899999995,
+    "bytes_delta": 592,
+    "bytes_ratio": 1.0068882062738527
+  },
+  {
+    "id": "alpha-1-1",
+    "codec": "avif",
+    "group": "alpha",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "graphics-1-2",
+    "codec": "webp",
+    "group": "graphics",
+    "score_delta": 2.432050679999989,
+    "bytes_delta": 594,
+    "bytes_ratio": 1.0060705160960655
+  },
+  {
+    "id": "graphics-1-2",
+    "codec": "avif",
+    "group": "graphics",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "alpha-1-2",
+    "codec": "webp",
+    "group": "alpha",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "alpha-1-2",
+    "codec": "avif",
+    "group": "alpha",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "graphics-1-3",
+    "codec": "webp",
+    "group": "graphics",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "graphics-1-3",
+    "codec": "avif",
+    "group": "graphics",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "alpha-1-3",
+    "codec": "webp",
+    "group": "alpha",
+    "score_delta": 0.0,
+    "bytes_delta": 596,
+    "bytes_ratio": 1.0067460497125005
+  },
+  {
+    "id": "alpha-1-3",
+    "codec": "avif",
+    "group": "alpha",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "graphics-2-0",
+    "codec": "webp",
+    "group": "graphics",
+    "score_delta": 0.0,
+    "bytes_delta": 614,
+    "bytes_ratio": 1.0119804878048781
+  },
+  {
+    "id": "graphics-2-0",
+    "codec": "avif",
+    "group": "graphics",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "alpha-2-0",
+    "codec": "webp",
+    "group": "alpha",
+    "score_delta": 0.0,
+    "bytes_delta": 596,
+    "bytes_ratio": 1.0111268762601748
+  },
+  {
+    "id": "alpha-2-0",
+    "codec": "avif",
+    "group": "alpha",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "graphics-2-1",
+    "codec": "webp",
+    "group": "graphics",
+    "score_delta": 0.5982677900000013,
+    "bytes_delta": 610,
+    "bytes_ratio": 1.0119024390243903
+  },
+  {
+    "id": "graphics-2-1",
+    "codec": "avif",
+    "group": "graphics",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "alpha-2-1",
+    "codec": "webp",
+    "group": "alpha",
+    "score_delta": -0.34052535000000006,
+    "bytes_delta": 592,
+    "bytes_ratio": 1.0110521992382944
+  },
+  {
+    "id": "alpha-2-1",
+    "codec": "avif",
+    "group": "alpha",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "graphics-2-2",
+    "codec": "webp",
+    "group": "graphics",
+    "score_delta": 0.12355587000000412,
+    "bytes_delta": 594,
+    "bytes_ratio": 1.0115902439024391
+  },
+  {
+    "id": "graphics-2-2",
+    "codec": "avif",
+    "group": "graphics",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "alpha-2-2",
+    "codec": "webp",
+    "group": "alpha",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "alpha-2-2",
+    "codec": "avif",
+    "group": "alpha",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "graphics-2-3",
+    "codec": "webp",
+    "group": "graphics",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "graphics-2-3",
+    "codec": "avif",
+    "group": "graphics",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "alpha-2-3",
+    "codec": "webp",
+    "group": "alpha",
+    "score_delta": 0.0,
+    "bytes_delta": 596,
+    "bytes_ratio": 1.0109704020026506
+  },
+  {
+    "id": "alpha-2-3",
+    "codec": "avif",
+    "group": "alpha",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "graphics-3-0",
+    "codec": "webp",
+    "group": "graphics",
+    "score_delta": 0.0,
+    "bytes_delta": 614,
+    "bytes_ratio": 1.1137037037037036
+  },
+  {
+    "id": "graphics-3-0",
+    "codec": "avif",
+    "group": "graphics",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "alpha-3-0",
+    "codec": "webp",
+    "group": "alpha",
+    "score_delta": 0.0,
+    "bytes_delta": 596,
+    "bytes_ratio": 1.06352590066084
+  },
+  {
+    "id": "alpha-3-0",
+    "codec": "avif",
+    "group": "alpha",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "graphics-3-1",
+    "codec": "webp",
+    "group": "graphics",
+    "score_delta": -2.345698470000002,
+    "bytes_delta": 610,
+    "bytes_ratio": 1.112962962962963
+  },
+  {
+    "id": "graphics-3-1",
+    "codec": "avif",
+    "group": "graphics",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "alpha-3-1",
+    "codec": "webp",
+    "group": "alpha",
+    "score_delta": -3.3277919000000082,
+    "bytes_delta": 592,
+    "bytes_ratio": 1.063099552334257
+  },
+  {
+    "id": "alpha-3-1",
+    "codec": "avif",
+    "group": "alpha",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "graphics-3-2",
+    "codec": "webp",
+    "group": "graphics",
+    "score_delta": -2.9943326199999944,
+    "bytes_delta": 594,
+    "bytes_ratio": 1.11
+  },
+  {
+    "id": "graphics-3-2",
+    "codec": "avif",
+    "group": "graphics",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "alpha-3-2",
+    "codec": "webp",
+    "group": "alpha",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "alpha-3-2",
+    "codec": "avif",
+    "group": "alpha",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "graphics-3-3",
+    "codec": "webp",
+    "group": "graphics",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "graphics-3-3",
+    "codec": "avif",
+    "group": "graphics",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  },
+  {
+    "id": "alpha-3-3",
+    "codec": "webp",
+    "group": "alpha",
+    "score_delta": 0.0,
+    "bytes_delta": 596,
+    "bytes_ratio": 1.054181818181818
+  },
+  {
+    "id": "alpha-3-3",
+    "codec": "avif",
+    "group": "alpha",
+    "score_delta": 0.0,
+    "bytes_delta": 0,
+    "bytes_ratio": 1.0
+  }
+]
