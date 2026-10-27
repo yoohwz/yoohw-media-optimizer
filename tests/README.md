@@ -169,7 +169,9 @@ ICC and test raw and independently color-managed samples where LCMS is available
 The `editor-quality` child additionally uses real GD and Imagick encoders, with
 native tools disabled. JPEG rotation/reflection and neutral tagged JPEG/PNG
 fallbacks compare exact output bytes at quality23/89 against a test-only editor
-that applies quality after WordPress resolves the output MIME. Different qualities
+that applies image and wand quality after WordPress resolves the output MIME.
+Older WordPress Imagick editors omit wand quality; the sidecar adapter supplies it
+without changing original-optimization saves. Different qualities
 must produce different output; checking an earlier setter call is insufficient.
 Engine identity, source bytes, display dimensions, exact ICC/privacy and fresh
 sidecar retention are checked. A pre-existing quality callback, unrelated MIME,

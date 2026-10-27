@@ -4,6 +4,16 @@
  */
 if ( ! defined( 'ABSPATH' ) ) { exit; }
 class YoOhw_Media_Optimizer_Imagick extends WP_Image_Editor_Imagick {
+	/** Older WordPress editors set image quality but omit the wand quality used by some encoders. */
+	public function prepare_sidecar_quality( $quality ) {
+		try {
+			if ( $this->image->setCompressionQuality( $quality ) ) { return true; }
+		} catch ( Exception $e ) {
+			return new WP_Error( 'image_quality_error', $e->getMessage() );
+		}
+		return new WP_Error( 'image_quality_error', __( 'The image editor could not set sidecar compression quality.', 'yoohw-media-optimizer' ) );
+	}
+
 	/** Check the loaded profile before stripping private metadata in memory. */
 	public function prepare_color( $icc, $remove_private ) {
 		try {
