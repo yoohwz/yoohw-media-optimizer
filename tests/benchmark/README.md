@@ -264,3 +264,70 @@ The raw controls still do not implement plugin EXIF routing. Compare their byte
 hashes with actual neutral plugin outputs before attributing their per-child
 RSS to a production encoder path. PHP/editor per-encode peak RSS remains
 unavailable; process memory and end-to-end costs are not implied by these values.
+
+## Round 5: isolated AVIF chroma and alpha PoC
+
+Round 5 holds source pixels/profile and color quality fixed while varying actual
+AVIF chroma420/444 and alpha quality within each available encoder path. It
+separates existing plugin anchors from controlled experiments, verifies encoded
+chroma through a decoder, and treats unsupported Imagick alpha controls as
+unavailable. This development-only PoC does not change shipping defaults or
+install/modify the staging runtime. The final report must distinguish within-
+backend factor contrasts from cross-backend differences.
+
+Round 5 uses `avif_factors.py prepare` on the expanded round4 manifest, selecting
+45 neutral8-bit PNGs (21masters). It serializes opaque inputs as RGB and true
+transparency as RGBA, without changing decoded source RGBA or ICC bytes; this
+avoids inventing alpha items on opaque controls. Private metadata is stripped.
+JPEG inputs/full-resolution throughput are outside this focused experiment.
+
+```sh
+python3 tests/benchmark/test_avif_factors.py
+python3 tests/benchmark/test_avif_measure.py
+python3 tests/benchmark/avif_factors.py prepare ROUND4/manifest.json NEW_CORPUS
+python3 tests/benchmark/avif_factors.py encode NEW_CORPUS/manifest.json \
+  NEW_AVIFENC --backend avifenc
+python3 tests/benchmark/avif_factors.py encode NEW_CORPUS/manifest.json \
+  NEW_HEIFENC --backend heifenc
+```
+
+Both command backends use color quality82, speed6, one thread and CICP1/13/6
+full-range. `avifenc` varies YUV420/444 and alpha quality82/100; `heif-enc` varies
+chroma420/444 and only `lossless-alpha=false/true`, with alpha-quality82 fixed.
+Quality is a requested encoder setting, not a recovered bitstream quantizer.
+The bridge exposes a control absent from IM6; it does not make the equivalent
+Imagick setting available. Encoding is sequential; child RSS includes CLI
+input/conversion work and is not end-to-end WordPress memory.
+
+The existing PHP probe also accepts `--codec=both|avif` (defaultboth),
+`--avif-chroma=default|420|444` and `--avif-speed=default|6`. Custom AVIF controls
+require `--engine=imagick`; they run through a test-only subclass at save time,
+retaining the full shipping save wrapper, ICC/privacy preparation and quality
+filter. Defaults do not load that subclass. `applied_options` means options
+stored on the wand, not proof of encoder consumption; inspect emitted chroma.
+Use a disposable WordPress root and fresh output for every probe:
+
+```sh
+php tests/benchmark/plugin-baseline.php DISPOSABLE_WP NEW_CORPUS/manifest.json \
+  NEW_IMAGICK420 --codec=avif --engine=imagick --avif-chroma=420 --avif-speed=6
+python3 tests/benchmark/avif_measure.py NEW_CORPUS/manifest.json NEW_SCORE \
+  --receipt NEW_IMAGICK420/plugin-baseline.json --profile-label imagick_c420_s6 \
+  --avifdec /path/to/avifdec --ssimulacra2 /path/to/ssimulacra2
+```
+
+Repeat with444, plus native/default-Imagick anchors with no custom knobs. Score
+command `receipt.json` files without `--profile-label`; their explicit expected
+matrix must be complete. Missing, duplicate, failed, stale or escaped outputs
+fail validation. Scoring hashes source/receipt/output/decoder/metric, verifies
+ICC/privacy/dimensions and actual decoded YUV/depth/alpha/CICP, and rejects a
+requested chroma that the bitstream does not implement. Common decoding pins
+avifdec depth8/jobs1/bilinear; do not directly attribute differences from the
+round4 Pillow decoder to one encoder patch.
+
+Joint black/white SSIMULACRA2 includes actual alpha. A second metric replaces
+candidate alpha with the source alpha before identical compositing, separating
+color reconstruction from alpha quantization in that common decoder. Both are
+ICC-managed SDR metrics; neither certifies HDR/wide-gamut displays. Visible-RGB
+weighted MAE, source-opaque-region MAE and exact alpha pixel differences provide
+separate evidence. Preserve the two metric directories and raw decoder images
+when retaining receipts. Imagick PHP per-encode RSS remains unavailable.

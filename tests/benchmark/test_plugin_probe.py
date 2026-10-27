@@ -64,11 +64,18 @@ file_put_contents(__DIR__ . '/booted', 'yes');
 define('ABSPATH', __DIR__ . '/');
 $GLOBALS['wp_version'] = 'stub-not-real-wordpress';
 $GLOBALS['probe_filters'] = array();
-function add_filter($name, $callback, $priority = 10, $args = 1) { $GLOBALS['probe_filters'][$name][] = $callback; }
+function add_filter($name, $callback, $priority = 10, $args = 1) { $GLOBALS['probe_filters'][$name][$priority][] = $callback; }
+function apply_filters($name, $value, ...$args) {
+    $priorities = $GLOBALS['probe_filters'][$name] ?? array();
+    ksort($priorities);
+    foreach ($priorities as $callbacks) {
+        foreach ($callbacks as $callback) { $value = $callback($value, ...$args); }
+    }
+    return $value;
+}
 function add_action(...$args) {}
 function get_option($name, $default = false) {
-    foreach ($GLOBALS['probe_filters']['pre_option_' . $name] ?? array() as $callback) { return $callback(); }
-    return $default;
+    return apply_filters('pre_option_' . $name, $default);
 }
 function wp_parse_args($args, $defaults) { return array_merge($defaults, $args); }
 function absint($value) { return abs((int) $value); }
@@ -84,10 +91,102 @@ require __DIR__ . '/plugin/includes/class-yoohw-media-optimizer.php';
 """)
         return plugin
 
+    def stub_imagick_editor(self):
+        """No encoder: expose setOption/save calls through fake WordPress editor classes."""
+        includes = self.wordpress / "wp-includes"
+        includes.mkdir()
+        (includes / "class-wp-image-editor.php").write_text("<?php class WP_Image_Editor {}")
+        (includes / "class-wp-image-editor-imagick.php").write_text("""<?php
+class ProbeImage {
+    public $options = array();
+    function setOption($key, $value) { $this->options[$key] = $value; }
+}
+class WP_Image_Editor_Imagick extends WP_Image_Editor {
+    protected $image;
+    function __construct() { $this->image = new ProbeImage(); }
+    function save($destination = null, $mime = null) {
+        return array('destination' => $destination, 'mime' => $mime, 'options' => $this->image->options);
+    }
+}
+""")
+
+    def test_custom_avif_controls_require_imagick_before_bootstrap(self):
+        for engine in (None, "native", "gd"):
+            for control in ("--avif-chroma=420", "--avif-chroma=444", "--avif-speed=6"):
+                arguments = (["--engine=" + engine] if engine else []) + [control]
+                with self.subTest(arguments=arguments):
+                    self.assert_prebootstrap_failure("Test-only AVIF controls require --engine=imagick", *arguments)
+
+    def test_custom_avif_adapter_instruments_only_avif_and_calls_parent_save(self):
+        self.stub_runtime()
+        self.stub_imagick_editor()
+        # A wrapper inspects the loaded test subclass after the probe has completed.
+        # Its input stays invalid, so no real image encoding or site bootstrap occurs.
+        wrapper = self.directory / "instrument.php"
+        wrapper.write_text("""<?php
+array_shift($argv);
+$probe = array_shift($argv);
+array_unshift($argv, $probe);
+$argc = count($argv);
+require $probe;
+$webp = (new YoOhw_Benchmark_Imagick())->save('webp-output', 'image/webp');
+$avif = (new YoOhw_Benchmark_Imagick())->save('avif-output', 'image/avif');
+echo json_encode(array('webp' => $webp, 'avif' => $avif,
+    'applied' => YoOhw_Benchmark_Imagick::$applied_options,
+    'editors' => apply_filters('wp_image_editors', array('WP_Image_Editor_Imagick')),
+    'parent' => get_parent_class('YoOhw_Benchmark_Imagick'),
+    'prepare_owner' => (new ReflectionMethod('YoOhw_Benchmark_Imagick', 'prepare_color'))->getDeclaringClass()->getName()));
+""")
+        for chroma, speed in (("420", "default"), ("444", "6"), ("default", "6")):
+            with self.subTest(chroma=chroma, speed=speed):
+                output = self.directory / ("output-" + chroma + "-" + speed)
+                result = subprocess.run([PHP, str(wrapper), str(PROBE), str(self.wordpress), str(self.manifest),
+                                         str(output), "--engine=imagick", "--codec=avif",
+                                         "--avif-chroma=" + chroma, "--avif-speed=" + speed],
+                                        text=True, capture_output=True, timeout=10)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                calls = json.loads(result.stdout.splitlines()[-1])
+                expected = {}
+                if chroma != "default":
+                    expected["heic:chroma"] = chroma
+                if speed != "default":
+                    expected["heic:speed"] = speed
+                self.assertEqual(calls["webp"], {"destination": "webp-output", "mime": "image/webp", "options": []})
+                self.assertEqual(calls["avif"], {"destination": "avif-output", "mime": "image/avif", "options": expected})
+                self.assertEqual(calls["applied"], expected)
+                self.assertEqual(calls["editors"], ["YoOhw_Benchmark_Imagick"])
+                self.assertEqual(calls["parent"], "YoOhw_Media_Optimizer_Imagick")
+                self.assertEqual(calls["prepare_owner"], "YoOhw_Media_Optimizer_Imagick")
+                report = json.loads((output / "plugin-baseline.json").read_text())
+                self.assertEqual(report["codec_request"], "avif")
+                self.assertEqual(report["test_instrumentation"], {"avif_chroma": chroma, "avif_speed": speed})
+                self.assertEqual([row["codec"] for row in report["images"]], ["avif"])
+                row = report["images"][0]
+                self.assertEqual(row["test_instrumentation"], {"avif_chroma": chroma, "avif_speed": speed, "applied_options": []})
+                self.assertIn("yoohw_mo_color_unsupported", row["error"])
+                self.assertIn(str((self.wordpress / "wp-includes/class-wp-image-editor-imagick.php").resolve()), report["loaded_file_sha256"])
+
+    def test_explicit_default_controls_do_not_load_test_editor(self):
+        self.stub_runtime()
+        # No fake editor files exist: loading the test adapter would fail.
+        for engine in ("native", "imagick", "gd"):
+            with self.subTest(engine=engine):
+                output = self.directory / ("default-" + engine)
+                result = self.run_probe("--engine=" + engine, "--avif-chroma=default", "--avif-speed=default",
+                                        "--codec=avif", output=output)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                report = json.loads((output / "plugin-baseline.json").read_text())
+                self.assertEqual(report["test_instrumentation"], {"avif_chroma": "default", "avif_speed": "default"})
+                self.assertEqual([row["codec"] for row in report["images"]], ["avif"])
+                self.assertFalse(any("class-wp-image-editor" in path for path in report["loaded_file_sha256"]))
+
     def test_invalid_options_fail_before_bootstrap(self):
         for arguments in (("--engine=unknown",), ("--webp-quality=0",), ("--avif-quality=101",),
                           ("--webp-quality=82.5",), ("--png-webp-mode=auto",),
                           ("--avif-alpha-mode=auto",), ("--engine=gd", "--engine=gd"),
+                          ("--avif-chroma=422",), ("--avif-speed=5",), ("--avif-speed=06",),
+                          ("--codec=webp",), ("--avif-chroma=420", "--avif-chroma=444"),
+                          ("--avif-speed=6", "--avif-speed=6"), ("--codec=both", "--codec=avif"),
                           ("--bogus=yes",), ("--engine", "gd")):
             with self.subTest(arguments=arguments):
                 self.assert_prebootstrap_failure("", *arguments)
@@ -172,6 +271,9 @@ require __DIR__ . '/plugin/includes/class-yoohw-media-optimizer.php';
         self.assertEqual(result.returncode, 0, result.stderr)
         report = json.loads((self.output / "plugin-baseline.json").read_text())
         self.assertEqual(report["engine_request"], "native")
+        self.assertEqual(report["codec_request"], "both")
+        self.assertEqual(report["test_instrumentation"], {"avif_chroma": "default", "avif_speed": "default"})
+        self.assertEqual([row["codec"] for row in report["images"]], ["webp", "avif"])
         self.assertEqual(report["options"]["webp_quality"], 82)
         self.assertEqual(report["options"]["avif_quality"], 82)
         self.assertEqual(report["options"]["webp_png_mode"], "lossy")

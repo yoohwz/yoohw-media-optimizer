@@ -7,7 +7,7 @@
  */
 
 if ( 'cli' !== PHP_SAPI || $argc < 4 ) {
-	fwrite( STDERR, "Usage: php plugin-baseline.php /path/to/wordpress manifest.json /new/output-directory [--engine=native|imagick|gd] [--webp-quality=1..100] [--avif-quality=1..100] [--png-webp-mode=lossy|lossless] [--avif-alpha-mode=default|lossless]\n" );
+	fwrite( STDERR, "Usage: php plugin-baseline.php /path/to/wordpress manifest.json /new/output-directory [--engine=native|imagick|gd] [--webp-quality=1..100] [--avif-quality=1..100] [--png-webp-mode=lossy|lossless] [--avif-alpha-mode=default|lossless] [--codec=both|avif] [--avif-chroma=default|420|444] [--avif-speed=default|6]\n" );
 	exit( 1 );
 }
 
@@ -29,10 +29,12 @@ function yoohw_benchmark_runtime_hashes( $directory ) {
 try {
 	$started = microtime( true );
 	$engine  = 'native';
+	$codec_request = 'both';
+	$instrumentation = array( 'avif_chroma' => 'default', 'avif_speed' => 'default' );
 	$options = array( 'use_external_binaries' => 1, 'quality' => 82, 'webp_quality' => 82, 'avif_quality' => 82, 'webp_png_mode' => 'lossy', 'avif_alpha_mode' => 'default' );
 	$seen    = array();
 	foreach ( array_slice( $argv, 4 ) as $argument ) {
-		if ( ! preg_match( '/\A--(engine|webp-quality|avif-quality|png-webp-mode|avif-alpha-mode)=([^=]+)\z/', $argument, $match ) || isset( $seen[ $match[1] ] ) ) {
+		if ( ! preg_match( '/\A--(engine|webp-quality|avif-quality|png-webp-mode|avif-alpha-mode|codec|avif-chroma|avif-speed)=([^=]+)\z/', $argument, $match ) || isset( $seen[ $match[1] ] ) ) {
 			throw new RuntimeException( 'Unknown, duplicate, or malformed option: ' . $argument );
 		}
 		list( , $key, $value ) = $match;
@@ -43,12 +45,21 @@ try {
 		} elseif ( 'engine' === $key ) {
 			if ( ! in_array( $value, array( 'native', 'imagick', 'gd' ), true ) ) { throw new RuntimeException( 'Unknown engine preference.' ); }
 			$engine = $value;
+		} elseif ( 'codec' === $key ) {
+			if ( ! in_array( $value, array( 'both', 'avif' ), true ) ) { throw new RuntimeException( 'Unknown codec selection.' ); }
+			$codec_request = $value;
+		} elseif ( in_array( $key, array( 'avif-chroma', 'avif-speed' ), true ) ) {
+			$allowed = 'avif-chroma' === $key ? array( 'default', '420', '444' ) : array( 'default', '6' );
+			if ( ! in_array( $value, $allowed, true ) ) { throw new RuntimeException( 'Unknown test-only AVIF control: ' . $key ); }
+			$instrumentation[ str_replace( '-', '_', $key ) ] = $value;
 		} else {
 			$allowed = 'png-webp-mode' === $key ? array( 'lossy', 'lossless' ) : array( 'default', 'lossless' );
 			if ( ! in_array( $value, $allowed, true ) ) { throw new RuntimeException( 'Unknown PNG mode.' ); }
 			$options[ 'png-webp-mode' === $key ? 'webp_png_mode' : 'avif_alpha_mode' ] = $value;
 		}
 	}
+	$custom_avif = 'default' !== $instrumentation['avif_chroma'] || 'default' !== $instrumentation['avif_speed'];
+	if ( $custom_avif && 'imagick' !== $engine ) { throw new RuntimeException( 'Test-only AVIF controls require --engine=imagick.' ); }
 	if ( 'native' !== $engine ) {
 		if ( 'lossless' === $options['webp_png_mode'] || 'lossless' === $options['avif_alpha_mode'] ) { throw new RuntimeException( 'Advanced PNG modes require --engine=native.' ); }
 		$options['use_external_binaries'] = 0;
@@ -96,13 +107,39 @@ try {
 	if ( yoohw_benchmark_runtime_hashes( $loaded_root ) !== $runtime_hashes ) {
 		throw new RuntimeException( 'Loaded plugin differs from the benchmark checkout.' );
 	}
+	// Load the test adapter only after bootstrap and runtime identity validation.
+	// Default controls retain the actual shipping editor class and save behavior.
+	if ( $custom_avif ) {
+		require_once $wp_root . '/wp-includes/class-wp-image-editor.php';
+		require_once $wp_root . '/wp-includes/class-wp-image-editor-imagick.php';
+		require_once $loaded_root . '/includes/class-yoohw-media-optimizer-imagick.php';
+		class YoOhw_Benchmark_Imagick extends YoOhw_Media_Optimizer_Imagick {
+			public static $controls = array();
+			public static $applied_options = array();
+
+			/** Instrument only the final AVIF save; retain parent color/privacy handling. */
+			public function save( $destfilename = null, $mime_type = null ) {
+				if ( 'image/avif' === $mime_type ) {
+					foreach ( array( 'avif_chroma' => 'heic:chroma', 'avif_speed' => 'heic:speed' ) as $control => $option ) {
+						if ( 'default' !== self::$controls[ $control ] ) {
+							$this->image->setOption( $option, self::$controls[ $control ] );
+							self::$applied_options[ $option ] = self::$controls[ $control ];
+						}
+					}
+				}
+				return parent::save( $destfilename, $mime_type );
+			}
+		}
+		YoOhw_Benchmark_Imagick::$controls = $instrumentation;
+	}
 	// Request-local options only. No update_option() or attachment mutation.
 	add_filter( 'pre_option_' . YoOhw_Media_Optimizer::OPTION_KEY, static function() use ( $options ) {
 		return $options;
 	} );
 	// This is an editor preference, not a forced engine: plain WebP can use direct GD.
 	if ( 'native' !== $engine ) {
-		add_filter( 'wp_image_editors', static function() use ( $engine ) {
+		add_filter( 'wp_image_editors', static function() use ( $engine, $custom_avif ) {
+			if ( $custom_avif ) { return array( 'YoOhw_Benchmark_Imagick' ); }
 			return array( 'imagick' === $engine ? 'WP_Image_Editor_Imagick' : 'WP_Image_Editor_GD' );
 		}, PHP_INT_MAX );
 	}
@@ -113,14 +150,17 @@ try {
 	$rows      = array();
 	foreach ( $inputs as $id => $input ) {
 		list( $entry, $source ) = $input;
-		foreach ( array( 'webp', 'avif' ) as $codec ) {
+		foreach ( 'avif' === $codec_request ? array( 'avif' ) : array( 'webp', 'avif' ) as $codec ) {
 			$destination = $output . '/' . $id . '.' . $codec;
 			$method      = $reflection->getMethod( 'save_' . $codec . '_file' );
 			$method->setAccessible( true );
+			if ( $custom_avif ) { YoOhw_Benchmark_Imagick::$applied_options = array(); }
 			$start = microtime( true );
 			$actual_options = $optimizer->get_options();
 			$saved = $method->invoke( $optimizer, $source, $destination, $actual_options[ $codec . '_quality' ] );
 			$row   = array( 'id' => $id, 'codec' => $codec, 'source_sha256' => $entry['sha256'], 'seconds' => microtime( true ) - $start, 'engine_request' => $engine, 'options' => $actual_options, 'quality' => $actual_options[ $codec . '_quality' ], 'engine' => null );
+			$row['test_instrumentation'] = $instrumentation;
+			$row['test_instrumentation']['applied_options'] = $custom_avif ? YoOhw_Benchmark_Imagick::$applied_options : array();
 			if ( is_wp_error( $saved ) ) {
 				$row['error'] = $saved->get_error_code() . ': ' . $saved->get_error_message();
 			} else {
@@ -151,6 +191,7 @@ try {
 		'imagick' => extension_loaded( 'imagick' ) ? array( 'extension' => phpversion( 'imagick' ), 'library' => Imagick::getVersion(), 'formats' => Imagick::queryFormats() ) : null,
 		'gd' => function_exists( 'gd_info' ) ? gd_info() : null,
 		'engine_request' => $engine, 'engine_request_policy' => 'native retains production routing; imagick/gd disable external binaries and prefer that WordPress editor; direct GD WebP remains possible. Actual engines are recorded per result.',
+		'codec_request' => $codec_request, 'test_instrumentation' => $instrumentation,
 		'options' => $optimizer->get_options(), 'seconds' => microtime( true ) - $started,
 		'manifest_sha256' => $manifest_hash, 'plugin_sha256' => $runtime_hashes['includes/class-yoohw-media-optimizer.php'],
 		'runtime_php_sha256' => $runtime_hashes, 'loaded_file_sha256' => $loaded_hashes,

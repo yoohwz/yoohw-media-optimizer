@@ -1,0 +1,43 @@
+{
+  "status": "PASS",
+  "outputs": 540,
+  "icc_dimensions_privacy": 540,
+  "lossless_alpha_outputs": 180,
+  "transparent_lossless_alpha_outputs": 68,
+  "opaque_joint_fixed_equal": 336,
+  "alpha_contrasts": [
+    {
+      "before": "avifenc_c420_a82",
+      "after": "avifenc_c420_a100",
+      "decoded_rgb_identical": 45,
+      "opaque_count": 28,
+      "opaque_output_identical": 28
+    },
+    {
+      "before": "avifenc_c444_a82",
+      "after": "avifenc_c444_a100",
+      "decoded_rgb_identical": 45,
+      "opaque_count": 28,
+      "opaque_output_identical": 28
+    },
+    {
+      "before": "heifenc_c420_a82",
+      "after": "heifenc_c420_a100",
+      "decoded_rgb_identical": 45,
+      "opaque_count": 28,
+      "opaque_output_identical": 28
+    },
+    {
+      "before": "heifenc_c444_a82",
+      "after": "heifenc_c444_a100",
+      "decoded_rgb_identical": 45,
+      "opaque_count": 28,
+      "opaque_output_identical": 28
+    }
+  ],
+  "imagick_anchor_equals_explicit420": 45,
+  "actual_signal_counts": {
+    "2/2/6/Full": 35,
+    "1/13/6/Full": 505
+  }
+}
