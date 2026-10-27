@@ -21,6 +21,9 @@ function yoohw_media_optimizer_uninstall_site() {
 	delete_option( 'yoohw_media_optimizer_options' );
 	delete_option( 'yoohw_media_optimizer_queue' );
 	delete_option( 'yoohw_media_optimizer_queue_lock' );
+	delete_option( 'yoohw_media_optimizer_prune_cleanup' );
+	delete_option( 'yoohw_media_optimizer_source_revision' );
+	delete_metadata( 'post', 0, '_yoohw_media_optimizer_source_revision', '', true );
 	delete_transient( 'yoohw_media_optimizer_savings' );
 	delete_metadata( 'post', 0, '_yoohw_media_optimizer', '', true );
 }
