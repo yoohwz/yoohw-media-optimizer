@@ -64,15 +64,38 @@ class CIContracts(unittest.TestCase):
 
     def test_native_profile_routing(self):
         workflow = (ROOT / ".github/workflows/regression.yml").read_text()
-        self.assertIn("extensions: ${{ inputs.php == '8.4' && 'mysqli, gd, exif, imagick' || 'mysqli, gd, exif' }}", workflow)
+        self.assertIn("extensions: mysqli, gd, exif, imagick", workflow)
         self.assertRegex(workflow, r"if: \$\{\{ inputs.php == '8\.4' \}\}\n        run: \|\n          sudo apt-get update\n          sudo apt-get install --no-install-recommends -y webp libavif-bin libjpeg-turbo-progs")
         self.assertIn("YOOHW_MO_REQUIRE_NATIVE_QUALITY: ${{ inputs.php == '8.4' && '1' || '0' }}", workflow)
         self.assertNotIn("continue-on-error", workflow)
         canary = (ROOT / ".github/workflows/compatibility-canary.yml").read_text()
         self.assertIn("uses: ./.github/workflows/regression.yml", canary)
         self.assertIn("wordpress: nightly\n      php: '8.4'", canary)
-        for path in (".github/workflows/regression.yml", "bin/run-wp-regression.sh"):
+        for path in (".github/workflows/regression.yml", "bin/run-wp-regression.sh", "bin/setup-ci-imagick.sh"):
             self.assertIn("      - " + path, canary)
+
+    def test_pinned_imagick_environment(self):
+        workflow = (ROOT / ".github/workflows/regression.yml").read_text()
+        self.assertLess(workflow.index("php-version:"), workflow.index("run: bash bin/setup-ci-imagick.sh"))
+        self.assertLess(workflow.index("run: bash bin/setup-ci-imagick.sh"), workflow.index("bash bin/run-wp-regression.sh"))
+        script = (ROOT / "bin/setup-ci-imagick.sh").read_text()
+        for pin in ("6.9.13-59", "3.8.1", "25f456444a7b8fa6622a87a901791acc8617f91ef7fb815fa383732e8a271366",
+                    "3a3587c0a524c17d0dad9673a160b90cd776e836838474e173b549ed864352ee"):
+            self.assertIn(pin, script)
+        self.assertEqual(script.count("sha256sum --check --strict"), 2)
+        self.assertLess(script.rindex("sha256sum --check --strict"), script.index("7z x"))
+        self.assertIn('--with-php-config="$(command -v php-config)"', script)
+        self.assertIn('--prefix="$prefix"', script)
+        self.assertIn('$(php-config --extension-dir)/imagick.so', script)
+        self.assertIn('export LD_LIBRARY_PATH=', script)
+        self.assertIn('export MAGICK_CODER_MODULE_PATH=', script)
+        self.assertNotIn("continue-on-error", workflow)
+        # The CI-only script must refuse local execution before installing packages/files.
+        env = dict(os.environ)
+        env.pop("GITHUB_ACTIONS", None)
+        refused = subprocess.run(["bash", str(ROOT / "bin/setup-ci-imagick.sh")], env=env, capture_output=True, text=True)
+        self.assertNotEqual(refused.returncode, 0)
+        self.assertIn("GitHub Linux runner required", refused.stderr)
 
     def test_required_capabilities_fail_closed(self):
         runner = (ROOT / "bin/run-wp-regression.sh").read_text()

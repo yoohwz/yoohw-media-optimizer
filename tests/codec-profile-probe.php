@@ -265,32 +265,6 @@ try {
 			$assert( 'setter' === $failure ? array() === $editor->seen : array( 'original' === $failure ? 64 : 71, 64 ) === $editor->seen, 'Quality callback escaped target MIME or setter failure still saved.' );
 			$assert( ( 'original' === $failure ? 0 : 1 ) === $editor->setter_calls, 'Optional sidecar quality changed original/editor setter behavior.' );
 		}
-		if ( class_exists( 'YoOhw_Media_Optimizer_Imagick' ) ) {
-			class YoOhw_MO_Quality_Fault_Wand {
-				public $throws = false;
-				public function setCompressionQuality( $quality ) {
-					if ( $this->throws ) { throw new RuntimeException( 'Wand quality fixture.' ); }
-					return false;
-				}
-			}
-			class YoOhw_MO_Quality_Fault_Imagick extends YoOhw_Media_Optimizer_Imagick {
-				public $saved = false;
-				public function __construct( $source, $throws ) {
-					parent::__construct( $source ); $this->image = new YoOhw_MO_Quality_Fault_Wand(); $this->image->throws = $throws;
-				}
-				public function prepare_color( $icc, $remove_private ) { return true; }
-				public function set_quality( $quality = null, $dims = array() ) { return true; }
-				public function save( $path = null, $mime = null ) { $this->saved = true; return array( 'path' => $path ); }
-			}
-			foreach ( array( false, true ) as $throws ) {
-				$editor = new YoOhw_MO_Quality_Fault_Imagick( $path, $throws );
-				$result = $invoke( 'save_color_editor', array( $editor, $path, $dir . '/wand.webp', 'image/webp', $options, 71 ) );
-				$assert( is_wp_error( $result ) && 'image_quality_error' === $result->get_error_code() && ! $editor->saved, 'Failed wand quality still saved or hid its error.' );
-				$check_hooks();
-				$result = $invoke( 'save_color_editor', array( $editor, $path, $dir . '/wand-original.jpg', 'image/jpeg', $options ) );
-				$assert( ! is_wp_error( $result ) && $editor->saved, 'Sidecar wand quality preparation affected original optimization.' );
-			}
-		}
 	} elseif ( 'native-missing' === $mode ) {
 		$changes = array( 'generate_avif_sidecars' => 1, 'webp_png_mode' => 'lossless', 'avif_alpha_mode' => 'lossless', 'use_external_binaries' => 0 );
 		list( $id, $path ) = $failure_case( 'disabled-native.png', $png(), $changes );

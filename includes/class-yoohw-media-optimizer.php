@@ -3539,10 +3539,6 @@ Header append Vary Accept env=REDIRECT_accept
 		try {
 			$set = $editor->set_quality( $quality );
 			if ( is_wp_error( $set ) ) { return $set; }
-			if ( $editor instanceof YoOhw_Media_Optimizer_Imagick ) {
-				$prepared = $editor->prepare_sidecar_quality( $quality );
-				if ( is_wp_error( $prepared ) ) { return $prepared; }
-			}
 			return $editor->save( $destination, $mime );
 		} finally {
 			remove_filter( 'wp_editor_set_quality', $filter, PHP_INT_MAX );

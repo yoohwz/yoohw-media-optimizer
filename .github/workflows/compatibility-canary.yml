@@ -6,6 +6,7 @@ on:
       - .github/workflows/compatibility-canary.yml
       - .github/workflows/regression.yml
       - bin/run-wp-regression.sh
+      - bin/setup-ci-imagick.sh
   schedule:
     - cron: '17 2 * * 1'
   workflow_dispatch:
