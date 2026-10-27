@@ -213,8 +213,11 @@ try {
 		$assert( array( 'Custom_Color_Editor', 'WP_Image_Editor_GD', 'YoOhw_Media_Optimizer_Thumbnail_Imagick' ) === $optimizer->thumbnail_image_editors( array( 'Custom_Color_Editor', 'WP_Image_Editor_GD', 'WP_Image_Editor_Imagick' ) ), 'Core mapping changed custom editor order.' );
 		$assert( array( 'WP_Image_Editor_GD' ) === $optimizer->thumbnail_image_editors( array( 'WP_Image_Editor_GD' ) ), 'Core color fix forced Imagick over GD.' );
 		$assert( 'YoOhw_Media_Optimizer_Imagick' === get_class( $invoke( 'color_image_editor', array( $path ) ) ), 'Core wrapper leaked into original optimization.' );
-		foreach ( array( 'rgb', 'jpeg' ) as $kind ) {
-			list( $id, $path ) = $attach( 'parent-parity.' . ( 'jpeg' === $kind ? 'jpg' : 'png' ), $fixture( $kind, '' ) );
+		foreach ( array( 'rgb', 'gamma', 'jpeg' ) as $kind ) {
+			$bytes = $fixture( 'gamma' === $kind ? 'rgb' : $kind, '' );
+			if ( 'gamma' === $kind ) { $bytes = substr( $bytes, 0, 33 ) . $chunk( 'gAMA', pack( 'N', 100000 ) ) . substr( $bytes, 33 ); }
+			list( $id, $path ) = $attach( 'parent-parity-' . $kind . ( 'jpeg' === $kind ? '.jpg' : '.png' ), $bytes );
+			if ( 'gamma' === $kind ) { $assert( is_wp_error( YoOhw_Media_Optimizer_Color::inspect( $path ) ) && ! is_wp_error( YoOhw_Media_Optimizer_Color::inspect( $path, true ) ), 'Core passthrough weakened ordinary optimizer color validation.' ); }
 			$parent = new WP_Image_Editor_Imagick( $path ); $assert( ! is_wp_error( $parent->load() ), 'Cannot load parent parity fixture.' );
 			$wrapper = wp_get_image_editor( $path ); $assert( 'YoOhw_Media_Optimizer_Thumbnail_Imagick' === get_class( $wrapper ), 'Core did not select color wrapper.' );
 			foreach ( array( 'parent' => $parent, 'wrapper' => $wrapper ) as $label => $instance ) {

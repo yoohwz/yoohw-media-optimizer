@@ -12,7 +12,7 @@ class YoOhw_Media_Optimizer_Thumbnail_Imagick extends YoOhw_Media_Optimizer_Imag
 		if ( 'image/png' !== $this->mime_type || wp_is_stream( $this->file ) || ! is_file( $this->file ) ) {
 			return parent::thumbnail_image( $dst_w, $dst_h, $filter_name, $strip_meta );
 		}
-		$color = YoOhw_Media_Optimizer_Color::inspect( $this->file );
+		$color = YoOhw_Media_Optimizer_Color::inspect( $this->file, true );
 		if ( is_wp_error( $color ) ) { return $color; }
 		if ( ! $color['icc'] ) { return parent::thumbnail_image( $dst_w, $dst_h, $filter_name, $strip_meta ); }
 		try {

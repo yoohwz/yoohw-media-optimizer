@@ -13,8 +13,8 @@ class YoOhw_Media_Optimizer_Color {
 	}
 	private static function uint( $bytes ) { return unpack( 'N', $bytes )[1]; }
 
-	/** Inspect JPEG/PNG without decoding pixels or loading the complete image. */
-	public static function inspect( $path ) {
+	/** Inspect bounded headers; core may pass untagged color declarations to its unchanged editor. */
+	public static function inspect( $path, $allow_untagged_color = false ) {
 		// phpcs:ignore WordPress.WP.AlternativeFunctions.file_system_operations_fopen -- Read-only bounded media stream; WP_Filesystem has no bounded stream/seek API.
 		$stream = @fopen( $path, 'rb' );
 		if ( ! $stream ) { return self::error(); }
@@ -23,7 +23,7 @@ class YoOhw_Media_Optimizer_Color {
 			$signature = fread( $stream, 8 );
 			rewind( $stream );
 			if ( "\x89PNG\r\n\x1a\n" === $signature ) {
-				return self::png( $stream );
+				return self::png( $stream, $allow_untagged_color );
 			}
 			if ( "\xff\xd8" === substr( $signature, 0, 2 ) ) {
 				return self::jpeg( $stream );
@@ -76,7 +76,7 @@ class YoOhw_Media_Optimizer_Color {
 		return array( 'icc' => $icc, 'private' => $private );
 	}
 
-	private static function png( $stream ) {
+	private static function png( $stream, $allow_untagged_color ) {
 		fseek( $stream, 8 ); $icc = ''; $seen = array(); $private = false; $color = -1; $idat = false;
 		$size = fstat( $stream )['size'];
 		for ( $i = 0; $i < self::MAX_HEADERS; ++$i ) {
@@ -113,7 +113,7 @@ class YoOhw_Media_Optimizer_Color {
 			if ( 'IDAT' === $type ) { $idat = true; }
 			if ( 'IEND' === $type ) {
 				if ( ! $idat || ! isset( $seen['IHDR'] ) || ( $icc && ( ! in_array( $color, array( 2, 3, 6 ), true ) || isset( $seen['sRGB'] ) ) ) ) { return self::error(); }
-				if ( isset( $seen['cICP'] ) || isset( $seen['mDCV'] ) || isset( $seen['cLLI'] ) || ( ! $icc && ( ( isset( $seen['gAMA'] ) && ! $seen['standard_gamma'] ) || ( isset( $seen['cHRM'] ) && ! $seen['standard_chroma'] ) ) ) ) { return self::error(); }
+				if ( ( ! $allow_untagged_color || $icc ) && ( isset( $seen['cICP'] ) || isset( $seen['mDCV'] ) || isset( $seen['cLLI'] ) || ( ! $icc && ( ( isset( $seen['gAMA'] ) && ! $seen['standard_gamma'] ) || ( isset( $seen['cHRM'] ) && ! $seen['standard_chroma'] ) ) ) ) ) { return self::error(); }
 				return array( 'icc' => $icc, 'private' => $private );
 			}
 		}

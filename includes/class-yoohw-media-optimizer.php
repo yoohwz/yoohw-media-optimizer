@@ -3510,7 +3510,7 @@ Header append Vary Accept env=REDIRECT_accept
 
 	/** Keep the normal editor order while preserving ICC in core Imagick PNG sizes. */
 	public function thumbnail_image_editors( $editors ) {
-		if ( ! in_array( 'WP_Image_Editor_Imagick', $editors, true ) ) { return $editors; }
+		if ( ! class_exists( 'WP_Image_Editor_Imagick' ) || ! in_array( 'WP_Image_Editor_Imagick', $editors, true ) ) { return $editors; }
 		require_once __DIR__ . '/class-yoohw-media-optimizer-imagick.php';
 		require_once __DIR__ . '/class-yoohw-media-optimizer-thumbnail-imagick.php';
 		return array_map( static function ( $editor ) { return 'WP_Image_Editor_Imagick' === $editor ? 'YoOhw_Media_Optimizer_Thumbnail_Imagick' : $editor; }, $editors );
