@@ -1518,7 +1518,7 @@ Header append Vary Accept env=REDIRECT_accept
 					<option value="default" <?php selected( 'default', $options['avif_imagick_chroma'] ); ?>><?php esc_html_e( 'Encoder default', 'yoohw-media-optimizer' ); ?></option>
 					<option value="444" <?php selected( '444', $options['avif_imagick_chroma'] ); ?>><?php esc_html_e( 'Request 4:4:4', 'yoohw-media-optimizer' ); ?></option>
 				</select>
-				<em><?php esc_html_e( 'Only affects AVIF sidecars encoded by Imagick; it does not switch engines or make alpha lossless. Writer support varies; larger files and more CPU are possible.', 'yoohw-media-optimizer' ); ?></em>
+				<em><?php esc_html_e( 'Only affects AVIF sidecars encoded by Imagick; it does not switch engines or make alpha lossless. Writer support varies; larger files and higher CPU and memory use are possible.', 'yoohw-media-optimizer' ); ?></em>
 			</label>
 			<label class="yoohw-mo-field">
 				<span><?php esc_html_e( 'PNG to AVIF alpha', 'yoohw-media-optimizer' ); ?></span>

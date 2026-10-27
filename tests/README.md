@@ -195,6 +195,34 @@ These deterministic same-runtime byte comparisons do not promise encoder byte
 stability across library versions or certify the upstream WordPress thumbnail
 color pipeline.
 
+The `avif-chroma` child verifies the opt-in Imagick AVIF preference through
+public attachment processing: default byte parity, real non-monochrome `av1C`
+subsampling bits for4:4:4,23/89 output quality, untagged/P3 PNG, JPEG EXIF6/2,
+ICC/privacy/display dimensions, fresh sidecars, core-thumbnail isolation and
+original fingerprints. Ordinary native failure may use Imagick444; exact PNG
+alpha still fails without its required native encoder. GD/independent custom
+editors and successful native arguments/output remain on their existing paths.
+The test-only bounded BMFF property reader is not included in the runtime.
+
+`avif-chroma-fault` exercises the actual adapter setter with wandfalse,
+Exception and Error, plus partial-save WP_Error through the public pipeline.
+Sources, seeded recovery files, old sidecars, truthful failure/skip-larger
+counters and owned-stage cleanup are asserted. Isolated `avif-chroma-post-*`
+children exercise the actual settings capability/nonce guards, enable/disable,
+missing field and invalid-array normalization; the normal settings form is
+rendered and checked. These are WordPress handler/form checks, not a browser
+transport or authentication-session certification. Child fixtures/options are
+restored; only an appropriate disposable site may run the suite.
+
+The Imagick4:4:4 setting is an encoder preference, not a universal delegate
+capability guarantee or independent alpha control. Real YUV444 is required on
+the representative supported stack; missing optional WordPress AVIF APIs such
+as6.4 report NOT RUN. Large public JPEG originals and an8.3MP RGBA/P3 PNG are
+measured separately with the production preference via the offline probe;
+per-process cost and limits are recorded in the linked PR evidence. These
+large saves do not exercise attachment transactions, whole-library throughput
+or process-crash recovery. They do not authorize deployment to a populated site.
+
 These checks also exercise PNG16 rejection, native-only failure without silent
 lossy fallback, JPEG behavior with PNG modes enabled, unchanged original
 fingerprints, fresh/force/stale sidecars, private metadata, larger valid candidates,
