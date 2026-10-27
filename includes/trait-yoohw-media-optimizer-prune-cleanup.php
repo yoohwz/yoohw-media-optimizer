@@ -166,7 +166,7 @@ trait YoOhw_Media_Optimizer_Prune_Cleanup {
 		}
 		$source = yotm_optimizer_prune_handoff( $token, $page, $item_key );
 		if ( is_wp_error( $source ) ) {
-			throw new RuntimeException( $source->get_error_message(), 409 );
+			throw new RuntimeException( esc_html( $source->get_error_message() ), 409 );
 		}
 		if ( ! is_array( $source ) || 1 !== ( $source['schema'] ?? null ) || ! is_string( $token ) || '' === $token || ( $source['job_token'] ?? null ) !== $token || ! is_array( $source['items'] ?? null ) || count( $source['items'] ) > 100 || ! is_int( $source['pages'] ?? null ) || ! is_int( $source['page'] ?? null ) || ! is_int( $source['total'] ?? null ) || $source['page'] !== $page || $page < 1 || $source['pages'] < 0 || $page > max( 1, $source['pages'] ) || $source['total'] < 0 || ! is_string( $source['source_url'] ?? null ) || ! is_string( $source['scope_label'] ?? null ) ) {
 			throw new RuntimeException( 'The completed Prune evidence is invalid or incompatible.', 409 );
@@ -268,7 +268,7 @@ trait YoOhw_Media_Optimizer_Prune_Cleanup {
 						$candidate = array( 'source' => $item, 'format' => $format, 'proof' => $proof );
 						$paths = array( $this->cleanup_path( $item['path'] ), $this->cleanup_path( $proof['path'] ) );
 						$valid = yotm_optimizer_with_cleanup_guard( $paths, function () use ( $candidate, $token, $page ) { return $this->validate_cleanup_candidate( $candidate, $token, $page ); } );
-						if ( is_wp_error( $valid ) ) { throw new RuntimeException( $valid->get_error_message() ); }
+						if ( is_wp_error( $valid ) ) { throw new RuntimeException( esc_html( $valid->get_error_message() ) ); }
 						if ( ! $valid ) {
 							$run['preserved'][] = array( 'path' => $item['path'] . '.' . $format, 'status' => 'skipped', 'message' => 'No sidecar exists; no cleanup is needed.' );
 							continue;
@@ -315,14 +315,14 @@ trait YoOhw_Media_Optimizer_Prune_Cleanup {
 						// Re-read the durable approval after all final source/reference/proof checks.
 						$this->read_prune_cleanup( $run['id'], $run['hash'] );
 						$guard = $checkpoint();
-						if ( true !== $guard ) { throw new RuntimeException( is_wp_error( $guard ) ? $guard->get_error_message() : 'Thumbnail Manager lock ownership was lost.', 503 ); }
+						if ( true !== $guard ) { throw new RuntimeException( is_wp_error( $guard ) ? esc_html( $guard->get_error_message() ) : 'Thumbnail Manager lock ownership was lost.', 503 ); }
 						$this->mutation_checkpoint();
-						// Native unlink cannot be redirected by wp_delete_file filters.
+						// phpcs:ignore WordPress.WP.AlternativeFunctions.unlink_unlink -- Native unlink must target the approved path directly; wp_delete_file filters could redirect this destructive operation.
 						$deleted = @unlink( $path );
 						clearstatcache( true, $path );
 						return array( 'status' => $deleted && ! file_exists( $path ) && ! is_link( $path ) ? 'deleted' : 'failed', 'message' => $deleted ? 'The approved sidecar was removed.' : 'The sidecar could not be removed.' );
 					} );
-					if ( is_wp_error( $outcome ) ) { throw new RuntimeException( $outcome->get_error_message(), 409 ); }
+					if ( is_wp_error( $outcome ) ) { throw new RuntimeException( esc_html( $outcome->get_error_message() ), 409 ); }
 				} catch ( RuntimeException $error ) {
 					if ( 503 === $error->getCode() ) { throw $error; }
 					$outcome = array( 'status' => 'preserved', 'message' => $error->getMessage() );
@@ -408,7 +408,9 @@ trait YoOhw_Media_Optimizer_Prune_Cleanup {
 			if ( $saved || $run_id ) {
 				$run = $this->read_prune_cleanup( $run_id, '', false );
 				echo '<p><a href="' . esc_url( $run['source_url'] ) . '">' . esc_html__( 'Back to the saved Thumbnail Manager result', 'yoohw-media-optimizer' ) . '</a></p>';
+				/* translators: 1: Source page number, 2: Source page count, 3: Deleted source count in the full report, 4: Preview candidate count, 5: Processed candidate count. */
 				echo '<p>' . esc_html( $run['scope_label'] ) . ' — ' . esc_html( sprintf( __( 'Source page %1$d of %2$d; %3$d deleted source items in the full report. Preview candidates: %4$d. Processed: %5$d.', 'yoohw-media-optimizer' ), $run['page'], max( 1, $run['source_pages'] ), $run['source_total'], count( $run['items'] ), $run['cursor'] ) ) . '</p>';
+				/* translators: %s: Cleanup approval deadline in UTC, formatted YYYY-MM-DD HH:MM:SS. */
 				echo '<p>' . esc_html( sprintf( __( 'Approval deadline (UTC): %s. Legacy sidecars without exact ownership evidence are preserved.', 'yoohw-media-optimizer' ), gmdate( 'Y-m-d H:i:s', $run['expires'] ) ) ) . '</p>';
 				if ( ! $run['items'] ) { echo '<p><strong>' . esc_html__( 'No eligible sidecars were found on this page. Nothing will be deleted.', 'yoohw-media-optimizer' ) . '</strong></p>'; }
 				elseif ( $run['cursor'] === count( $run['items'] ) ) { echo '<p><strong>' . esc_html__( 'Cleanup complete. Saved results are shown below.', 'yoohw-media-optimizer' ) . '</strong></p>'; }
@@ -434,6 +436,7 @@ trait YoOhw_Media_Optimizer_Prune_Cleanup {
 				$page = max( 1, absint( $this->get_query_arg( 'yotm_page' ) ) );
 				$source = $this->prune_cleanup_source( $token, $page );
 				echo '<p><a href="' . esc_url( $source['source_url'] ) . '">' . esc_html__( 'Back to the saved Thumbnail Manager result', 'yoohw-media-optimizer' ) . '</a></p>';
+				/* translators: 1: Source page number, 2: Source page count, 3: Deleted source item count on this page. */
 				echo '<p>' . esc_html( sprintf( __( 'Page %1$d of %2$d: %3$d deleted source items. Preparing a preview does not delete files.', 'yoohw-media-optimizer' ), $page, max( 1, $source['pages'] ), count( $source['items'] ) ) ) . '</p>';
 				$this->prune_cleanup_form( 'prepare', __( 'Prepare separate sidecar cleanup preview', 'yoohw-media-optimizer' ), array( 'yotm_prune' => $token, 'yotm_page' => $page ) );
 				foreach ( array( $page - 1 => __( 'Previous page', 'yoohw-media-optimizer' ), $page + 1 => __( 'Next page', 'yoohw-media-optimizer' ) ) as $target => $label ) {
