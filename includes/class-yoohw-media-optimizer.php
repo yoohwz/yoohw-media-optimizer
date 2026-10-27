@@ -124,6 +124,7 @@ class YoOhw_Media_Optimizer {
 	 * Constructor.
 	 */
 	private function __construct() {
+		add_filter( 'wp_image_editors', array( $this, 'thumbnail_image_editors' ), PHP_INT_MAX );
 		add_filter( 'wp_generate_attachment_metadata', array( $this, 'optimize_generated_metadata' ), 20, 2 );
 		add_filter( 'wp_update_attachment_metadata', array( $this, 'optimize_generated_metadata' ), 20, 2 );
 		add_action( 'delete_attachment', array( $this, 'delete_attachment_sidecars' ) );
@@ -3507,13 +3508,21 @@ Header append Vary Accept env=REDIRECT_accept
 		return $orientation >= 1 && $orientation <= 8 ? $orientation : new WP_Error( 'yoohw_mo_exif_orientation', __( 'The JPEG orientation cannot be normalized safely.', 'yoohw-media-optimizer' ) );
 	}
 
+	/** Keep the normal editor order while preserving ICC in core Imagick PNG sizes. */
+	public function thumbnail_image_editors( $editors ) {
+		if ( ! class_exists( 'WP_Image_Editor_Imagick' ) || ! in_array( 'WP_Image_Editor_Imagick', $editors, true ) ) { return $editors; }
+		require_once __DIR__ . '/class-yoohw-media-optimizer-imagick.php';
+		require_once __DIR__ . '/class-yoohw-media-optimizer-thumbnail-imagick.php';
+		return array_map( static function ( $editor ) { return 'WP_Image_Editor_Imagick' === $editor ? 'YoOhw_Media_Optimizer_Thumbnail_Imagick' : $editor; }, $editors );
+	}
+
 	/** Select the normal WordPress editor with a narrow Imagick save adapter. */
 	private function color_image_editor( $source, $args = array() ) {
 		$filter = static function ( $editors ) {
-			if ( ! in_array( 'WP_Image_Editor_Imagick', $editors, true ) ) { return $editors; }
+			if ( ! in_array( 'WP_Image_Editor_Imagick', $editors, true ) && ! in_array( 'YoOhw_Media_Optimizer_Thumbnail_Imagick', $editors, true ) ) { return $editors; }
 			// WordPress loads its editor base classes before applying this filter.
 			require_once __DIR__ . '/class-yoohw-media-optimizer-imagick.php';
-			return array_map( static function ( $editor ) { return 'WP_Image_Editor_Imagick' === $editor ? 'YoOhw_Media_Optimizer_Imagick' : $editor; }, $editors );
+			return array_map( static function ( $editor ) { return in_array( $editor, array( 'WP_Image_Editor_Imagick', 'YoOhw_Media_Optimizer_Thumbnail_Imagick' ), true ) ? 'YoOhw_Media_Optimizer_Imagick' : $editor; }, $editors );
 		};
 		add_filter( 'wp_image_editors', $filter, PHP_INT_MAX );
 		try { return wp_get_image_editor( $source, $args ); }

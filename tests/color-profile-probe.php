@@ -66,7 +66,7 @@ $fixture = static function( $kind, $profile, $orientation = 1, $pixel_colors = n
 	imagealphablending( $image, false );
 	imagesavealpha( $image, true );
 	foreach ( null === $pixel_colors ? $colors : $pixel_colors as $index => $color ) {
-		$alpha = 'jpeg' === $kind ? 0 : ( 2 === $index ? 127 : ( 3 === $index && ! $palette ? 64 : 0 ) );
+		$alpha = in_array( $kind, array( 'jpeg', 'rgb' ), true ) ? 0 : ( 2 === $index ? 127 : ( 3 === $index && ! $palette ? 64 : 0 ) );
 		$c = imagecolorallocatealpha( $image, $color[0], $color[1], $color[2], $alpha );
 		imagefilledrectangle( $image, ( $index % 2 ) * 48, (int) ( $index / 2 ) * 32, ( $index % 2 ) * 48 + 47, (int) ( $index / 2 ) * 32 + 31, $c );
 	}
@@ -143,12 +143,12 @@ try {
 	$editor = in_array( $mode, array( 'gd', 'tool-flags', 'native-strip' ), true ) ? 'WP_Image_Editor_GD' : 'WP_Image_Editor_Imagick';
 	$filter( 'wp_image_editors', static function() use ( $editor ) { return array( $editor ); } );
 	if ( 'native' !== $mode ) { putenv( 'PATH=' . $dir ); }
-	if ( in_array( $mode, array( 'imagick', 'native' ), true ) && ! class_exists( 'Imagick' ) ) {
+	if ( in_array( $mode, array( 'imagick', 'native', 'thumbnail' ), true ) && ! class_exists( 'Imagick' ) ) {
 		$assert( ! $required, 'Required ICC Imagick verifier unavailable.' );
 		echo 'Color profile ' . $mode . ": NOT RUN — Imagick unavailable.\n";
 		return;
 	}
-	if ( in_array( $mode, array( 'imagick', 'native' ), true ) ) {
+	if ( in_array( $mode, array( 'imagick', 'native', 'thumbnail' ), true ) ) {
 		// profileImage() may silently leave pixels unchanged when LCMS was not compiled in.
 		$delegates = implode( ' ', Imagick::getConfigureOptions( 'DELEGATES' ) );
 		if ( ! preg_match( '/\blcms(?:2)?\b/i', $delegates ) ) {
@@ -173,6 +173,112 @@ try {
 		file_put_contents( $path . '.webp', 'legacy untagged webp' ); touch( $path . '.webp', time() + 5 );
 		$result = $run( $id, array(), false );
 		$assert( 'existing' === $result['files'][0]['status'] && 'legacy untagged webp' === file_get_contents( $path . '.webp' ), 'Fresh legacy sidecar automatically regenerated.' );
+	} elseif ( 'thumbnail' === $mode ) {
+		require_once ABSPATH . 'wp-admin/includes/image.php';
+		update_option( YoOhw_Media_Optimizer::OPTION_KEY, array_merge( $options, array( 'auto_optimize_uploads' => 0 ) ) );
+		$filter( 'intermediate_image_sizes_advanced', static function() { return array( 'color-soft' => array( 'width' => 48, 'height' => 32, 'crop' => false ), 'color-crop' => array( 'width' => 32, 'height' => 32, 'crop' => true ) ); } );
+		$filter( 'big_image_size_threshold', static function() { return false; } );
+		foreach ( $profiles as $name => $profile ) {
+			foreach ( array( 'rgb', 'rgba', 'palette' ) as $kind ) {
+				list( $id, $path ) = $attach( 'thumbnail-' . $name . '-' . $kind . '.png', $fixture( $kind, $profile ) );
+				$hash = hash_file( 'sha256', $path );
+				$metadata = wp_generate_attachment_metadata( $id, $path );
+				wp_update_attachment_metadata( $id, $metadata );
+				$assert( 2 === count( $metadata['sizes'] ), 'Core did not generate both color thumbnails.' );
+				foreach ( $metadata['sizes'] as $size ) {
+					$output = dirname( $path ) . '/' . $size['file'];
+					$check( $output, $name, 1, $size['width'], $size['height'], 'rgb' === $kind ? false : $kind, 1 );
+					$privacy( $output );
+					$color = YoOhw_Media_Optimizer_Color::inspect( $output );
+					$assert( ! is_wp_error( $color ) && ! $color['private'], 'Core thumbnail contains private/duplicate profile text.' );
+				}
+				$assert( $hash === hash_file( 'sha256', $path ), 'Core thumbnails changed the upload master.' );
+				$assert( '' === get_post_meta( $id, YoOhw_Media_Optimizer::META_KEY, true ), 'Auto-off thumbnail generation ran the optimizer.' );
+				$result = $run( $id, array( 'skip_larger_files' => 0, 'auto_optimize_uploads' => 0 ) );
+				$assert( 3 === count( $result['files'] ) && 3 === $result['summary']['created'], 'Tagged core thumbnail sidecars did not succeed: ' . wp_json_encode( $result ) );
+				foreach ( $result['files'] as $file ) {
+					$assert( 'YoOhw_Media_Optimizer_Imagick' === $file['webp_engine'], 'Own optimizer used the core-thumbnail adapter.' );
+					$source = trailingslashit( wp_get_upload_dir()['basedir'] ) . $file['source'];
+					$dims = wp_getimagesize( $source );
+					$check( $source . '.webp', $name, 1, $dims[0], $dims[1], 'rgb' === $kind ? false : $kind );
+				}
+				$assert( $hash === hash_file( 'sha256', $path ), 'Sidecars changed the upload master.' );
+				// Regeneration starts from the still-tagged master, never retags an old derivative.
+				$old_hashes = array();
+				foreach ( $metadata['sizes'] as $size ) { $old_hashes[$size['file']] = hash_file( 'sha256', dirname( $path ) . '/' . $size['file'] ); }
+				$again = wp_generate_attachment_metadata( $id, $path );
+				foreach ( $again['sizes'] as $size ) { $assert( $old_hashes[$size['file']] === hash_file( 'sha256', dirname( $path ) . '/' . $size['file'] ), 'Deterministic regeneration changed color thumbnail bytes.' ); }
+			}
+		}
+		$assert( array( 'Custom_Color_Editor', 'WP_Image_Editor_GD', 'YoOhw_Media_Optimizer_Thumbnail_Imagick' ) === $optimizer->thumbnail_image_editors( array( 'Custom_Color_Editor', 'WP_Image_Editor_GD', 'WP_Image_Editor_Imagick' ) ), 'Core mapping changed custom editor order.' );
+		$assert( array( 'WP_Image_Editor_GD' ) === $optimizer->thumbnail_image_editors( array( 'WP_Image_Editor_GD' ) ), 'Core color fix forced Imagick over GD.' );
+		$assert( 'YoOhw_Media_Optimizer_Imagick' === get_class( $invoke( 'color_image_editor', array( $path ) ) ), 'Core wrapper leaked into original optimization.' );
+		foreach ( array( 'rgb', 'gamma', 'jpeg' ) as $kind ) {
+			$bytes = $fixture( 'gamma' === $kind ? 'rgb' : $kind, '' );
+			if ( 'gamma' === $kind ) { $bytes = substr( $bytes, 0, 33 ) . $chunk( 'gAMA', pack( 'N', 100000 ) ) . substr( $bytes, 33 ); }
+			list( $id, $path ) = $attach( 'parent-parity-' . $kind . ( 'jpeg' === $kind ? '.jpg' : '.png' ), $bytes );
+			if ( 'gamma' === $kind ) { $assert( is_wp_error( YoOhw_Media_Optimizer_Color::inspect( $path ) ) && ! is_wp_error( YoOhw_Media_Optimizer_Color::inspect( $path, true ) ), 'Core passthrough weakened ordinary optimizer color validation.' ); }
+			$parent = new WP_Image_Editor_Imagick( $path ); $assert( ! is_wp_error( $parent->load() ), 'Cannot load parent parity fixture.' );
+			$wrapper = wp_get_image_editor( $path ); $assert( 'YoOhw_Media_Optimizer_Thumbnail_Imagick' === get_class( $wrapper ), 'Core did not select color wrapper.' );
+			foreach ( array( 'parent' => $parent, 'wrapper' => $wrapper ) as $label => $instance ) {
+				$assert( ! is_wp_error( $instance->resize( 48, 32 ) ), 'Parity resize failed.' );
+				$saved = $instance->save( $dir . '/' . $label . '-' . basename( $path ) );
+				$assert( ! is_wp_error( $saved ), 'Parity save failed.' );
+			}
+			$assert( hash_file( 'sha256', $dir . '/parent-' . basename( $path ) ) === hash_file( 'sha256', $dir . '/wrapper-' . basename( $path ) ), 'Untagged PNG/JPEG changed parent output.' );
+		}
+		// Normal auto-upload lifecycle, including repeated metadata hooks and both supported codecs.
+		$avif = wp_image_editor_supports( array( 'mime_type' => 'image/avif' ) );
+		update_option( YoOhw_Media_Optimizer::OPTION_KEY, array_merge( $options, array( 'auto_optimize_uploads' => 1, 'skip_larger_files' => 0, 'generate_avif_sidecars' => $avif ? 1 : 0 ) ) );
+		list( $id, $path ) = $attach( 'auto-p3.png', $fixture( 'rgb', $profiles['display_p3'] ) ); $hash = hash_file( 'sha256', $path );
+		$metadata = wp_generate_attachment_metadata( $id, $path ); wp_update_attachment_metadata( $id, $metadata );
+		$tracking = get_post_meta( $id, YoOhw_Media_Optimizer::META_KEY, true );
+		$assert( 3 === count( $tracking['files'] ), 'Auto lifecycle did not persist all physical sources.' );
+		foreach ( $tracking['files'] as $file ) {
+			$source = trailingslashit( wp_get_upload_dir()['basedir'] ) . $file['source']; $dims = wp_getimagesize( $source );
+			foreach ( $avif ? array( 'webp', 'avif' ) : array( 'webp' ) as $format ) { $check( $source . '.' . $format, 'display_p3', 1, $dims[0], $dims[1] ); $privacy( $source . '.' . $format ); }
+		}
+		$assert( $hash === hash_file( 'sha256', $path ), 'Auto lifecycle changed P3 master.' );
+		// Core's scaled image is also derived from the untouched upload.
+		update_option( YoOhw_Media_Optimizer::OPTION_KEY, array_merge( $options, array( 'auto_optimize_uploads' => 0 ) ) );
+		$small_threshold = static function() { return 64; }; add_filter( 'big_image_size_threshold', $small_threshold, 1000 );
+		try {
+			// Older core versions intentionally do not scale PNG uploads. Compare
+			// the actual parent lifecycle rather than assuming this feature exists.
+			remove_filter( 'wp_image_editors', array( $optimizer, 'thumbnail_image_editors' ), PHP_INT_MAX );
+			try {
+				list( $baseline_id, $baseline_path ) = $attach( 'scaled-parent.png', $fixture( 'rgba', $profiles['display_p3'] ) );
+				wp_generate_attachment_metadata( $baseline_id, $baseline_path );
+				$parent_scales_png = get_attached_file( $baseline_id ) !== $baseline_path;
+			} finally { add_filter( 'wp_image_editors', array( $optimizer, 'thumbnail_image_editors' ), PHP_INT_MAX ); }
+			list( $id, $path ) = $attach( 'scaled-p3.png', $fixture( 'rgba', $profiles['display_p3'] ) ); $hash = hash_file( 'sha256', $path );
+			$metadata = wp_generate_attachment_metadata( $id, $path );
+			$scaled = get_attached_file( $id ); $dims = wp_getimagesize( $scaled );
+			$assert( $parent_scales_png === ( $scaled !== $path ) && $hash === hash_file( 'sha256', $path ), 'Core PNG scaling changed parent behavior or the upload master.' );
+			if ( $parent_scales_png ) {
+				$assert( basename( $path ) === $metadata['original_image'], 'Scaled image lost its original reference.' );
+				$check( $scaled, 'display_p3', 1, $dims[0], $dims[1], 'rgba', 2 ); $privacy( $scaled );
+			} else { echo "Core PNG scaling: NOT RUN — this WordPress parent retains PNG uploads at their original size.\n"; }
+		} finally { remove_filter( 'big_image_size_threshold', $small_threshold, 1000 ); }
+		class YoOhw_MO_Thumbnail_Fault extends YoOhw_Media_Optimizer_Thumbnail_Imagick {
+			public function drop_profile() { $this->image->removeImageProfile( 'icc' ); }
+			public function orient() { $this->image->setImageOrientation( Imagick::ORIENTATION_RIGHTTOP ); }
+			public $fail_prepare = false;
+			public function prepare_color( $icc, $remove ) { return $this->fail_prepare ? new WP_Error( 'thumbnail_fixture', 'Preparation refused.' ) : parent::prepare_color( $icc, $remove ); }
+		}
+		foreach ( array( 'mismatch', 'orientation', 'prepare', 'malformed' ) as $failure ) {
+			$bytes = $fixture( 'rgb', 'malformed' === $failure ? 'invalid profile' : $profiles['display_p3'] );
+			list( $id, $path ) = $attach( 'refuse-' . $failure . '.png', $bytes );
+			$old = substr( $path, 0, -4 ) . '-48x32.png'; file_put_contents( $old, 'owned old thumbnail' );
+			$editor = new YoOhw_MO_Thumbnail_Fault( $path ); $result = $editor->load();
+			if ( ! is_wp_error( $result ) ) {
+				if ( 'mismatch' === $failure ) { $editor->drop_profile(); }
+				if ( 'orientation' === $failure ) { $editor->orient(); }
+				$editor->fail_prepare = 'prepare' === $failure;
+				$result = $editor->make_subsize( array( 'width' => 48, 'height' => 32, 'crop' => false ) );
+			}
+			$assert( is_wp_error( $result ) && $bytes === file_get_contents( $path ) && 'owned old thumbnail' === file_get_contents( $old ), 'Rejected core resize overwrote source/old derivative: ' . $failure );
+		}
 	} elseif ( 'imagick' === $mode ) {
 		// Negative control: independently CMS-converted sRGB pixels carry the wrong P3 ICC.
 		$control = $dir . '/wrong-p3.png';
