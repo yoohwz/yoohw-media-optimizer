@@ -92,6 +92,18 @@ trait YoOhw_Media_Optimizer_Prune_Cleanup {
 		return $path;
 	}
 
+	/** An absent child is a no-op only when its exact safe parent can be read. */
+	private function cleanup_sidecar_absent( $relative ) {
+		$path = $this->cleanup_path( $relative );
+		clearstatcache( true, $path );
+		if ( false !== @lstat( $path ) || file_exists( $path ) || is_link( $path ) ) { return false; }
+		$parent = dirname( $path );
+		if ( ! is_dir( $parent ) || ! is_readable( $parent ) || ! is_executable( $parent ) ) {
+			throw new RuntimeException( 'Sidecar absence cannot be established safely; no cleanup is authorized.', 409 );
+		}
+		return true;
+	}
+
 	/** No discovery/backfill: only an actual successful publisher can create proof. */
 	private function sidecar_ownership_for_result( $source, $previous, $published ) {
 		$proofs = array();
@@ -248,16 +260,22 @@ trait YoOhw_Media_Optimizer_Prune_Cleanup {
 			foreach ( $source['items'] as $item ) {
 				foreach ( array( 'webp', 'avif' ) as $format ) {
 					try {
+						if ( $this->cleanup_sidecar_absent( $item['path'] . '.' . $format ) ) {
+							$run['preserved'][] = array( 'path' => $item['path'] . '.' . $format, 'status' => 'skipped', 'message' => 'No sidecar exists; no cleanup is needed.' );
+							continue;
+						}
 						$proof = $this->cleanup_proof( $item, $format );
 						$candidate = array( 'source' => $item, 'format' => $format, 'proof' => $proof );
 						$paths = array( $this->cleanup_path( $item['path'] ), $this->cleanup_path( $proof['path'] ) );
 						$valid = yotm_optimizer_with_cleanup_guard( $paths, function () use ( $candidate, $token, $page ) { return $this->validate_cleanup_candidate( $candidate, $token, $page ); } );
-						if ( is_wp_error( $valid ) || ! $valid ) {
-							throw new RuntimeException( is_wp_error( $valid ) ? $valid->get_error_message() : 'The sidecar is already absent; no cleanup is needed.' );
+						if ( is_wp_error( $valid ) ) { throw new RuntimeException( $valid->get_error_message() ); }
+						if ( ! $valid ) {
+							$run['preserved'][] = array( 'path' => $item['path'] . '.' . $format, 'status' => 'skipped', 'message' => 'No sidecar exists; no cleanup is needed.' );
+							continue;
 						}
 						$run['items'][] = $candidate;
 					} catch ( RuntimeException $error ) {
-						$run['preserved'][] = array( 'path' => $item['path'] . '.' . $format, 'message' => $error->getMessage() );
+						$run['preserved'][] = array( 'path' => $item['path'] . '.' . $format, 'status' => 'preserved', 'message' => $error->getMessage() );
 					}
 				}
 			}
@@ -400,7 +418,7 @@ trait YoOhw_Media_Optimizer_Prune_Cleanup {
 					$outcome = $run['outcomes'][ $index ] ?? array( 'status' => 'pending', 'message' => 'Unchanged ownership proof matches the deleted source. Awaiting explicit cleanup.' );
 					echo '<tr><td>' . esc_html( $candidate['proof']['path'] ) . '</td><td>' . esc_html( $outcome['status'] . ': ' . $outcome['message'] ) . '</td></tr>';
 				}
-				foreach ( $run['preserved'] as $row ) { echo '<tr><td>' . esc_html( $row['path'] ) . '</td><td>' . esc_html( 'Preserved: ' . $row['message'] ) . '</td></tr>'; }
+				foreach ( $run['preserved'] as $row ) { echo '<tr><td>' . esc_html( $row['path'] ) . '</td><td>' . esc_html( ( 'skipped' === ( $row['status'] ?? '' ) ? 'Skipped: ' : 'Preserved: ' ) . $row['message'] ) . '</td></tr>'; }
 				echo '</tbody></table>';
 				$fields = array( 'run_id' => $run['id'], 'manifest_hash' => $run['hash'] );
 				if ( time() < $run['expires'] && $run['cursor'] < count( $run['items'] ) ) {

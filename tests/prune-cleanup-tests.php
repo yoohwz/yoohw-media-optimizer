@@ -100,6 +100,10 @@ return static function( $optimizer, $invoke, $assert ) {
 		$GLOBALS['yoohw_mo_prune_fixture'] = array( 'source' => array( 'schema' => 1, 'job_token' => 'fixture-completed-prune', 'source_url' => admin_url( 'tools.php?page=thumbnail-manager' ), 'scope_label' => 'Deleted thumbnail fixtures', 'page' => 1, 'pages' => 1, 'total' => count( $items ), 'items' => $items ) );
 		$run = $optimizer->prepare_prune_cleanup( 'fixture-completed-prune' );
 		$assert( empty( $run['error'] ) && count( $run['items'] ) === 11 && count( $run['preserved'] ) === 13, 'Preview must select only exact owned WebP sidecars.' );
+		$absent_rows = array_filter( $run['preserved'], static function( $row ) { return ( $row['status'] ?? '' ) === 'skipped' && $row['message'] === 'No sidecar exists; no cleanup is needed.'; } );
+		$legacy_rows = array_filter( $run['preserved'], static function( $row ) use ( $items ) { return $row['path'] === $items[11]['path'] . '.webp' && ( $row['status'] ?? '' ) === 'preserved'; } );
+		$assert( count( $absent_rows ) === 12 && count( $legacy_rows ) === 1, 'Absent AVIF files must be skipped; an existing unowned legacy sidecar must remain preserved.' );
+
 		$assert( ! empty( $optimizer->prepare_prune_cleanup( 'fixture-completed-prune' )['error'] ), 'An unfinished preview was replaced.' );
 		$assert( ! empty( $optimizer->process_prune_cleanup( $run['id'], $run['hash'] )['error'] ), 'An unapproved preview deleted files.' );
 		$assert( ! empty( $optimizer->approve_prune_cleanup( $run['id'], str_repeat( '0', 64 ) )['error'] ), 'A tampered approval hash was accepted.' );
