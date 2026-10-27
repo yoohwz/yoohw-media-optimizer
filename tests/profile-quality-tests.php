@@ -6,7 +6,7 @@
  */
 return static function( $optimizer, $invoke, $assert, $test_dir ) {
 	$assert( function_exists( 'proc_open' ), 'Codec profile probes require proc_open.' );
-	foreach ( array( 'settings', 'gd', 'editor', 'editor-quality', 'native', 'native-fault', 'native-missing' ) as $mode ) {
+	foreach ( array( 'settings', 'gd', 'editor', 'editor-quality', 'native', 'native-fault', 'native-missing', 'avif-chroma', 'avif-chroma-fault', 'avif-chroma-post-valid', 'avif-chroma-post-missing', 'avif-chroma-post-invalid', 'avif-chroma-post-nonce', 'avif-chroma-post-capability' ) as $mode ) {
 		$process = proc_open( array( PHP_BINARY, __DIR__ . '/codec-profile-probe.php', ABSPATH, $mode ), array( 0 => array( 'pipe', 'r' ), 1 => array( 'pipe', 'w' ), 2 => array( 'pipe', 'w' ) ), $pipes );
 		$assert( is_resource( $process ), 'Could not start codec profile child: ' . $mode );
 		fclose( $pipes[0] );
