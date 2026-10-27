@@ -200,3 +200,14 @@ Choose follow-up experiments from paired rows and worst cases, then inspect
 text, edges, gradients and alpha at display size and 1:1. The gallery is labeled;
 agent inspection is not a blinded human panel. Do not infer a universal score
 threshold, production savings percentage or production-ready color policy.
+
+## Round 4: post-fix expanded baseline
+
+Round 4 reuses this harness on reviewed code after the Imagick quality and core
+PNG ICC fixes. Keep the original round-1 evidence immutable. Separate real
+product/camera holdout inputs from correlated generated controls, and retain
+private media outside Git. Compare actual native, Imagick and GD routes only
+where supported; report refusals rather than inventing scores. No production
+default, staging media or library-wide processing changes are authorized by
+this development benchmark. The final report records exact input, runtime,
+probe and runner identities, cost boundaries and remaining Human visual review.
