@@ -211,3 +211,56 @@ where supported; report refusals rather than inventing scores. No production
 default, staging media or library-wide processing changes are authorized by
 this development benchmark. The final report records exact input, runtime,
 probe and runner identities, cost boundaries and remaining Human visual review.
+
+### Expanded corpus import
+
+`expand_corpus.py` imports locally acquired, hash-pinned sources into a new
+private directory. The source spec remains private when it contains owner media
+paths. It has an `images` array with `id`, `path` (relative to the spec, or
+absolute), `sha256`, `group`, `independent_master_id`, `provenance` and explicit
+`color_policy=assume_srgb` for untagged RGB. Set `max_edge=0` to copy source bytes
+unchanged, or `1600` for an explicitly labeled EXIF/ICC-to-sRGB resized PNG.
+Variants of a master share its independent identity; resizing is not extra content.
+
+```sh
+python3 tests/benchmark/test_expand_corpus.py
+python3 tests/benchmark/expand_corpus.py --base-manifest OLD/manifest.json \
+  --sources PRIVATE/import-spec.json --output NEW_CORPUS
+```
+
+The importer copies old inputs/references byte-for-byte, prepares references from
+the saved new inputs, checks source/spec/reference hashes before and after, and
+never fetches, bootstraps WordPress, overwrites sources or removes partial output.
+The public additions are pinned in `ROUND4-SOURCES.json`; download explicitly to
+a private cache and verify each SHA256 before using it. Their Creative Commons
+licenses/attribution apply separately to the benchmark's software license.
+Retain author, source link, license link and the resize/encoding transformation
+notice with any gallery or redistributed derivative. Private site images have
+no redistribution grant and must not be committed or uploaded as CI artifacts.
+
+### Actual routes and existing optional modes
+
+`plugin-baseline.php` accepts `--engine=native|imagick|gd`,
+`--webp-quality=1..100`, `--avif-quality=1..100`,
+`--png-webp-mode=lossy|lossless` and `--avif-alpha-mode=default|lossless`.
+Defaults retain quality82, native routing and ordinary PNG modes. The two
+advanced modes require `--engine=native`. Editor preferences disable external
+binaries and constrain WordPress editor selection; direct GD WebP routing can
+still win. Read each row's actual `engine`, never infer it from a run's name.
+Every call still uses the shipping `save_webp_file`/`save_avif_file` wrapper.
+The probe verifies all runtime PHP hashes, captures loaded PHP/WordPress/editor
+identities, sanitized request-local options and actual codec quality. It does
+not mutate attachment records, queue, backups or stored options.
+
+The scorer's baseline82 import rejects recorded qualities other than82. Score
+an explicit failure code only as a refusal using repeated
+`--expected-refusal=EXACT_CODE`; it never becomes a successful encode or numeric
+score. Missing rows, stale hashes and all unlisted failures still fail the run.
+No flag is needed for the normal successful native/Imagick runs. Native-only
+optional controls `webp_current82`, `avif_current82`,
+`webp_png_lossless_current` and `avif_alpha_lossless82_current` reproduce current
+shipping command arguments; unlike round1 defaults they retain ICC/privacy.
+The raw controls still do not implement plugin EXIF routing. Compare their byte
+hashes with actual neutral plugin outputs before attributing their per-child
+RSS to a production encoder path. PHP/editor per-encode peak RSS remains
+unavailable; process memory and end-to-end costs are not implied by these values.
