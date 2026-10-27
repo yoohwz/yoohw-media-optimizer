@@ -89,6 +89,8 @@ For PNG sources, optional lossless WebP uses `cwebp` at moderate fixed effort, a
 
 The optional profiles require their native encoder and PNG sources of at most 8 bits per channel. If an encoder is disabled, unavailable or fails, the requested profile fails safely without silently using a lossy fallback. Existing sidecars remain intact. Supported ICC profiles and the private-metadata policy still apply. Processing can cost more CPU or produce larger files; the existing skip-larger setting still applies. No universal size saving or full perceptual-quality guarantee is implied.
 
+The optional Imagick AVIF chroma setting requests 4:4:4 color detail only when the plugin's Imagick editor creates an AVIF sidecar. It does not switch engines or change native encoders, GD, independent custom editors, original optimization or core thumbnails. The default leaves encoder behavior unchanged. Supported writers can preserve finer colored edges, but output size, CPU and memory use may increase substantially on large images; test your images first. This is an encoder request, not a guarantee for every ImageMagick build, and does not make alpha lossless. If setting the request fails, generation fails without replacing an existing sidecar.
+
 Changing settings does not re-encode fresh sidecars or repeat original-file optimization. Use explicit force processing to regenerate sidecars after reviewing test images. Default profiles continue to use the existing supported-engine fallbacks.
 
 = What storage is required for backup and restore? =
