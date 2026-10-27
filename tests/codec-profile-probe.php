@@ -143,6 +143,128 @@ try {
 			$status = 'webp' === $format ? 'status' : 'avif_status'; $assert( 'created' === $result['files'][0][$status], 'Oriented editor profile failed: ' . wp_json_encode( $result ) );
 			$assert( in_array( $quality, YoOhw_MO_Codec_Quality_Editor::$qualities, true ) && ! in_array( 'webp' === $format ? 33 : 71, YoOhw_MO_Codec_Quality_Editor::$qualities, true ), 'WordPress editor received wrong codec quality.' );
 		}
+	} elseif ( 'editor-quality' === $mode ) {
+		require_once ABSPATH . WPINC . '/class-wp-image-editor.php';
+		require_once ABSPATH . WPINC . '/class-wp-image-editor-gd.php';
+		// Independent real-save oracle: apply quality after WordPress has resolved MIME.
+		class YoOhw_MO_Quality_Oracle_GD extends WP_Image_Editor_GD {
+			public $requested_quality;
+			protected function get_output_format( $filename = null, $mime_type = null ) {
+				$output = parent::get_output_format( $filename, $mime_type );
+				$this->set_quality( $this->requested_quality );
+				return $output;
+			}
+		}
+		// Existing site callbacks must survive every save and cannot override explicit codec quality.
+		$filter( 'wp_editor_set_quality', static function() { return 64; } );
+		$quality_hooks = $GLOBALS['wp_filter']['wp_editor_set_quality']->callbacks;
+		$check_hooks = static function() use ( $assert, $quality_hooks ) {
+			$assert( $quality_hooks === $GLOBALS['wp_filter']['wp_editor_set_quality']->callbacks, 'Save leaked or removed a quality callback.' );
+			$assert( 64 === apply_filters( 'wp_editor_set_quality', 11, 'image/jpeg' ), 'Save changed an unrelated MIME/site quality filter.' );
+		};
+		$engines = array( 'gd' );
+		if ( class_exists( 'Imagick' ) ) {
+			require_once ABSPATH . WPINC . '/class-wp-image-editor-imagick.php';
+			require_once dirname( __DIR__ ) . '/includes/class-yoohw-media-optimizer-imagick.php';
+			class YoOhw_MO_Quality_Oracle_Imagick extends YoOhw_Media_Optimizer_Imagick {
+				public $requested_quality;
+				public function quality_state() {
+					return array( 'image' => $this->image->getImageCompressionQuality(), 'wand' => $this->image->getCompressionQuality(), 'format' => $this->image->getImageFormat(), 'lossless' => $this->image->getOption( 'webp:lossless' ), 'near_lossless' => $this->image->getOption( 'webp:near-lossless' ) );
+				}
+				protected function get_output_format( $filename = null, $mime_type = null ) {
+					$output = parent::get_output_format( $filename, $mime_type );
+					$this->set_quality( $this->requested_quality );
+					$this->image->setCompressionQuality( $this->requested_quality );
+					return $output;
+				}
+			}
+			$engines[] = 'imagick';
+		} else {
+			$assert( ! $required, 'Required real Imagick quality editor is unavailable.' );
+			echo "Imagick editor quality: NOT RUN — extension unavailable.\n";
+		}
+		$engine = 'gd';
+		$filter( 'wp_image_editors', static function() use ( &$engine ) { return array( 'imagick' === $engine ? 'WP_Image_Editor_Imagick' : 'WP_Image_Editor_GD' ); } );
+		$icc = file_get_contents( __DIR__ . '/fixtures/display_p3.icc' );
+		foreach ( $engines as $engine ) {
+			foreach ( array( 'webp', 'avif' ) as $format ) {
+				$mime = 'image/' . $format;
+				if ( ! wp_image_editor_supports( array( 'mime_type' => $mime ) ) ) {
+					$assert( ! $required || 'imagick' !== $engine, 'Required Imagick quality codec unavailable: ' . $format );
+					echo $engine . '/' . $format . " quality: NOT RUN — WordPress editor codec unavailable.\n"; continue;
+				}
+				$cases = 'imagick' === $engine ? array( 'rotate' => 6, 'reflect' => 2, 'neutral' => 1, 'png' => 1 ) : array( 'rotate' => 6 );
+				foreach ( $cases as $case => $orientation ) {
+					$bytes = 'png' === $case ? $png( 8, $icc ) : $jpeg( $orientation );
+					if ( 'imagick' === $engine && 'png' !== $case ) {
+						$body = "ICC_PROFILE\0\x01\x01" . $icc;
+						$bytes = substr( $bytes, 0, 2 ) . "\xff\xe2" . pack( 'n', strlen( $body ) + 2 ) . $body . substr( $bytes, 2 );
+					}
+					list( $id, $path ) = $attach( $engine . '-' . $format . '-' . $case . ( 'png' === $case ? '.png' : '.jpg' ), $bytes );
+					$hashes = $diagnostics = array();
+					foreach ( array( 23, 89 ) as $quality ) {
+						$changes = array( 'generate_webp_sidecars' => 'webp' === $format ? 1 : 0, 'generate_avif_sidecars' => 'avif' === $format ? 1 : 0, 'webp_quality' => 'webp' === $format ? $quality : 47, 'avif_quality' => 'avif' === $format ? $quality : 47 );
+						$result = $run( $id, $changes ); $check_hooks(); $file = $result['files'][0];
+						$status = 'webp' === $format ? 'status' : 'avif_status'; $engine_key = 'webp' === $format ? 'webp_engine' : 'avif_engine';
+						$assert( in_array( $file[$status], array( 'created', 'updated' ), true ), 'Real editor quality save failed: ' . wp_json_encode( $result ) );
+						$assert( ( 'imagick' === $engine ? 'YoOhw_Media_Optimizer_Imagick' : 'WP_Image_Editor_GD' ) === $file[$engine_key], 'Quality test silently selected another encoder.' );
+						$class = 'imagick' === $engine ? 'YoOhw_MO_Quality_Oracle_Imagick' : 'YoOhw_MO_Quality_Oracle_GD';
+						$expected = new $class( $path ); $expected->requested_quality = $quality;
+						$assert( ! is_wp_error( $expected->load() ), 'Cannot load real quality oracle.' );
+						if ( $orientation > 1 ) { $assert( true === $expected->maybe_exif_rotate(), 'Quality oracle cannot normalize orientation.' ); }
+						if ( 'imagick' === $engine ) { $assert( true === $expected->prepare_color( $icc, true ), 'Quality oracle cannot prepare ICC/privacy.' ); }
+						$oracle = $dir . '/expected-' . $engine . '-' . $format . '-' . $case . '-' . $quality . '.' . $format;
+						$assert( ! is_wp_error( $expected->save( $oracle, $mime ) ), 'Real quality oracle cannot save.' );
+						$hashes[] = hash_file( 'sha256', $path . '.' . $format );
+						$diagnostics[] = array( 'requested' => $quality, 'editor_quality' => $expected->get_quality(), 'state' => method_exists( $expected, 'quality_state' ) ? $expected->quality_state() : array(), 'chunk' => substr( file_get_contents( $path . '.' . $format ), 12, 4 ), 'bytes' => filesize( $path . '.' . $format ), 'hash' => end( $hashes ) );
+						$assert( end( $hashes ) === hash_file( 'sha256', $oracle ), 'Encoded quality differs from post-MIME oracle: ' . $engine . '/' . $format . '/' . $case . '/' . $quality );
+						$size = wp_getimagesize( $path . '.' . $format );
+						$assert( $mime === $size['mime'] && ( 6 === $orientation ? array( 32, 48 ) : ( 'png' === $case ? array( 16, 16 ) : array( 48, 32 ) ) ) === array( $size[0], $size[1] ), 'Quality save changed MIME/display dimensions.' );
+						$assert( hash( 'sha256', $bytes ) === hash_file( 'sha256', $path ), 'Quality save changed source bytes.' );
+						if ( 'imagick' === $engine ) {
+							$image = new Imagick( $path . '.' . $format ); $profiles = $image->getImageProfiles( '*', true );
+							$assert( $icc === ( $profiles['icc'] ?? '' ) && empty( $profiles['exif'] ) && empty( $profiles['xmp'] ), 'Quality save lost ICC or retained privacy metadata.' ); $image->clear();
+						}
+						// Changed settings alone must keep a fresh sidecar; explicit force above applies quality.
+						touch( $path . '.' . $format, time() + 5 );
+						$fresh = $run( $id, array_merge( $changes, array( 'webp_quality' => 51, 'avif_quality' => 52 ) ), false );
+						$assert( 'existing' === $fresh['files'][0][$status] && end( $hashes ) === hash_file( 'sha256', $path . '.' . $format ), 'Quality change replayed a fresh sidecar.' );
+					}
+					$assert( $hashes[0] !== $hashes[1], 'Different qualities produced identical real editor output: ' . $engine . '/' . $format . '/' . $case . ' ' . wp_json_encode( array( 'php' => PHP_VERSION, 'wordpress' => get_bloginfo( 'version' ), 'imagick' => phpversion( 'imagick' ), 'library' => class_exists( 'Imagick' ) ? Imagick::getVersion() : array(), 'encodes' => $diagnostics ) ) );
+				}
+			}
+		}
+		// Exercise the scope boundary even when no image is written or save throws.
+		class YoOhw_MO_Quality_Failure_Editor {
+			public $failure;
+			public $seen = array();
+			public $setter_calls = 0;
+			public function set_quality( $quality = null ) {
+				++$this->setter_calls;
+				return 'setter' === $this->failure ? new WP_Error( 'quality_fixture', 'Setter refused quality.' ) : true;
+			}
+			public function save( $path, $mime ) {
+				$this->seen = array( apply_filters( 'wp_editor_set_quality', 11, $mime ), apply_filters( 'wp_editor_set_quality', 11, 'image/jpeg' ) );
+				if ( 'throw' === $this->failure ) { throw new RuntimeException( 'Quality save fixture.' ); }
+				return 'save' === $this->failure ? new WP_Error( 'quality_fixture', 'Save refused quality.' ) : array( 'path' => $path );
+			}
+		}
+		list( $id, $path ) = $attach( 'quality-scope.jpg', $jpeg() );
+		foreach ( array( 'success', 'setter', 'save', 'throw', 'original' ) as $failure ) {
+			$editor = new YoOhw_MO_Quality_Failure_Editor(); $editor->failure = $failure;
+			try {
+				$args = array( $editor, $path, $dir . '/scope.webp', 'image/webp', $options );
+				if ( 'original' !== $failure ) { $args[] = 71; }
+				$result = $invoke( 'save_color_editor', $args );
+				$assert( 'throw' !== $failure, 'Save exception was swallowed.' );
+				$assert( in_array( $failure, array( 'setter', 'save' ), true ) === is_wp_error( $result ), 'Quality/save error was not propagated.' );
+			} catch ( RuntimeException $error ) {
+				$assert( 'throw' === $failure && 'Quality save fixture.' === $error->getMessage(), 'Unexpected scope exception: ' . $error->getMessage() );
+			}
+			$check_hooks();
+			$assert( 'setter' === $failure ? array() === $editor->seen : array( 'original' === $failure ? 64 : 71, 64 ) === $editor->seen, 'Quality callback escaped target MIME or setter failure still saved.' );
+			$assert( ( 'original' === $failure ? 0 : 1 ) === $editor->setter_calls, 'Optional sidecar quality changed original/editor setter behavior.' );
+		}
 	} elseif ( 'native-missing' === $mode ) {
 		$changes = array( 'generate_avif_sidecars' => 1, 'webp_png_mode' => 'lossless', 'avif_alpha_mode' => 'lossless', 'use_external_binaries' => 0 );
 		list( $id, $path ) = $failure_case( 'disabled-native.png', $png(), $changes );

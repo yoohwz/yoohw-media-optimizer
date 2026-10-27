@@ -166,6 +166,21 @@ AVIF lossless alpha compares all 256 exact alpha values using `avifdec` PNG outp
 or Imagick byte samples. Color remains lossy for AVIF. Tagged P3 probes retain exact
 ICC and test raw and independently color-managed samples where LCMS is available.
 
+The `editor-quality` child additionally uses real GD and Imagick encoders, with
+native tools disabled. JPEG rotation/reflection and neutral tagged JPEG/PNG
+fallbacks compare exact output bytes at quality23/89 against a test-only editor
+that applies image and wand quality after WordPress resolves the output MIME.
+Different qualities
+must produce different output; checking an earlier setter call is insufficient.
+Engine identity, source bytes, display dimensions, exact ICC/privacy and fresh
+sidecar retention are checked. A pre-existing quality callback, unrelated MIME,
+setter/save errors and exceptions verify the temporary quality scope is removed
+without changing original-optimization saves. Missing optional editor codecs are
+reported as NOT RUN; the representative native profile requires Imagick support.
+These deterministic same-runtime byte comparisons do not promise encoder byte
+stability across library versions or certify the upstream WordPress thumbnail
+color pipeline.
+
 These checks also exercise PNG16 rejection, native-only failure without silent
 lossy fallback, JPEG behavior with PNG modes enabled, unchanged original
 fingerprints, fresh/force/stale sidecars, private metadata, larger valid candidates,
@@ -231,7 +246,17 @@ remains a repository-owner action.
 Each regression environment uses a fresh WordPress install, MySQL 8.0, and
 WP-CLI 2.12.0, with GD required before the existing script runs. Thus its image
 optimization/backup assertions cannot silently skip because GD is absent.
-The representative PHP 8.4 profile additionally requires Imagick and real
+The shared runner builds unmodified, SHA256-pinned Imagick3.8.1 and
+ImageMagick6.9.13-59 in a private runner-temp prefix for every PHP boundary.
+Distro ImageMagick6.9.12-98 ignores lossy WebP quality even when the editor
+properties are correct; the real quality regression remains strict. This CI
+stack does not fix that external-library limitation on other installations.
+The build script verifies archives before extraction, rebuilds the module for
+the selected PHP ABI, verifies the loaded versions/formats, and is excluded from
+the plugin payload. It does not change developer/staging PHP or cache generated
+runtime/WordPress state.
+
+The representative PHP 8.4 profile additionally requires real
 `cwebp`, `avifenc`, `jpegtran` quality checks. Other declared boundaries preserve
 the GD regressions and report unavailable optional quality branches explicitly.
 This suite is not PHPUnit, PHPCS, PHPCompatibility, a browser suite, or a full
