@@ -264,3 +264,13 @@ The raw controls still do not implement plugin EXIF routing. Compare their byte
 hashes with actual neutral plugin outputs before attributing their per-child
 RSS to a production encoder path. PHP/editor per-encode peak RSS remains
 unavailable; process memory and end-to-end costs are not implied by these values.
+
+## Round 5: isolated AVIF chroma and alpha PoC
+
+Round 5 holds source pixels/profile and color quality fixed while varying actual
+AVIF chroma420/444 and alpha quality within each available encoder path. It
+separates existing plugin anchors from controlled experiments, verifies encoded
+chroma through a decoder, and treats unsupported Imagick alpha controls as
+unavailable. This development-only PoC does not change shipping defaults or
+install/modify the staging runtime. The final report must distinguish within-
+backend factor contrasts from cross-backend differences.
