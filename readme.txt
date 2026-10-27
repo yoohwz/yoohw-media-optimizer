@@ -77,7 +77,9 @@ Supported RGB JPEG and PNG images retain their source ICC profile and color enco
 
 Profile-aware processing requires a capable engine. GD alone cannot retain tagged images in this workflow; unsupported or malformed profiles, CMYK/YCCK sources and unverified color declarations are left unchanged with an explanatory result. Tagged AVIF output requires an available Imagick verifier. RGB matrix/TRC ICC v2/v4 profiles are supported; this is not full ICC, HDR or CMYK conversion support.
 
-New outputs are checked before publishing or replacing an original. Backup and restore retain the exact original bytes. Previously optimized originals and fresh sidecars are not automatically re-encoded to repair historical color loss. Regenerate sidecars explicitly when needed; existing original repeat-protection remains active.
+Plugin-generated sidecars and optimized-original candidates are checked before publishing or replacing an original. Backup and restore retain the exact original bytes. Previously optimized originals and fresh sidecars are not automatically re-encoded to repair historical color loss. Regenerate sidecars explicitly when needed; existing original repeat-protection remains active.
+
+WordPress PNG thumbnails and scaled images created by the standard Imagick editor also retain supported source ICC profiles, including when automatic sidecars are disabled. This path keeps the upload untouched and removes private thumbnail metadata so the writer can retain ICC safely. GD and custom image editors keep their existing behavior. This does not infer profiles for existing untagged thumbnails; regenerate from an original that still has its profile. Core publishes its generated sizes; arbitrary image-writer faults are not covered by the optimizer candidate verifier.
 
 = Can WebP and AVIF use different quality settings? =
 

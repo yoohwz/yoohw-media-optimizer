@@ -149,6 +149,17 @@ matrix/TRC ICC v2/v4 with XYZ PCS; it does not certify arbitrary ICC conformance
 LUT/GRAY/CMYK conversion or HDR. Profile inspection uses 1 MiB ICC limits,
 bounded PNG decompression and header/segment budgets.
 
+The `thumbnail` child exercises real `wp_generate_attachment_metadata()` with the
+standard Imagick editor: sRGB/P3/Adobe RGB PNGs, RGB/RGBA/palette+tRNS, soft and
+cropped sizes, auto-off/auto-on sidecars, regeneration and core scaling. Exact
+serialized ICC, raw and independent LCMS samples, alpha, private chunks and master
+hashes are asserted. Untagged PNG/JPEG parent output, custom/GD order and the own
+optimizer adapter are characterized separately. Malformed/loaded-mismatched ICC,
+non-neutral PNG orientation and preparation refusal must leave an existing owned
+derivative and source untouched. This is the existing core publication path,
+not a new staged writer or a guarantee against arbitrary encoder faults. GD and
+custom thumbnail editor fidelity are outside this bounded Imagick correction.
+
 Some ImageMagick PNG writers emit a duplicate ICC text profile despite privacy
 exclusions (observed on Local ImageMagick 7.1.1-15). Strict output verification
 rejects these candidates, leaving media unchanged; no PNG container rewrite or
