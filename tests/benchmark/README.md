@@ -6,6 +6,10 @@ Git and outside a site's upload directory. The runner's measurements describe a
 small PoC, not a universal quality or encoder ranking.
 
 See [the measured round-1 report](RESULTS.md) for findings, per-case data and limitations.
+The [round-3 native PNG probe](results/2026-10-27/RESULTS.md) measures the opt-in
+moderate-effort WebP and lossless AVIF alpha flags while retaining source ICC.
+It includes per-case measurements and receipts, and makes no perceptual-score or
+production savings claim.
 
 ## Build the 64-case corpus
 
