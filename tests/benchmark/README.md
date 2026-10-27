@@ -331,3 +331,13 @@ ICC-managed SDR metrics; neither certifies HDR/wide-gamut displays. Visible-RGB
 weighted MAE, source-opaque-region MAE and exact alpha pixel differences provide
 separate evidence. Preserve the two metric directories and raw decoder images
 when retaining receipts. Imagick PHP per-encode RSS remains unavailable.
+
+For the production Imagick chroma preference, the actual-plugin probe accepts
+`--avif-imagick-chroma=default|444`. This populates the real sanitized option
+without enabling the round5 test subclass or overriding speed. Use
+`--engine=imagick --codec=avif` and assert the actual engine is the shipping
+adapter, with empty `test_instrumentation.applied_options`. This is distinct
+from `--avif-chroma`, which remains a test-only round5 control. Real large
+JPEG/PNG saves need fresh hash-pinned inputs/output directories, process limits
+and separate source/dimension/ICC/privacy/bitstream validation; PHP child RSS
+includes WordPress/bootstrap/encoding, not just a codec subprocess.

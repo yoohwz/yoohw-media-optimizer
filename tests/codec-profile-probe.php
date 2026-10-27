@@ -21,7 +21,7 @@ $original_options = get_option( YoOhw_Media_Optimizer::OPTION_KEY, array() );
 $original_path = getenv( 'PATH' );
 $dir = trailingslashit( wp_get_upload_dir()['basedir'] ) . 'yoohw-mo-codec-' . wp_generate_password( 8, false, false );
 $ids = $filters = $backups = array();
-$options = array_merge( $original_options, array( 'auto_optimize_uploads' => 0, 'optimize_originals' => 0, 'backup_originals' => 1, 'quality' => 82, 'webp_quality' => 71, 'avif_quality' => 33, 'webp_png_mode' => 'lossy', 'avif_alpha_mode' => 'default', 'generate_webp_sidecars' => 1, 'generate_avif_sidecars' => 0, 'use_external_binaries' => 0, 'skip_larger_files' => 0, 'max_width' => 0, 'max_height' => 0, 'metadata_policy' => 'remove' ) );
+$options = array_merge( $original_options, array( 'auto_optimize_uploads' => 0, 'optimize_originals' => 0, 'backup_originals' => 1, 'quality' => 82, 'webp_quality' => 71, 'avif_quality' => 33, 'webp_png_mode' => 'lossy', 'avif_alpha_mode' => 'default', 'avif_imagick_chroma' => 'default', 'generate_webp_sidecars' => 1, 'generate_avif_sidecars' => 0, 'use_external_binaries' => 0, 'skip_larger_files' => 0, 'max_width' => 0, 'max_height' => 0, 'metadata_policy' => 'remove' ) );
 $filter = static function( $hook, $callback ) use ( &$filters ) { add_filter( $hook, $callback, 999, 3 ); $filters[] = array( $hook, $callback ); };
 $remove = static function( $path ) use ( &$remove ) {
 	if ( is_file( $path ) || is_link( $path ) ) { unlink( $path ); }
@@ -65,7 +65,8 @@ $failure_case = static function( $name, $bytes, $changes ) use ( $attach, $run, 
 	$assert( ! is_wp_error( $backup ), 'Cannot seed profile recovery data.' ); $backups[] = $backup['path']; $backup_hash = hash_file( 'sha256', $backup['path'] );
 	file_put_contents( $path . '.webp', 'old webp' ); file_put_contents( $path . '.avif', 'old avif' );
 	$result = $run( $id, $changes ); $file = $result['files'][0];
-	$assert( 'failed' === $file['status'] && in_array( $file['avif_status'], array( 'failed', 'unsupported' ), true ), 'Advanced unavailable/failing profile silently fell back: ' . wp_json_encode( $result ) );
+	$assert( ( 'failed' === $file['status'] || ( isset( $changes['generate_webp_sidecars'] ) && ! $changes['generate_webp_sidecars'] && 'disabled' === $file['status'] ) ) && in_array( $file['avif_status'], array( 'failed', 'unsupported' ), true ), 'Advanced unavailable/failing profile silently fell back: ' . wp_json_encode( $result ) );
+	$assert( 1 === $result['summary']['avif_failed'] + $result['summary']['avif_unsupported'] && 0 === $result['summary']['original_optimized'], 'Failed profile counters did not report exactly one AVIF failure.' );
 	$assert( 0 === $result['summary']['created'] && 0 === $result['summary']['updated'] && 0 === $result['summary']['avif_created'] && 0 === $result['summary']['avif_updated'], 'Failed profiles reported sidecar success.' );
 	$assert( $bytes === file_get_contents( $path ) && 'old webp' === file_get_contents( $path . '.webp' ) && 'old avif' === file_get_contents( $path . '.avif' ), 'Failed profile changed source or historical sidecars.' );
 	$assert( $backup_hash === hash_file( 'sha256', $backup['path'] ), 'Profile failure changed recovery bytes.' );
@@ -108,7 +109,9 @@ $find = static function( $tool ) use ( $original_path ) {
 try {
 	wp_mkdir_p( $dir );
 	$filter( 'wp_image_editors', static function() { return array( 'WP_Image_Editor_GD' ); } );
-	if ( 'settings' === $mode ) {
+	if ( 0 === strpos( $mode, 'avif-chroma' ) ) {
+		require __DIR__ . '/avif-chroma-probe.php';
+	} elseif ( 'settings' === $mode ) {
 		foreach ( array( array(), array( 'quality' => 59 ), array( 'quality' => 59, 'webp_quality' => 24 ), array( 'quality' => 59, 'avif_quality' => 96 ) ) as $stored ) {
 			update_option( YoOhw_Media_Optimizer::OPTION_KEY, $stored ); $actual = $optimizer->get_options(); $legacy = $stored['quality'] ?? 82;
 			$assert( ( $stored['webp_quality'] ?? $legacy ) === $actual['webp_quality'] && ( $stored['avif_quality'] ?? $legacy ) === $actual['avif_quality'], 'Each absent codec quality must inherit legacy quality independently.' );
@@ -123,7 +126,7 @@ try {
 		$b = $invoke( 'original_options_fingerprint', array( array_merge( $options, array( 'webp_quality' => 12, 'avif_quality' => 98, 'webp_png_mode' => 'lossless', 'avif_alpha_mode' => 'lossless' ) ) ) );
 		$assert( $a === $b, 'Sidecar profiles invalidated original fingerprints.' );
 	} elseif ( 'gd' === $mode ) {
-		list( $id, $path ) = $attach( 'gd.png', $png() ); $result = $run( $id );
+		list( $id, $path ) = $attach( 'gd.png', $png() ); $result = $run( $id, array( 'avif_imagick_chroma' => '444' ) );
 		$assert( 'created' === $result['files'][0]['status'] && 'gd' === $result['files'][0]['webp_engine'], 'GD codec quality route unavailable.' );
 		$image = imagecreatefrompng( $path ); imagepalettetotruecolor( $image ); imagealphablending( $image, true ); imagesavealpha( $image, true );
 		imagewebp( $image, $dir . '/gd-expected.webp', 71 ); imagedestroy( $image );
@@ -139,7 +142,7 @@ try {
 		foreach ( array( 'webp' => 71, 'avif' => 33 ) as $format => $quality ) {
 			if ( ! wp_image_editor_supports( array( 'mime_type' => 'image/' . $format ) ) ) { echo $format . " profile editor: NOT RUN — WordPress/GD codec unavailable.\n"; continue; }
 			list( $id, $path ) = $attach( 'editor-' . $format . '.jpg', $jpeg( 6 ) ); YoOhw_MO_Codec_Quality_Editor::$qualities = array();
-			$result = $run( $id, array( 'generate_webp_sidecars' => 'webp' === $format ? 1 : 0, 'generate_avif_sidecars' => 'avif' === $format ? 1 : 0 ) );
+			$result = $run( $id, array( 'generate_webp_sidecars' => 'webp' === $format ? 1 : 0, 'generate_avif_sidecars' => 'avif' === $format ? 1 : 0, 'avif_imagick_chroma' => '444' ) );
 			$status = 'webp' === $format ? 'status' : 'avif_status'; $assert( 'created' === $result['files'][0][$status], 'Oriented editor profile failed: ' . wp_json_encode( $result ) );
 			$assert( in_array( $quality, YoOhw_MO_Codec_Quality_Editor::$qualities, true ) && ! in_array( 'webp' === $format ? 33 : 71, YoOhw_MO_Codec_Quality_Editor::$qualities, true ), 'WordPress editor received wrong codec quality.' );
 		}
@@ -266,7 +269,7 @@ try {
 			$assert( ( 'original' === $failure ? 0 : 1 ) === $editor->setter_calls, 'Optional sidecar quality changed original/editor setter behavior.' );
 		}
 	} elseif ( 'native-missing' === $mode ) {
-		$changes = array( 'generate_avif_sidecars' => 1, 'webp_png_mode' => 'lossless', 'avif_alpha_mode' => 'lossless', 'use_external_binaries' => 0 );
+		$changes = array( 'generate_avif_sidecars' => 1, 'webp_png_mode' => 'lossless', 'avif_alpha_mode' => 'lossless', 'avif_imagick_chroma' => '444', 'use_external_binaries' => 0 );
 		list( $id, $path ) = $failure_case( 'disabled-native.png', $png(), $changes );
 		// New modes alone do not rewrite fresh historical sidecars.
 		touch( $path . '.webp', time() + 10 ); touch( $path . '.avif', time() + 10 );
@@ -291,7 +294,7 @@ try {
 			chmod( $dir . '/' . $tool, 0700 );
 		}
 		putenv( 'PATH=' . $dir );
-		$advanced = array( 'generate_avif_sidecars' => 1, 'webp_png_mode' => 'lossless', 'avif_alpha_mode' => 'lossless', 'use_external_binaries' => 1 );
+		$advanced = array( 'generate_avif_sidecars' => 1, 'webp_png_mode' => 'lossless', 'avif_alpha_mode' => 'lossless', 'avif_imagick_chroma' => '444', 'use_external_binaries' => 1 );
 		if ( 'native-fault' === $mode ) {
 			$failure_case( 'failing-native.png', $png(), $advanced );
 			$assert( is_file( $dir . '/cwebp.args' ) && is_file( $dir . '/avifenc.args' ), 'Fault probe did not invoke both native encoders.' );

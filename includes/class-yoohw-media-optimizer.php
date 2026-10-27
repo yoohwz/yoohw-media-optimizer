@@ -111,6 +111,7 @@ class YoOhw_Media_Optimizer {
 			'jpeg_quality'           => 82,
 			'webp_png_mode'          => 'lossy',
 			'avif_alpha_mode'        => 'default',
+			'avif_imagick_chroma'    => 'default',
 			'compression_mode'       => 'balanced',
 			'metadata_policy'        => 'remove',
 			'max_width'              => 0,
@@ -325,6 +326,7 @@ class YoOhw_Media_Optimizer {
 		$options['avif_quality']           = max( 1, min( 100, absint( $options['avif_quality'] ?? $options['quality'] ) ) );
 		$options['webp_png_mode']          = in_array( $options['webp_png_mode'], array( 'lossy', 'lossless' ), true ) ? $options['webp_png_mode'] : 'lossy';
 		$options['avif_alpha_mode']        = in_array( $options['avif_alpha_mode'], array( 'default', 'lossless' ), true ) ? $options['avif_alpha_mode'] : 'default';
+		$options['avif_imagick_chroma']    = in_array( $options['avif_imagick_chroma'], array( 'default', '444' ), true ) ? $options['avif_imagick_chroma'] : 'default';
 		$options['jpeg_quality']           = max( 1, min( 100, absint( $options['jpeg_quality'] ) ) );
 		$options['max_width']              = max( 0, absint( $options['max_width'] ) );
 		$options['max_height']             = max( 0, absint( $options['max_height'] ) );
@@ -1511,6 +1513,14 @@ Header append Vary Accept env=REDIRECT_accept
 				<em><?php esc_html_e( 'Lossless PNG pixels use fixed cwebp effort settings and ignore WebP quality. RGB hidden by fully transparent pixels may change.', 'yoohw-media-optimizer' ); ?></em>
 			</label>
 			<label class="yoohw-mo-field">
+				<span><?php esc_html_e( 'Imagick AVIF color detail', 'yoohw-media-optimizer' ); ?></span>
+				<select name="avif_imagick_chroma">
+					<option value="default" <?php selected( 'default', $options['avif_imagick_chroma'] ); ?>><?php esc_html_e( 'Encoder default', 'yoohw-media-optimizer' ); ?></option>
+					<option value="444" <?php selected( '444', $options['avif_imagick_chroma'] ); ?>><?php esc_html_e( 'Request 4:4:4', 'yoohw-media-optimizer' ); ?></option>
+				</select>
+				<em><?php esc_html_e( 'Only affects AVIF sidecars encoded by Imagick; it does not switch engines or make alpha lossless. Writer support varies; larger files and higher CPU and memory use are possible.', 'yoohw-media-optimizer' ); ?></em>
+			</label>
+			<label class="yoohw-mo-field">
 				<span><?php esc_html_e( 'PNG to AVIF alpha', 'yoohw-media-optimizer' ); ?></span>
 				<select name="avif_alpha_mode">
 					<option value="default" <?php selected( 'default', $options['avif_alpha_mode'] ); ?>><?php esc_html_e( 'Encoder default', 'yoohw-media-optimizer' ); ?></option>
@@ -1537,6 +1547,7 @@ Header append Vary Accept env=REDIRECT_accept
 		check_admin_referer( 'yoohw_mo_save_settings' );
 
 		$current = $this->get_options();
+		$avif_chroma = array_key_exists( 'avif_imagick_chroma', $_POST ) ? wp_unslash( $_POST['avif_imagick_chroma'] ) : $current['avif_imagick_chroma'];
 		$quality = isset( $_POST['quality'] ) ? max( 1, min( 100, absint( wp_unslash( $_POST['quality'] ) ) ) ) : $current['quality'];
 		$options = array(
 			'auto_optimize_uploads'  => empty( $_POST['auto_optimize_uploads'] ) ? 0 : 1,
@@ -1551,6 +1562,7 @@ Header append Vary Accept env=REDIRECT_accept
 			'avif_quality'           => isset( $_POST['avif_quality'] ) ? max( 1, min( 100, absint( wp_unslash( $_POST['avif_quality'] ) ) ) ) : ( isset( $_POST['quality'] ) ? $quality : $current['avif_quality'] ),
 			'webp_png_mode'          => isset( $_POST['webp_png_mode'] ) ? sanitize_key( wp_unslash( $_POST['webp_png_mode'] ) ) : $current['webp_png_mode'],
 			'avif_alpha_mode'        => isset( $_POST['avif_alpha_mode'] ) ? sanitize_key( wp_unslash( $_POST['avif_alpha_mode'] ) ) : $current['avif_alpha_mode'],
+			'avif_imagick_chroma'    => in_array( $avif_chroma, array( 'default', '444' ), true ) ? $avif_chroma : 'default',
 			'jpeg_quality'           => isset( $_POST['jpeg_quality'] ) ? max( 1, min( 100, absint( wp_unslash( $_POST['jpeg_quality'] ) ) ) ) : 82,
 			'max_width'              => isset( $_POST['max_width'] ) ? max( 0, min( 10000, absint( wp_unslash( $_POST['max_width'] ) ) ) ) : 0,
 			'max_height'             => isset( $_POST['max_height'] ) ? max( 0, min( 10000, absint( wp_unslash( $_POST['max_height'] ) ) ) ) : 0,
@@ -3536,6 +3548,10 @@ Header append Vary Accept env=REDIRECT_accept
 		if ( $editor instanceof YoOhw_Media_Optimizer_Imagick ) {
 			$prepared = $editor->prepare_color( $color['icc'], 'remove' === $options['metadata_policy'] );
 			if ( is_wp_error( $prepared ) ) { return $prepared; }
+			if ( null !== $quality && 'image/avif' === $mime && '444' === ( $options['avif_imagick_chroma'] ?? 'default' ) ) {
+				$chroma = $editor->request_avif444();
+				if ( is_wp_error( $chroma ) ) { return $chroma; }
+			}
 		} elseif ( $color['icc'] ) {
 			return new WP_Error( 'yoohw_mo_color_editor', __( 'The active image editor cannot preserve this color profile. The source was left unchanged.', 'yoohw-media-optimizer' ) );
 		}

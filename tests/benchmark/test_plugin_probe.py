@@ -180,6 +180,18 @@ echo json_encode(array('webp' => $webp, 'avif' => $avif,
                 self.assertEqual([row["codec"] for row in report["images"]], ["avif"])
                 self.assertFalse(any("class-wp-image-editor" in path for path in report["loaded_file_sha256"]))
 
+    def test_runtime_avif_preference_does_not_enable_test_instrumentation(self):
+        self.assert_prebootstrap_failure('Unknown Imagick AVIF preference', '--avif-imagick-chroma=420')
+        self.stub_runtime()
+        result = self.run_probe('--engine=imagick', '--codec=avif', '--avif-imagick-chroma=444')
+        self.assertEqual(result.returncode, 0, result.stderr)
+        report = json.loads((self.output / 'plugin-baseline.json').read_text())
+        self.assertEqual(report['options']['avif_imagick_chroma'], '444')
+        self.assertEqual(report['test_instrumentation'], {'avif_chroma': 'default', 'avif_speed': 'default'})
+        self.assertEqual(len(report['images']), 1)
+        self.assertEqual(report['images'][0]['options']['avif_imagick_chroma'], '444')
+        self.assertEqual(report['images'][0]['test_instrumentation']['applied_options'], [])
+
     def test_invalid_options_fail_before_bootstrap(self):
         for arguments in (("--engine=unknown",), ("--webp-quality=0",), ("--avif-quality=101",),
                           ("--webp-quality=82.5",), ("--png-webp-mode=auto",),
