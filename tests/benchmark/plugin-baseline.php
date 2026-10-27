@@ -7,7 +7,7 @@
  */
 
 if ( 'cli' !== PHP_SAPI || $argc < 4 ) {
-	fwrite( STDERR, "Usage: php plugin-baseline.php /path/to/wordpress manifest.json /new/output-directory [--engine=native|imagick|gd] [--webp-quality=1..100] [--avif-quality=1..100] [--png-webp-mode=lossy|lossless] [--avif-alpha-mode=default|lossless] [--codec=both|avif] [--avif-chroma=default|420|444] [--avif-speed=default|6]\n" );
+	fwrite( STDERR, "Usage: php plugin-baseline.php /path/to/wordpress manifest.json /new/output-directory [--engine=native|imagick|gd] [--webp-quality=1..100] [--avif-quality=1..100] [--png-webp-mode=lossy|lossless] [--avif-alpha-mode=default|lossless] [--codec=both|avif] [--avif-chroma=default|420|444] [--avif-speed=default|6] [--avif-imagick-chroma=default|444]\n" );
 	exit( 1 );
 }
 
@@ -31,10 +31,10 @@ try {
 	$engine  = 'native';
 	$codec_request = 'both';
 	$instrumentation = array( 'avif_chroma' => 'default', 'avif_speed' => 'default' );
-	$options = array( 'use_external_binaries' => 1, 'quality' => 82, 'webp_quality' => 82, 'avif_quality' => 82, 'webp_png_mode' => 'lossy', 'avif_alpha_mode' => 'default' );
+	$options = array( 'use_external_binaries' => 1, 'quality' => 82, 'webp_quality' => 82, 'avif_quality' => 82, 'webp_png_mode' => 'lossy', 'avif_alpha_mode' => 'default', 'avif_imagick_chroma' => 'default' );
 	$seen    = array();
 	foreach ( array_slice( $argv, 4 ) as $argument ) {
-		if ( ! preg_match( '/\A--(engine|webp-quality|avif-quality|png-webp-mode|avif-alpha-mode|codec|avif-chroma|avif-speed)=([^=]+)\z/', $argument, $match ) || isset( $seen[ $match[1] ] ) ) {
+		if ( ! preg_match( '/\A--(engine|webp-quality|avif-quality|png-webp-mode|avif-alpha-mode|codec|avif-chroma|avif-speed|avif-imagick-chroma)=([^=]+)\z/', $argument, $match ) || isset( $seen[ $match[1] ] ) ) {
 			throw new RuntimeException( 'Unknown, duplicate, or malformed option: ' . $argument );
 		}
 		list( , $key, $value ) = $match;
@@ -45,6 +45,9 @@ try {
 		} elseif ( 'engine' === $key ) {
 			if ( ! in_array( $value, array( 'native', 'imagick', 'gd' ), true ) ) { throw new RuntimeException( 'Unknown engine preference.' ); }
 			$engine = $value;
+		} elseif ( 'avif-imagick-chroma' === $key ) {
+			if ( ! in_array( $value, array( 'default', '444' ), true ) ) { throw new RuntimeException( 'Unknown Imagick AVIF preference.' ); }
+			$options['avif_imagick_chroma'] = $value;
 		} elseif ( 'codec' === $key ) {
 			if ( ! in_array( $value, array( 'both', 'avif' ), true ) ) { throw new RuntimeException( 'Unknown codec selection.' ); }
 			$codec_request = $value;
