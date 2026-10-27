@@ -1,0 +1,2490 @@
+[
+  {
+    "group": "alpha",
+    "route": "advanced",
+    "codec": "avif",
+    "attempts": 16,
+    "ok": 16,
+    "refused": 0,
+    "independent_masters": 4,
+    "bytes": {
+      "median": 31432.5,
+      "min": 8753,
+      "max": 43852
+    },
+    "ssimulacra2_worst": {
+      "median": 93.24054309499999,
+      "min": 90.28122097,
+      "max": 94.53889301
+    },
+    "alpha_max_error": {
+      "median": 0.0,
+      "min": 0,
+      "max": 0
+    },
+    "encode_wall_seconds": {
+      "median": 0.2748534679412842,
+      "min": 0.10774087905883789,
+      "max": 0.7734360694885254
+    },
+    "matched_command_encode_wall_seconds": {
+      "median": 0.18701381299979403,
+      "min": 0.05225874999996449,
+      "max": 0.3526244170006976
+    },
+    "matched_command_encode_peak_rss_bytes": {
+      "median": 28401664.0,
+      "min": 17186816,
+      "max": 40206336
+    }
+  },
+  {
+    "group": "alpha",
+    "route": "advanced",
+    "codec": "webp",
+    "attempts": 16,
+    "ok": 16,
+    "refused": 0,
+    "independent_masters": 4,
+    "bytes": {
+      "median": 18708.0,
+      "min": 3908,
+      "max": 27578
+    },
+    "ssimulacra2_worst": {
+      "median": 100.0,
+      "min": 100.0,
+      "max": 100.0
+    },
+    "alpha_max_error": {
+      "median": 0.0,
+      "min": 0,
+      "max": 0
+    },
+    "encode_wall_seconds": {
+      "median": 0.2051544189453125,
+      "min": 0.10129618644714355,
+      "max": 0.31256103515625
+    },
+    "matched_command_encode_wall_seconds": {
+      "median": 0.14424666649938445,
+      "min": 0.014038707999134203,
+      "max": 0.19607620900023903
+    },
+    "matched_command_encode_peak_rss_bytes": {
+      "median": 22937600.0,
+      "min": 4849664,
+      "max": 28262400
+    }
+  },
+  {
+    "group": "alpha",
+    "route": "gd",
+    "codec": "avif",
+    "attempts": 16,
+    "ok": 0,
+    "refused": 16,
+    "independent_masters": 4,
+    "bytes": null,
+    "ssimulacra2_worst": null,
+    "alpha_max_error": null,
+    "encode_wall_seconds": null,
+    "matched_command_encode_wall_seconds": null,
+    "matched_command_encode_peak_rss_bytes": null
+  },
+  {
+    "group": "alpha",
+    "route": "gd",
+    "codec": "webp",
+    "attempts": 16,
+    "ok": 4,
+    "refused": 12,
+    "independent_masters": 4,
+    "bytes": {
+      "median": 32609.0,
+      "min": 8946,
+      "max": 80742
+    },
+    "ssimulacra2_worst": {
+      "median": 78.918892895,
+      "min": 59.92350604,
+      "max": 83.90824971
+    },
+    "alpha_max_error": {
+      "median": 1.0,
+      "min": 1,
+      "max": 1
+    },
+    "encode_wall_seconds": {
+      "median": 0.03357410430908203,
+      "min": 0.012280941009521484,
+      "max": 0.052420854568481445
+    },
+    "matched_command_encode_wall_seconds": null,
+    "matched_command_encode_peak_rss_bytes": null
+  },
+  {
+    "group": "alpha",
+    "route": "imagick",
+    "codec": "avif",
+    "attempts": 16,
+    "ok": 16,
+    "refused": 0,
+    "independent_masters": 4,
+    "bytes": {
+      "median": 11465.0,
+      "min": 6002,
+      "max": 21909
+    },
+    "ssimulacra2_worst": {
+      "median": 81.247657045,
+      "min": 62.15279955,
+      "max": 89.24703003
+    },
+    "alpha_max_error": {
+      "median": 7.0,
+      "min": 4,
+      "max": 14
+    },
+    "encode_wall_seconds": {
+      "median": 0.3877769708633423,
+      "min": 0.041934967041015625,
+      "max": 0.6211740970611572
+    },
+    "matched_command_encode_wall_seconds": null,
+    "matched_command_encode_peak_rss_bytes": null
+  },
+  {
+    "group": "alpha",
+    "route": "imagick",
+    "codec": "webp",
+    "attempts": 16,
+    "ok": 16,
+    "refused": 0,
+    "independent_masters": 4,
+    "bytes": {
+      "median": 36631.0,
+      "min": 8946,
+      "max": 88944
+    },
+    "ssimulacra2_worst": {
+      "median": 78.737561665,
+      "min": 59.6509901,
+      "max": 84.46168295
+    },
+    "alpha_max_error": {
+      "median": 0.0,
+      "min": 0,
+      "max": 1
+    },
+    "encode_wall_seconds": {
+      "median": 0.08394956588745117,
+      "min": 0.01183319091796875,
+      "max": 0.11064600944519043
+    },
+    "matched_command_encode_wall_seconds": null,
+    "matched_command_encode_peak_rss_bytes": null
+  },
+  {
+    "group": "alpha",
+    "route": "native",
+    "codec": "avif",
+    "attempts": 16,
+    "ok": 16,
+    "refused": 0,
+    "independent_masters": 4,
+    "bytes": {
+      "median": 12326.0,
+      "min": 5892,
+      "max": 24426
+    },
+    "ssimulacra2_worst": {
+      "median": 92.93274098500001,
+      "min": 90.0629693,
+      "max": 94.02591289
+    },
+    "alpha_max_error": {
+      "median": 7.0,
+      "min": 5,
+      "max": 14
+    },
+    "encode_wall_seconds": {
+      "median": 0.11870694160461426,
+      "min": 0.10729408264160156,
+      "max": 0.2313401699066162
+    },
+    "matched_command_encode_wall_seconds": {
+      "median": 0.09277004150044377,
+      "min": 0.04000287499911792,
+      "max": 0.16523412500100676
+    },
+    "matched_command_encode_peak_rss_bytes": {
+      "median": 32284672.0,
+      "min": 20856832,
+      "max": 46596096
+    }
+  },
+  {
+    "group": "alpha",
+    "route": "native",
+    "codec": "webp",
+    "attempts": 16,
+    "ok": 16,
+    "refused": 0,
+    "independent_masters": 4,
+    "bytes": {
+      "median": 37042.0,
+      "min": 9286,
+      "max": 88944
+    },
+    "ssimulacra2_worst": {
+      "median": 78.737561665,
+      "min": 59.6509901,
+      "max": 84.46168295
+    },
+    "alpha_max_error": {
+      "median": 0.0,
+      "min": 0,
+      "max": 0
+    },
+    "encode_wall_seconds": {
+      "median": 0.10600852966308594,
+      "min": 0.1019139289855957,
+      "max": 0.21224713325500488
+    },
+    "matched_command_encode_wall_seconds": {
+      "median": 0.09443795849983871,
+      "min": 0.02009004100000311,
+      "max": 0.4476324580009532
+    },
+    "matched_command_encode_peak_rss_bytes": {
+      "median": 16089088.0,
+      "min": 5423104,
+      "max": 21872640
+    }
+  },
+  {
+    "group": "camera_photo",
+    "route": "advanced",
+    "codec": "avif",
+    "attempts": 4,
+    "ok": 4,
+    "refused": 0,
+    "independent_masters": 2,
+    "bytes": {
+      "median": 422031.5,
+      "min": 187686,
+      "max": 1295594
+    },
+    "ssimulacra2_worst": {
+      "median": 84.24969334,
+      "min": 83.06947043,
+      "max": 85.41439263
+    },
+    "alpha_max_error": {
+      "median": 0.0,
+      "min": 0,
+      "max": 0
+    },
+    "encode_wall_seconds": {
+      "median": 0.765828013420105,
+      "min": 0.5401411056518555,
+      "max": 1.1269850730895996
+    },
+    "matched_command_encode_wall_seconds": {
+      "median": 0.7088193545005197,
+      "min": 0.45717508400048246,
+      "max": 0.9604636250005569
+    },
+    "matched_command_encode_peak_rss_bytes": {
+      "median": 76439552.0,
+      "min": 68435968,
+      "max": 84443136
+    }
+  },
+  {
+    "group": "camera_photo",
+    "route": "advanced",
+    "codec": "webp",
+    "attempts": 4,
+    "ok": 4,
+    "refused": 0,
+    "independent_masters": 2,
+    "bytes": {
+      "median": 1390544.0,
+      "min": 144974,
+      "max": 2309896
+    },
+    "ssimulacra2_worst": {
+      "median": 86.791742235,
+      "min": 69.79391468,
+      "max": 100.0
+    },
+    "alpha_max_error": {
+      "median": 0.0,
+      "min": 0,
+      "max": 0
+    },
+    "encode_wall_seconds": {
+      "median": 0.7305079698562622,
+      "min": 0.41776299476623535,
+      "max": 1.144942045211792
+    },
+    "matched_command_encode_wall_seconds": {
+      "median": 0.8435951039991778,
+      "min": 0.7882217499991384,
+      "max": 0.8989684579992172
+    },
+    "matched_command_encode_peak_rss_bytes": {
+      "median": 84975616.0,
+      "min": 84672512,
+      "max": 85278720
+    }
+  },
+  {
+    "group": "camera_photo",
+    "route": "gd",
+    "codec": "avif",
+    "attempts": 4,
+    "ok": 1,
+    "refused": 3,
+    "independent_masters": 2,
+    "bytes": {
+      "median": 256063,
+      "min": 256063,
+      "max": 256063
+    },
+    "ssimulacra2_worst": {
+      "median": 78.9961853,
+      "min": 78.9961853,
+      "max": 78.9961853
+    },
+    "alpha_max_error": {
+      "median": 0,
+      "min": 0,
+      "max": 0
+    },
+    "encode_wall_seconds": {
+      "median": 0.26870012283325195,
+      "min": 0.26870012283325195,
+      "max": 0.26870012283325195
+    },
+    "matched_command_encode_wall_seconds": null,
+    "matched_command_encode_peak_rss_bytes": null
+  },
+  {
+    "group": "camera_photo",
+    "route": "gd",
+    "codec": "webp",
+    "attempts": 4,
+    "ok": 1,
+    "refused": 3,
+    "independent_masters": 2,
+    "bytes": {
+      "median": 144960,
+      "min": 144960,
+      "max": 144960
+    },
+    "ssimulacra2_worst": {
+      "median": 69.35199167,
+      "min": 69.35199167,
+      "max": 69.35199167
+    },
+    "alpha_max_error": {
+      "median": 0,
+      "min": 0,
+      "max": 0
+    },
+    "encode_wall_seconds": {
+      "median": 0.2712399959564209,
+      "min": 0.2712399959564209,
+      "max": 0.2712399959564209
+    },
+    "matched_command_encode_wall_seconds": null,
+    "matched_command_encode_peak_rss_bytes": null
+  },
+  {
+    "group": "camera_photo",
+    "route": "imagick",
+    "codec": "avif",
+    "attempts": 4,
+    "ok": 4,
+    "refused": 0,
+    "independent_masters": 2,
+    "bytes": {
+      "median": 373891.5,
+      "min": 116480,
+      "max": 1335883
+    },
+    "ssimulacra2_worst": {
+      "median": 80.5181777,
+      "min": 77.87593129,
+      "max": 82.64029712
+    },
+    "alpha_max_error": {
+      "median": 0.0,
+      "min": 0,
+      "max": 0
+    },
+    "encode_wall_seconds": {
+      "median": 0.4366375207901001,
+      "min": 0.17145586013793945,
+      "max": 0.8279249668121338
+    },
+    "matched_command_encode_wall_seconds": null,
+    "matched_command_encode_peak_rss_bytes": null
+  },
+  {
+    "group": "camera_photo",
+    "route": "imagick",
+    "codec": "webp",
+    "attempts": 4,
+    "ok": 4,
+    "refused": 0,
+    "independent_masters": 2,
+    "bytes": {
+      "median": 254613.0,
+      "min": 73862,
+      "max": 928600
+    },
+    "ssimulacra2_worst": {
+      "median": 72.328856125,
+      "min": 69.35199167,
+      "max": 74.99311285
+    },
+    "alpha_max_error": {
+      "median": 0.0,
+      "min": 0,
+      "max": 0
+    },
+    "encode_wall_seconds": {
+      "median": 0.2323366403579712,
+      "min": 0.1341869831085205,
+      "max": 0.5490500926971436
+    },
+    "matched_command_encode_wall_seconds": null,
+    "matched_command_encode_peak_rss_bytes": null
+  },
+  {
+    "group": "camera_photo",
+    "route": "native",
+    "codec": "avif",
+    "attempts": 4,
+    "ok": 4,
+    "refused": 0,
+    "independent_masters": 2,
+    "bytes": {
+      "median": 421983.5,
+      "min": 187562,
+      "max": 1295594
+    },
+    "ssimulacra2_worst": {
+      "median": 84.25830755999999,
+      "min": 83.13880781,
+      "max": 85.41439263
+    },
+    "alpha_max_error": {
+      "median": 0.0,
+      "min": 0,
+      "max": 0
+    },
+    "encode_wall_seconds": {
+      "median": 0.4012269973754883,
+      "min": 0.2570788860321045,
+      "max": 0.9780178070068359
+    },
+    "matched_command_encode_wall_seconds": {
+      "median": 0.24412666650005121,
+      "min": 0.15908820900040155,
+      "max": 0.6641015409986721
+    },
+    "matched_command_encode_peak_rss_bytes": {
+      "median": 98549760.0,
+      "min": 75137024,
+      "max": 192544768
+    }
+  },
+  {
+    "group": "camera_photo",
+    "route": "native",
+    "codec": "webp",
+    "attempts": 4,
+    "ok": 4,
+    "refused": 0,
+    "independent_masters": 2,
+    "bytes": {
+      "median": 254620.0,
+      "min": 73862,
+      "max": 928600
+    },
+    "ssimulacra2_worst": {
+      "median": 72.328856125,
+      "min": 69.79391468,
+      "max": 74.99311285
+    },
+    "alpha_max_error": {
+      "median": 0.0,
+      "min": 0,
+      "max": 0
+    },
+    "encode_wall_seconds": {
+      "median": 0.2622414827346802,
+      "min": 0.208665132522583,
+      "max": 0.6274189949035645
+    },
+    "matched_command_encode_wall_seconds": {
+      "median": 0.22342066649980552,
+      "min": 0.13363016599942057,
+      "max": 0.5472462910001923
+    },
+    "matched_command_encode_peak_rss_bytes": {
+      "median": 27025408.0,
+      "min": 15384576,
+      "max": 51822592
+    }
+  },
+  {
+    "group": "graphics",
+    "route": "advanced",
+    "codec": "avif",
+    "attempts": 16,
+    "ok": 16,
+    "refused": 0,
+    "independent_masters": 4,
+    "bytes": {
+      "median": 10215.0,
+      "min": 4244,
+      "max": 18003
+    },
+    "ssimulacra2_worst": {
+      "median": 92.957614955,
+      "min": 89.23821679,
+      "max": 94.59465075
+    },
+    "alpha_max_error": {
+      "median": 0.0,
+      "min": 0,
+      "max": 0
+    },
+    "encode_wall_seconds": {
+      "median": 0.16663801670074463,
+      "min": 0.10555505752563477,
+      "max": 0.3977789878845215
+    },
+    "matched_command_encode_wall_seconds": {
+      "median": 0.12571391700021195,
+      "min": 0.03338304199860431,
+      "max": 0.24339929099915025
+    },
+    "matched_command_encode_peak_rss_bytes": {
+      "median": 24412160.0,
+      "min": 15843328,
+      "max": 32243712
+    }
+  },
+  {
+    "group": "graphics",
+    "route": "advanced",
+    "codec": "webp",
+    "attempts": 16,
+    "ok": 16,
+    "refused": 0,
+    "independent_masters": 4,
+    "bytes": {
+      "median": 5368.0,
+      "min": 3312,
+      "max": 8488
+    },
+    "ssimulacra2_worst": {
+      "median": 100.0,
+      "min": 100.0,
+      "max": 100.0
+    },
+    "alpha_max_error": {
+      "median": 0.0,
+      "min": 0,
+      "max": 0
+    },
+    "encode_wall_seconds": {
+      "median": 0.10606944561004639,
+      "min": 0.10207700729370117,
+      "max": 0.21143007278442383
+    },
+    "matched_command_encode_wall_seconds": {
+      "median": 0.02104508350021206,
+      "min": 0.013607041999421199,
+      "max": 0.18180679199940641
+    },
+    "matched_command_encode_peak_rss_bytes": {
+      "median": 14843904.0,
+      "min": 4833280,
+      "max": 42172416
+    }
+  },
+  {
+    "group": "graphics",
+    "route": "gd",
+    "codec": "avif",
+    "attempts": 16,
+    "ok": 4,
+    "refused": 12,
+    "independent_masters": 4,
+    "bytes": {
+      "median": 9363.5,
+      "min": 4370,
+      "max": 20357
+    },
+    "ssimulacra2_worst": {
+      "median": 68.58036461,
+      "min": 51.32621687,
+      "max": 74.54581121
+    },
+    "alpha_max_error": {
+      "median": 0.0,
+      "min": 0,
+      "max": 0
+    },
+    "encode_wall_seconds": {
+      "median": 0.18574845790863037,
+      "min": 0.027508974075317383,
+      "max": 0.32747507095336914
+    },
+    "matched_command_encode_wall_seconds": null,
+    "matched_command_encode_peak_rss_bytes": null
+  },
+  {
+    "group": "graphics",
+    "route": "gd",
+    "codec": "webp",
+    "attempts": 16,
+    "ok": 4,
+    "refused": 12,
+    "independent_masters": 4,
+    "bytes": {
+      "median": 30183.0,
+      "min": 5400,
+      "max": 97850
+    },
+    "ssimulacra2_worst": {
+      "median": 64.92934511,
+      "min": 47.04885798,
+      "max": 72.27171018
+    },
+    "alpha_max_error": {
+      "median": 0.0,
+      "min": 0,
+      "max": 0
+    },
+    "encode_wall_seconds": {
+      "median": 0.025177001953125,
+      "min": 0.004942178726196289,
+      "max": 0.030933141708374023
+    },
+    "matched_command_encode_wall_seconds": null,
+    "matched_command_encode_peak_rss_bytes": null
+  },
+  {
+    "group": "graphics",
+    "route": "imagick",
+    "codec": "avif",
+    "attempts": 16,
+    "ok": 16,
+    "refused": 0,
+    "independent_masters": 4,
+    "bytes": {
+      "median": 9268.0,
+      "min": 4393,
+      "max": 15918
+    },
+    "ssimulacra2_worst": {
+      "median": 65.29547156000001,
+      "min": 49.50804847,
+      "max": 77.72239067
+    },
+    "alpha_max_error": {
+      "median": 0.0,
+      "min": 0,
+      "max": 0
+    },
+    "encode_wall_seconds": {
+      "median": 0.22244691848754883,
+      "min": 0.030344009399414062,
+      "max": 0.48984193801879883
+    },
+    "matched_command_encode_wall_seconds": null,
+    "matched_command_encode_peak_rss_bytes": null
+  },
+  {
+    "group": "graphics",
+    "route": "imagick",
+    "codec": "webp",
+    "attempts": 16,
+    "ok": 16,
+    "refused": 0,
+    "independent_masters": 4,
+    "bytes": {
+      "median": 30490.0,
+      "min": 5400,
+      "max": 98464
+    },
+    "ssimulacra2_worst": {
+      "median": 63.553228950000005,
+      "min": 47.04885798,
+      "max": 73.9886677
+    },
+    "alpha_max_error": {
+      "median": 0.0,
+      "min": 0,
+      "max": 0
+    },
+    "encode_wall_seconds": {
+      "median": 0.025757551193237305,
+      "min": 0.005675792694091797,
+      "max": 0.03328680992126465
+    },
+    "matched_command_encode_wall_seconds": null,
+    "matched_command_encode_peak_rss_bytes": null
+  },
+  {
+    "group": "graphics",
+    "route": "native",
+    "codec": "avif",
+    "attempts": 16,
+    "ok": 16,
+    "refused": 0,
+    "independent_masters": 4,
+    "bytes": {
+      "median": 10208.0,
+      "min": 4259,
+      "max": 18017
+    },
+    "ssimulacra2_worst": {
+      "median": 92.90586456,
+      "min": 89.23962306,
+      "max": 94.57148869
+    },
+    "alpha_max_error": {
+      "median": 0.0,
+      "min": 0,
+      "max": 0
+    },
+    "encode_wall_seconds": {
+      "median": 0.11541891098022461,
+      "min": 0.10741615295410156,
+      "max": 0.22875094413757324
+    },
+    "matched_command_encode_wall_seconds": {
+      "median": 0.06441993750013353,
+      "min": 0.03288029100076528,
+      "max": 0.12693683300130942
+    },
+    "matched_command_encode_peak_rss_bytes": {
+      "median": 28508160.0,
+      "min": 19070976,
+      "max": 36585472
+    }
+  },
+  {
+    "group": "graphics",
+    "route": "native",
+    "codec": "webp",
+    "attempts": 16,
+    "ok": 16,
+    "refused": 0,
+    "independent_masters": 4,
+    "bytes": {
+      "median": 30490.0,
+      "min": 5400,
+      "max": 98464
+    },
+    "ssimulacra2_worst": {
+      "median": 63.553228950000005,
+      "min": 47.04885798,
+      "max": 73.9886677
+    },
+    "alpha_max_error": {
+      "median": 0.0,
+      "min": 0,
+      "max": 0
+    },
+    "encode_wall_seconds": {
+      "median": 0.10616505146026611,
+      "min": 0.10216999053955078,
+      "max": 0.1069800853729248
+    },
+    "matched_command_encode_wall_seconds": {
+      "median": 0.037893604000601044,
+      "min": 0.013593417001175112,
+      "max": 0.15756725000028382
+    },
+    "matched_command_encode_peak_rss_bytes": {
+      "median": 4276224.0,
+      "min": 3014656,
+      "max": 5210112
+    }
+  },
+  {
+    "group": "natural",
+    "route": "advanced",
+    "codec": "avif",
+    "attempts": 16,
+    "ok": 16,
+    "refused": 0,
+    "independent_masters": 4,
+    "bytes": {
+      "median": 44045.0,
+      "min": 10699,
+      "max": 98804
+    },
+    "ssimulacra2_worst": {
+      "median": 88.68115792500001,
+      "min": 86.66345105,
+      "max": 91.93451008
+    },
+    "alpha_max_error": {
+      "median": 0.0,
+      "min": 0,
+      "max": 0
+    },
+    "encode_wall_seconds": {
+      "median": 0.11572790145874023,
+      "min": 0.06915807723999023,
+      "max": 0.34249305725097656
+    },
+    "matched_command_encode_wall_seconds": {
+      "median": 0.12308483350079769,
+      "min": 0.08681699999942794,
+      "max": 0.22026916600043478
+    },
+    "matched_command_encode_peak_rss_bytes": {
+      "median": 17645568.0,
+      "min": 13860864,
+      "max": 27852800
+    }
+  },
+  {
+    "group": "natural",
+    "route": "advanced",
+    "codec": "webp",
+    "attempts": 16,
+    "ok": 16,
+    "refused": 0,
+    "independent_masters": 4,
+    "bytes": {
+      "median": 34450.0,
+      "min": 11292,
+      "max": 326846
+    },
+    "ssimulacra2_worst": {
+      "median": 80.33422388,
+      "min": 77.45586946,
+      "max": 100.0
+    },
+    "alpha_max_error": {
+      "median": 0.0,
+      "min": 0,
+      "max": 0
+    },
+    "encode_wall_seconds": {
+      "median": 0.1057654619216919,
+      "min": 0.03386807441711426,
+      "max": 0.30652499198913574
+    },
+    "matched_command_encode_wall_seconds": {
+      "median": 0.1706912284998907,
+      "min": 0.10073029100021813,
+      "max": 0.20471474999976635
+    },
+    "matched_command_encode_peak_rss_bytes": {
+      "median": 21929984.0,
+      "min": 12402688,
+      "max": 27688960
+    }
+  },
+  {
+    "group": "natural",
+    "route": "gd",
+    "codec": "avif",
+    "attempts": 16,
+    "ok": 4,
+    "refused": 12,
+    "independent_masters": 4,
+    "bytes": {
+      "median": 15568.5,
+      "min": 10469,
+      "max": 20734
+    },
+    "ssimulacra2_worst": {
+      "median": 89.757775385,
+      "min": 87.90500506,
+      "max": 90.87217581
+    },
+    "alpha_max_error": {
+      "median": 0.0,
+      "min": 0,
+      "max": 0
+    },
+    "encode_wall_seconds": {
+      "median": 0.055492520332336426,
+      "min": 0.029653072357177734,
+      "max": 0.26631712913513184
+    },
+    "matched_command_encode_wall_seconds": null,
+    "matched_command_encode_peak_rss_bytes": null
+  },
+  {
+    "group": "natural",
+    "route": "gd",
+    "codec": "webp",
+    "attempts": 16,
+    "ok": 4,
+    "refused": 12,
+    "independent_masters": 4,
+    "bytes": {
+      "median": 16741.0,
+      "min": 11390,
+      "max": 20776
+    },
+    "ssimulacra2_worst": {
+      "median": 81.39258214,
+      "min": 80.97915858,
+      "max": 81.7651447
+    },
+    "alpha_max_error": {
+      "median": 0.0,
+      "min": 0,
+      "max": 0
+    },
+    "encode_wall_seconds": {
+      "median": 0.011793971061706543,
+      "min": 0.007810115814208984,
+      "max": 0.013473987579345703
+    },
+    "matched_command_encode_wall_seconds": null,
+    "matched_command_encode_peak_rss_bytes": null
+  },
+  {
+    "group": "natural",
+    "route": "imagick",
+    "codec": "avif",
+    "attempts": 16,
+    "ok": 16,
+    "refused": 0,
+    "independent_masters": 4,
+    "bytes": {
+      "median": 46004.5,
+      "min": 10437,
+      "max": 100960
+    },
+    "ssimulacra2_worst": {
+      "median": 88.112412675,
+      "min": 85.26367648,
+      "max": 90.91492204
+    },
+    "alpha_max_error": {
+      "median": 0.0,
+      "min": 0,
+      "max": 0
+    },
+    "encode_wall_seconds": {
+      "median": 0.06489706039428711,
+      "min": 0.01970696449279785,
+      "max": 0.11409902572631836
+    },
+    "matched_command_encode_wall_seconds": null,
+    "matched_command_encode_peak_rss_bytes": null
+  },
+  {
+    "group": "natural",
+    "route": "imagick",
+    "codec": "webp",
+    "attempts": 16,
+    "ok": 16,
+    "refused": 0,
+    "independent_masters": 4,
+    "bytes": {
+      "median": 33327.0,
+      "min": 11390,
+      "max": 70348
+    },
+    "ssimulacra2_worst": {
+      "median": 79.299152305,
+      "min": 77.45586946,
+      "max": 81.7651447
+    },
+    "alpha_max_error": {
+      "median": 0.0,
+      "min": 0,
+      "max": 0
+    },
+    "encode_wall_seconds": {
+      "median": 0.022873997688293457,
+      "min": 0.008404016494750977,
+      "max": 0.30704522132873535
+    },
+    "matched_command_encode_wall_seconds": null,
+    "matched_command_encode_peak_rss_bytes": null
+  },
+  {
+    "group": "natural",
+    "route": "native",
+    "codec": "avif",
+    "attempts": 16,
+    "ok": 16,
+    "refused": 0,
+    "independent_masters": 4,
+    "bytes": {
+      "median": 43996.5,
+      "min": 10699,
+      "max": 98804
+    },
+    "ssimulacra2_worst": {
+      "median": 88.69370854499999,
+      "min": 86.60865117,
+      "max": 91.93451008
+    },
+    "alpha_max_error": {
+      "median": 0.0,
+      "min": 0,
+      "max": 0
+    },
+    "encode_wall_seconds": {
+      "median": 0.11738407611846924,
+      "min": 0.07169890403747559,
+      "max": 0.3859879970550537
+    },
+    "matched_command_encode_wall_seconds": {
+      "median": 0.058333708000645856,
+      "min": 0.02695329200105334,
+      "max": 0.08395308399849455
+    },
+    "matched_command_encode_peak_rss_bytes": {
+      "median": 20578304,
+      "min": 12009472,
+      "max": 33800192
+    }
+  },
+  {
+    "group": "natural",
+    "route": "native",
+    "codec": "webp",
+    "attempts": 16,
+    "ok": 16,
+    "refused": 0,
+    "independent_masters": 4,
+    "bytes": {
+      "median": 33327.0,
+      "min": 11292,
+      "max": 70348
+    },
+    "ssimulacra2_worst": {
+      "median": 79.299152305,
+      "min": 77.45586946,
+      "max": 81.7651447
+    },
+    "alpha_max_error": {
+      "median": 0.0,
+      "min": 0,
+      "max": 0
+    },
+    "encode_wall_seconds": {
+      "median": 0.10575449466705322,
+      "min": 0.030459165573120117,
+      "max": 0.10680103302001953
+    },
+    "matched_command_encode_wall_seconds": {
+      "median": 0.026931375001367996,
+      "min": 0.01453787500031467,
+      "max": 0.05701483300072141
+    },
+    "matched_command_encode_peak_rss_bytes": {
+      "median": 3833856,
+      "min": 3276800,
+      "max": 6537216
+    }
+  },
+  {
+    "group": "product_detail",
+    "route": "advanced",
+    "codec": "avif",
+    "attempts": 16,
+    "ok": 16,
+    "refused": 0,
+    "independent_masters": 4,
+    "bytes": {
+      "median": 22643.5,
+      "min": 1929,
+      "max": 84620
+    },
+    "ssimulacra2_worst": {
+      "median": 90.564154355,
+      "min": 82.72311678,
+      "max": 93.89901712
+    },
+    "alpha_max_error": {
+      "median": 0.0,
+      "min": 0,
+      "max": 0
+    },
+    "encode_wall_seconds": {
+      "median": 0.11319243907928467,
+      "min": 0.09147310256958008,
+      "max": 0.3402099609375
+    },
+    "matched_command_encode_wall_seconds": {
+      "median": 0.1185981045000517,
+      "min": 0.033087042000261135,
+      "max": 0.21271158400122658
+    },
+    "matched_command_encode_peak_rss_bytes": {
+      "median": 17096704.0,
+      "min": 12189696,
+      "max": 18874368
+    }
+  },
+  {
+    "group": "product_detail",
+    "route": "advanced",
+    "codec": "webp",
+    "attempts": 16,
+    "ok": 16,
+    "refused": 0,
+    "independent_masters": 4,
+    "bytes": {
+      "median": 36966.0,
+      "min": 1100,
+      "max": 319720
+    },
+    "ssimulacra2_worst": {
+      "median": 86.631221575,
+      "min": 73.96869469,
+      "max": 100.0
+    },
+    "alpha_max_error": {
+      "median": 0.0,
+      "min": 0,
+      "max": 0
+    },
+    "encode_wall_seconds": {
+      "median": 0.10584604740142822,
+      "min": 0.02820301055908203,
+      "max": 0.21093416213989258
+    },
+    "matched_command_encode_wall_seconds": {
+      "median": 0.10161591700034478,
+      "min": 0.05155662499964819,
+      "max": 0.15685866599960718
+    },
+    "matched_command_encode_peak_rss_bytes": {
+      "median": 12656640.0,
+      "min": 7356416,
+      "max": 21315584
+    }
+  },
+  {
+    "group": "product_detail",
+    "route": "gd",
+    "codec": "avif",
+    "attempts": 16,
+    "ok": 4,
+    "refused": 12,
+    "independent_masters": 4,
+    "bytes": {
+      "median": 11618.5,
+      "min": 1581,
+      "max": 31834
+    },
+    "ssimulacra2_worst": {
+      "median": 91.74062845,
+      "min": 87.08414375,
+      "max": 95.10618807
+    },
+    "alpha_max_error": {
+      "median": 0.0,
+      "min": 0,
+      "max": 0
+    },
+    "encode_wall_seconds": {
+      "median": 0.04367339611053467,
+      "min": 0.03002309799194336,
+      "max": 0.05838918685913086
+    },
+    "matched_command_encode_wall_seconds": null,
+    "matched_command_encode_peak_rss_bytes": null
+  },
+  {
+    "group": "product_detail",
+    "route": "gd",
+    "codec": "webp",
+    "attempts": 16,
+    "ok": 4,
+    "refused": 12,
+    "independent_masters": 4,
+    "bytes": {
+      "median": 10700.0,
+      "min": 1100,
+      "max": 37548
+    },
+    "ssimulacra2_worst": {
+      "median": 83.877281555,
+      "min": 80.3001105,
+      "max": 88.9516184
+    },
+    "alpha_max_error": {
+      "median": 0.0,
+      "min": 0,
+      "max": 0
+    },
+    "encode_wall_seconds": {
+      "median": 0.009631037712097168,
+      "min": 0.0038628578186035156,
+      "max": 0.015522956848144531
+    },
+    "matched_command_encode_wall_seconds": null,
+    "matched_command_encode_peak_rss_bytes": null
+  },
+  {
+    "group": "product_detail",
+    "route": "imagick",
+    "codec": "avif",
+    "attempts": 16,
+    "ok": 16,
+    "refused": 0,
+    "independent_masters": 4,
+    "bytes": {
+      "median": 23375.0,
+      "min": 1560,
+      "max": 104681
+    },
+    "ssimulacra2_worst": {
+      "median": 90.77095788,
+      "min": 82.72311678,
+      "max": 95.07832254
+    },
+    "alpha_max_error": {
+      "median": 0.0,
+      "min": 0,
+      "max": 0
+    },
+    "encode_wall_seconds": {
+      "median": 0.04996657371520996,
+      "min": 0.012523889541625977,
+      "max": 0.13479018211364746
+    },
+    "matched_command_encode_wall_seconds": null,
+    "matched_command_encode_peak_rss_bytes": null
+  },
+  {
+    "group": "product_detail",
+    "route": "imagick",
+    "codec": "webp",
+    "attempts": 16,
+    "ok": 16,
+    "refused": 0,
+    "independent_masters": 4,
+    "bytes": {
+      "median": 16023.0,
+      "min": 1100,
+      "max": 79620
+    },
+    "ssimulacra2_worst": {
+      "median": 83.671387765,
+      "min": 73.96869469,
+      "max": 88.9516184
+    },
+    "alpha_max_error": {
+      "median": 0.0,
+      "min": 0,
+      "max": 0
+    },
+    "encode_wall_seconds": {
+      "median": 0.01999843120574951,
+      "min": 0.004153013229370117,
+      "max": 0.04649686813354492
+    },
+    "matched_command_encode_wall_seconds": null,
+    "matched_command_encode_peak_rss_bytes": null
+  },
+  {
+    "group": "product_detail",
+    "route": "native",
+    "codec": "avif",
+    "attempts": 16,
+    "ok": 16,
+    "refused": 0,
+    "independent_masters": 4,
+    "bytes": {
+      "median": 22643.5,
+      "min": 1929,
+      "max": 84620
+    },
+    "ssimulacra2_worst": {
+      "median": 90.5671425,
+      "min": 82.72311678,
+      "max": 93.89901712
+    },
+    "alpha_max_error": {
+      "median": 0.0,
+      "min": 0,
+      "max": 0
+    },
+    "encode_wall_seconds": {
+      "median": 0.11240899562835693,
+      "min": 0.0508270263671875,
+      "max": 0.12351012229919434
+    },
+    "matched_command_encode_wall_seconds": {
+      "median": 0.03964120899945556,
+      "min": 0.02067445800093992,
+      "max": 0.0952137499989476
+    },
+    "matched_command_encode_peak_rss_bytes": {
+      "median": 20496384,
+      "min": 12288000,
+      "max": 22970368
+    }
+  },
+  {
+    "group": "product_detail",
+    "route": "native",
+    "codec": "webp",
+    "attempts": 16,
+    "ok": 16,
+    "refused": 0,
+    "independent_masters": 4,
+    "bytes": {
+      "median": 16023.0,
+      "min": 1100,
+      "max": 79620
+    },
+    "ssimulacra2_worst": {
+      "median": 83.671387765,
+      "min": 73.96869469,
+      "max": 88.9516184
+    },
+    "alpha_max_error": {
+      "median": 0.0,
+      "min": 0,
+      "max": 0
+    },
+    "encode_wall_seconds": {
+      "median": 0.10574948787689209,
+      "min": 0.025786876678466797,
+      "max": 0.10660600662231445
+    },
+    "matched_command_encode_wall_seconds": {
+      "median": 0.027106249999633292,
+      "min": 0.014404042000023765,
+      "max": 0.040062667001620866
+    },
+    "matched_command_encode_peak_rss_bytes": {
+      "median": 3817472,
+      "min": 2965504,
+      "max": 4882432
+    }
+  },
+  {
+    "group": "public_product",
+    "route": "advanced",
+    "codec": "avif",
+    "attempts": 2,
+    "ok": 2,
+    "refused": 0,
+    "independent_masters": 1,
+    "bytes": {
+      "median": 496280.5,
+      "min": 62421,
+      "max": 930140
+    },
+    "ssimulacra2_worst": {
+      "median": 85.94787557999999,
+      "min": 84.80031761,
+      "max": 87.09543355
+    },
+    "alpha_max_error": {
+      "median": 0.0,
+      "min": 0,
+      "max": 0
+    },
+    "encode_wall_seconds": {
+      "median": 1.106395959854126,
+      "min": 0.7649071216583252,
+      "max": 1.4478847980499268
+    },
+    "matched_command_encode_wall_seconds": {
+      "median": 0.7404117499991116,
+      "min": 0.7404117499991116,
+      "max": 0.7404117499991116
+    },
+    "matched_command_encode_peak_rss_bytes": {
+      "median": 81461248,
+      "min": 81461248,
+      "max": 81461248
+    }
+  },
+  {
+    "group": "public_product",
+    "route": "advanced",
+    "codec": "webp",
+    "attempts": 2,
+    "ok": 2,
+    "refused": 0,
+    "independent_masters": 1,
+    "bytes": {
+      "median": 828804.0,
+      "min": 306554,
+      "max": 1351054
+    },
+    "ssimulacra2_worst": {
+      "median": 87.16687485,
+      "min": 74.3337497,
+      "max": 100.0
+    },
+    "alpha_max_error": {
+      "median": 0.0,
+      "min": 0,
+      "max": 0
+    },
+    "encode_wall_seconds": {
+      "median": 1.099458932876587,
+      "min": 0.941817045211792,
+      "max": 1.2571008205413818
+    },
+    "matched_command_encode_wall_seconds": {
+      "median": 0.9134651669992309,
+      "min": 0.9134651669992309,
+      "max": 0.9134651669992309
+    },
+    "matched_command_encode_peak_rss_bytes": {
+      "median": 69550080,
+      "min": 69550080,
+      "max": 69550080
+    }
+  },
+  {
+    "group": "public_product",
+    "route": "gd",
+    "codec": "avif",
+    "attempts": 2,
+    "ok": 1,
+    "refused": 1,
+    "independent_masters": 1,
+    "bytes": {
+      "median": 320256,
+      "min": 320256,
+      "max": 320256
+    },
+    "ssimulacra2_worst": {
+      "median": 78.9670667,
+      "min": 78.9670667,
+      "max": 78.9670667
+    },
+    "alpha_max_error": {
+      "median": 0,
+      "min": 0,
+      "max": 0
+    },
+    "encode_wall_seconds": {
+      "median": 1.3527400493621826,
+      "min": 1.3527400493621826,
+      "max": 1.3527400493621826
+    },
+    "matched_command_encode_wall_seconds": null,
+    "matched_command_encode_peak_rss_bytes": null
+  },
+  {
+    "group": "public_product",
+    "route": "gd",
+    "codec": "webp",
+    "attempts": 2,
+    "ok": 1,
+    "refused": 1,
+    "independent_masters": 1,
+    "bytes": {
+      "median": 307300,
+      "min": 307300,
+      "max": 307300
+    },
+    "ssimulacra2_worst": {
+      "median": 74.40537559,
+      "min": 74.40537559,
+      "max": 74.40537559
+    },
+    "alpha_max_error": {
+      "median": 0,
+      "min": 0,
+      "max": 0
+    },
+    "encode_wall_seconds": {
+      "median": 1.3803908824920654,
+      "min": 1.3803908824920654,
+      "max": 1.3803908824920654
+    },
+    "matched_command_encode_wall_seconds": null,
+    "matched_command_encode_peak_rss_bytes": null
+  },
+  {
+    "group": "public_product",
+    "route": "imagick",
+    "codec": "avif",
+    "attempts": 2,
+    "ok": 2,
+    "refused": 0,
+    "independent_masters": 1,
+    "bytes": {
+      "median": 171388.5,
+      "min": 42650,
+      "max": 300127
+    },
+    "ssimulacra2_worst": {
+      "median": 82.05566875,
+      "min": 79.31277767,
+      "max": 84.79855983
+    },
+    "alpha_max_error": {
+      "median": 0.0,
+      "min": 0,
+      "max": 0
+    },
+    "encode_wall_seconds": {
+      "median": 0.7621555328369141,
+      "min": 0.1905500888824463,
+      "max": 1.3337609767913818
+    },
+    "matched_command_encode_wall_seconds": null,
+    "matched_command_encode_peak_rss_bytes": null
+  },
+  {
+    "group": "public_product",
+    "route": "imagick",
+    "codec": "webp",
+    "attempts": 2,
+    "ok": 2,
+    "refused": 0,
+    "independent_masters": 1,
+    "bytes": {
+      "median": 175147.0,
+      "min": 42994,
+      "max": 307300
+    },
+    "ssimulacra2_worst": {
+      "median": 75.82900064500001,
+      "min": 74.40537559,
+      "max": 77.2526257
+    },
+    "alpha_max_error": {
+      "median": 0.0,
+      "min": 0,
+      "max": 0
+    },
+    "encode_wall_seconds": {
+      "median": 0.837241530418396,
+      "min": 0.12061500549316406,
+      "max": 1.553868055343628
+    },
+    "matched_command_encode_wall_seconds": null,
+    "matched_command_encode_peak_rss_bytes": null
+  },
+  {
+    "group": "public_product",
+    "route": "native",
+    "codec": "avif",
+    "attempts": 2,
+    "ok": 2,
+    "refused": 0,
+    "independent_masters": 1,
+    "bytes": {
+      "median": 496199.0,
+      "min": 62258,
+      "max": 930140
+    },
+    "ssimulacra2_worst": {
+      "median": 85.994387765,
+      "min": 84.80031761,
+      "max": 87.18845792
+    },
+    "alpha_max_error": {
+      "median": 0.0,
+      "min": 0,
+      "max": 0
+    },
+    "encode_wall_seconds": {
+      "median": 0.9723564386367798,
+      "min": 0.35889196395874023,
+      "max": 1.5858209133148193
+    },
+    "matched_command_encode_wall_seconds": {
+      "median": 0.5145850415001405,
+      "min": 0.21232608300124411,
+      "max": 0.8168439999990369
+    },
+    "matched_command_encode_peak_rss_bytes": {
+      "median": 292503552.0,
+      "min": 88162304,
+      "max": 496844800
+    }
+  },
+  {
+    "group": "public_product",
+    "route": "native",
+    "codec": "webp",
+    "attempts": 2,
+    "ok": 2,
+    "refused": 0,
+    "independent_masters": 1,
+    "bytes": {
+      "median": 174774.0,
+      "min": 42994,
+      "max": 306554
+    },
+    "ssimulacra2_worst": {
+      "median": 75.7931877,
+      "min": 74.3337497,
+      "max": 77.2526257
+    },
+    "alpha_max_error": {
+      "median": 0.0,
+      "min": 0,
+      "max": 0
+    },
+    "encode_wall_seconds": {
+      "median": 0.7289433479309082,
+      "min": 0.2106459140777588,
+      "max": 1.2472407817840576
+    },
+    "matched_command_encode_wall_seconds": {
+      "median": 0.682812208499854,
+      "min": 0.12409016699893982,
+      "max": 1.2415342500007682
+    },
+    "matched_command_encode_peak_rss_bytes": {
+      "median": 70557696.0,
+      "min": 12058624,
+      "max": 129056768
+    }
+  },
+  {
+    "group": "site_alpha",
+    "route": "advanced",
+    "codec": "avif",
+    "attempts": 1,
+    "ok": 1,
+    "refused": 0,
+    "independent_masters": 1,
+    "bytes": {
+      "median": 136018,
+      "min": 136018,
+      "max": 136018
+    },
+    "ssimulacra2_worst": {
+      "median": 87.1649171,
+      "min": 87.1649171,
+      "max": 87.1649171
+    },
+    "alpha_max_error": {
+      "median": 0,
+      "min": 0,
+      "max": 0
+    },
+    "encode_wall_seconds": {
+      "median": 0.4560818672180176,
+      "min": 0.4560818672180176,
+      "max": 0.4560818672180176
+    },
+    "matched_command_encode_wall_seconds": {
+      "median": 0.33925983399967663,
+      "min": 0.33925983399967663,
+      "max": 0.33925983399967663
+    },
+    "matched_command_encode_peak_rss_bytes": {
+      "median": 42467328,
+      "min": 42467328,
+      "max": 42467328
+    }
+  },
+  {
+    "group": "site_alpha",
+    "route": "advanced",
+    "codec": "webp",
+    "attempts": 1,
+    "ok": 1,
+    "refused": 0,
+    "independent_masters": 1,
+    "bytes": {
+      "median": 586418,
+      "min": 586418,
+      "max": 586418
+    },
+    "ssimulacra2_worst": {
+      "median": 100.0,
+      "min": 100.0,
+      "max": 100.0
+    },
+    "alpha_max_error": {
+      "median": 0,
+      "min": 0,
+      "max": 0
+    },
+    "encode_wall_seconds": {
+      "median": 0.41858696937561035,
+      "min": 0.41858696937561035,
+      "max": 0.41858696937561035
+    },
+    "matched_command_encode_wall_seconds": {
+      "median": 0.3543206670001382,
+      "min": 0.3543206670001382,
+      "max": 0.3543206670001382
+    },
+    "matched_command_encode_peak_rss_bytes": {
+      "median": 46841856,
+      "min": 46841856,
+      "max": 46841856
+    }
+  },
+  {
+    "group": "site_alpha",
+    "route": "gd",
+    "codec": "avif",
+    "attempts": 1,
+    "ok": 1,
+    "refused": 0,
+    "independent_masters": 1,
+    "bytes": {
+      "median": 131154,
+      "min": 131154,
+      "max": 131154
+    },
+    "ssimulacra2_worst": {
+      "median": 86.77187275,
+      "min": 86.77187275,
+      "max": 86.77187275
+    },
+    "alpha_max_error": {
+      "median": 19,
+      "min": 19,
+      "max": 19
+    },
+    "encode_wall_seconds": {
+      "median": 0.15984201431274414,
+      "min": 0.15984201431274414,
+      "max": 0.15984201431274414
+    },
+    "matched_command_encode_wall_seconds": null,
+    "matched_command_encode_peak_rss_bytes": null
+  },
+  {
+    "group": "site_alpha",
+    "route": "gd",
+    "codec": "webp",
+    "attempts": 1,
+    "ok": 1,
+    "refused": 0,
+    "independent_masters": 1,
+    "bytes": {
+      "median": 87232,
+      "min": 87232,
+      "max": 87232
+    },
+    "ssimulacra2_worst": {
+      "median": 78.23143668,
+      "min": 78.23143668,
+      "max": 78.23143668
+    },
+    "alpha_max_error": {
+      "median": 1,
+      "min": 1,
+      "max": 1
+    },
+    "encode_wall_seconds": {
+      "median": 0.06746196746826172,
+      "min": 0.06746196746826172,
+      "max": 0.06746196746826172
+    },
+    "matched_command_encode_wall_seconds": null,
+    "matched_command_encode_peak_rss_bytes": null
+  },
+  {
+    "group": "site_alpha",
+    "route": "imagick",
+    "codec": "avif",
+    "attempts": 1,
+    "ok": 1,
+    "refused": 0,
+    "independent_masters": 1,
+    "bytes": {
+      "median": 129359,
+      "min": 129359,
+      "max": 129359
+    },
+    "ssimulacra2_worst": {
+      "median": 86.60299262,
+      "min": 86.60299262,
+      "max": 86.60299262
+    },
+    "alpha_max_error": {
+      "median": 14,
+      "min": 14,
+      "max": 14
+    },
+    "encode_wall_seconds": {
+      "median": 0.14252710342407227,
+      "min": 0.14252710342407227,
+      "max": 0.14252710342407227
+    },
+    "matched_command_encode_wall_seconds": null,
+    "matched_command_encode_peak_rss_bytes": null
+  },
+  {
+    "group": "site_alpha",
+    "route": "imagick",
+    "codec": "webp",
+    "attempts": 1,
+    "ok": 1,
+    "refused": 0,
+    "independent_masters": 1,
+    "bytes": {
+      "median": 87232,
+      "min": 87232,
+      "max": 87232
+    },
+    "ssimulacra2_worst": {
+      "median": 78.23143668,
+      "min": 78.23143668,
+      "max": 78.23143668
+    },
+    "alpha_max_error": {
+      "median": 1,
+      "min": 1,
+      "max": 1
+    },
+    "encode_wall_seconds": {
+      "median": 0.06782817840576172,
+      "min": 0.06782817840576172,
+      "max": 0.06782817840576172
+    },
+    "matched_command_encode_wall_seconds": null,
+    "matched_command_encode_peak_rss_bytes": null
+  },
+  {
+    "group": "site_alpha",
+    "route": "native",
+    "codec": "avif",
+    "attempts": 1,
+    "ok": 1,
+    "refused": 0,
+    "independent_masters": 1,
+    "bytes": {
+      "median": 125923,
+      "min": 125923,
+      "max": 125923
+    },
+    "ssimulacra2_worst": {
+      "median": 87.11516294,
+      "min": 87.11516294,
+      "max": 87.11516294
+    },
+    "alpha_max_error": {
+      "median": 12,
+      "min": 12,
+      "max": 12
+    },
+    "encode_wall_seconds": {
+      "median": 0.3482940196990967,
+      "min": 0.3482940196990967,
+      "max": 0.3482940196990967
+    },
+    "matched_command_encode_wall_seconds": {
+      "median": 0.10803504199975578,
+      "min": 0.10803504199975578,
+      "max": 0.10803504199975578
+    },
+    "matched_command_encode_peak_rss_bytes": {
+      "median": 48103424,
+      "min": 48103424,
+      "max": 48103424
+    }
+  },
+  {
+    "group": "site_alpha",
+    "route": "native",
+    "codec": "webp",
+    "attempts": 1,
+    "ok": 1,
+    "refused": 0,
+    "independent_masters": 1,
+    "bytes": {
+      "median": 94082,
+      "min": 94082,
+      "max": 94082
+    },
+    "ssimulacra2_worst": {
+      "median": 78.47711274,
+      "min": 78.47711274,
+      "max": 78.47711274
+    },
+    "alpha_max_error": {
+      "median": 0,
+      "min": 0,
+      "max": 0
+    },
+    "encode_wall_seconds": {
+      "median": 0.21130013465881348,
+      "min": 0.21130013465881348,
+      "max": 0.21130013465881348
+    },
+    "matched_command_encode_wall_seconds": {
+      "median": 0.07781033299943374,
+      "min": 0.07781033299943374,
+      "max": 0.07781033299943374
+    },
+    "matched_command_encode_peak_rss_bytes": {
+      "median": 20922368,
+      "min": 20922368,
+      "max": 20922368
+    }
+  },
+  {
+    "group": "site_graphics",
+    "route": "advanced",
+    "codec": "avif",
+    "attempts": 1,
+    "ok": 1,
+    "refused": 0,
+    "independent_masters": 1,
+    "bytes": {
+      "median": 128826,
+      "min": 128826,
+      "max": 128826
+    },
+    "ssimulacra2_worst": {
+      "median": 85.50314362,
+      "min": 85.50314362,
+      "max": 85.50314362
+    },
+    "alpha_max_error": {
+      "median": 0,
+      "min": 0,
+      "max": 0
+    },
+    "encode_wall_seconds": {
+      "median": 0.4521780014038086,
+      "min": 0.4521780014038086,
+      "max": 0.4521780014038086
+    },
+    "matched_command_encode_wall_seconds": {
+      "median": 0.3692904579984315,
+      "min": 0.3692904579984315,
+      "max": 0.3692904579984315
+    },
+    "matched_command_encode_peak_rss_bytes": {
+      "median": 52330496,
+      "min": 52330496,
+      "max": 52330496
+    }
+  },
+  {
+    "group": "site_graphics",
+    "route": "advanced",
+    "codec": "webp",
+    "attempts": 1,
+    "ok": 1,
+    "refused": 0,
+    "independent_masters": 1,
+    "bytes": {
+      "median": 950994,
+      "min": 950994,
+      "max": 950994
+    },
+    "ssimulacra2_worst": {
+      "median": 100.0,
+      "min": 100.0,
+      "max": 100.0
+    },
+    "alpha_max_error": {
+      "median": 0,
+      "min": 0,
+      "max": 0
+    },
+    "encode_wall_seconds": {
+      "median": 0.6316120624542236,
+      "min": 0.6316120624542236,
+      "max": 0.6316120624542236
+    },
+    "matched_command_encode_wall_seconds": {
+      "median": 0.5614214590004849,
+      "min": 0.5614214590004849,
+      "max": 0.5614214590004849
+    },
+    "matched_command_encode_peak_rss_bytes": {
+      "median": 44777472,
+      "min": 44777472,
+      "max": 44777472
+    }
+  },
+  {
+    "group": "site_graphics",
+    "route": "gd",
+    "codec": "avif",
+    "attempts": 1,
+    "ok": 1,
+    "refused": 0,
+    "independent_masters": 1,
+    "bytes": {
+      "median": 129609,
+      "min": 129609,
+      "max": 129609
+    },
+    "ssimulacra2_worst": {
+      "median": 84.59137134,
+      "min": 84.59137134,
+      "max": 84.59137134
+    },
+    "alpha_max_error": {
+      "median": 0,
+      "min": 0,
+      "max": 0
+    },
+    "encode_wall_seconds": {
+      "median": 0.12401485443115234,
+      "min": 0.12401485443115234,
+      "max": 0.12401485443115234
+    },
+    "matched_command_encode_wall_seconds": null,
+    "matched_command_encode_peak_rss_bytes": null
+  },
+  {
+    "group": "site_graphics",
+    "route": "gd",
+    "codec": "webp",
+    "attempts": 1,
+    "ok": 1,
+    "refused": 0,
+    "independent_masters": 1,
+    "bytes": {
+      "median": 95406,
+      "min": 95406,
+      "max": 95406
+    },
+    "ssimulacra2_worst": {
+      "median": 77.15121676,
+      "min": 77.15121676,
+      "max": 77.15121676
+    },
+    "alpha_max_error": {
+      "median": 0,
+      "min": 0,
+      "max": 0
+    },
+    "encode_wall_seconds": {
+      "median": 0.10602402687072754,
+      "min": 0.10602402687072754,
+      "max": 0.10602402687072754
+    },
+    "matched_command_encode_wall_seconds": null,
+    "matched_command_encode_peak_rss_bytes": null
+  },
+  {
+    "group": "site_graphics",
+    "route": "imagick",
+    "codec": "avif",
+    "attempts": 1,
+    "ok": 1,
+    "refused": 0,
+    "independent_masters": 1,
+    "bytes": {
+      "median": 127458,
+      "min": 127458,
+      "max": 127458
+    },
+    "ssimulacra2_worst": {
+      "median": 84.28019421,
+      "min": 84.28019421,
+      "max": 84.28019421
+    },
+    "alpha_max_error": {
+      "median": 0,
+      "min": 0,
+      "max": 0
+    },
+    "encode_wall_seconds": {
+      "median": 0.169234037399292,
+      "min": 0.169234037399292,
+      "max": 0.169234037399292
+    },
+    "matched_command_encode_wall_seconds": null,
+    "matched_command_encode_peak_rss_bytes": null
+  },
+  {
+    "group": "site_graphics",
+    "route": "imagick",
+    "codec": "webp",
+    "attempts": 1,
+    "ok": 1,
+    "refused": 0,
+    "independent_masters": 1,
+    "bytes": {
+      "median": 95406,
+      "min": 95406,
+      "max": 95406
+    },
+    "ssimulacra2_worst": {
+      "median": 77.15121676,
+      "min": 77.15121676,
+      "max": 77.15121676
+    },
+    "alpha_max_error": {
+      "median": 0,
+      "min": 0,
+      "max": 0
+    },
+    "encode_wall_seconds": {
+      "median": 0.0910501480102539,
+      "min": 0.0910501480102539,
+      "max": 0.0910501480102539
+    },
+    "matched_command_encode_wall_seconds": null,
+    "matched_command_encode_peak_rss_bytes": null
+  },
+  {
+    "group": "site_graphics",
+    "route": "native",
+    "codec": "avif",
+    "attempts": 1,
+    "ok": 1,
+    "refused": 0,
+    "independent_masters": 1,
+    "bytes": {
+      "median": 128871,
+      "min": 128871,
+      "max": 128871
+    },
+    "ssimulacra2_worst": {
+      "median": 85.45790243,
+      "min": 85.45790243,
+      "max": 85.45790243
+    },
+    "alpha_max_error": {
+      "median": 0,
+      "min": 0,
+      "max": 0
+    },
+    "encode_wall_seconds": {
+      "median": 0.38982391357421875,
+      "min": 0.38982391357421875,
+      "max": 0.38982391357421875
+    },
+    "matched_command_encode_wall_seconds": {
+      "median": 0.12264495800081932,
+      "min": 0.12264495800081932,
+      "max": 0.12264495800081932
+    },
+    "matched_command_encode_peak_rss_bytes": {
+      "median": 58589184,
+      "min": 58589184,
+      "max": 58589184
+    }
+  },
+  {
+    "group": "site_graphics",
+    "route": "native",
+    "codec": "webp",
+    "attempts": 1,
+    "ok": 1,
+    "refused": 0,
+    "independent_masters": 1,
+    "bytes": {
+      "median": 95406,
+      "min": 95406,
+      "max": 95406
+    },
+    "ssimulacra2_worst": {
+      "median": 77.15121676,
+      "min": 77.15121676,
+      "max": 77.15121676
+    },
+    "alpha_max_error": {
+      "median": 0,
+      "min": 0,
+      "max": 0
+    },
+    "encode_wall_seconds": {
+      "median": 0.21162199974060059,
+      "min": 0.21162199974060059,
+      "max": 0.21162199974060059
+    },
+    "matched_command_encode_wall_seconds": {
+      "median": 0.09500562500033993,
+      "min": 0.09500562500033993,
+      "max": 0.09500562500033993
+    },
+    "matched_command_encode_peak_rss_bytes": {
+      "median": 9568256,
+      "min": 9568256,
+      "max": 9568256
+    }
+  },
+  {
+    "group": "site_product",
+    "route": "advanced",
+    "codec": "avif",
+    "attempts": 2,
+    "ok": 2,
+    "refused": 0,
+    "independent_masters": 2,
+    "bytes": {
+      "median": 21825.5,
+      "min": 13198,
+      "max": 30453
+    },
+    "ssimulacra2_worst": {
+      "median": 88.29611881,
+      "min": 87.97792991,
+      "max": 88.61430771
+    },
+    "alpha_max_error": {
+      "median": 0.0,
+      "min": 0,
+      "max": 0
+    },
+    "encode_wall_seconds": {
+      "median": 0.11411094665527344,
+      "min": 0.1120600700378418,
+      "max": 0.11616182327270508
+    },
+    "matched_command_encode_wall_seconds": null,
+    "matched_command_encode_peak_rss_bytes": null
+  },
+  {
+    "group": "site_product",
+    "route": "advanced",
+    "codec": "webp",
+    "attempts": 2,
+    "ok": 2,
+    "refused": 0,
+    "independent_masters": 2,
+    "bytes": {
+      "median": 16868.0,
+      "min": 10128,
+      "max": 23608
+    },
+    "ssimulacra2_worst": {
+      "median": 77.971845785,
+      "min": 75.00833196,
+      "max": 80.93535961
+    },
+    "alpha_max_error": {
+      "median": 0.0,
+      "min": 0,
+      "max": 0
+    },
+    "encode_wall_seconds": {
+      "median": 0.10422015190124512,
+      "min": 0.10402607917785645,
+      "max": 0.10441422462463379
+    },
+    "matched_command_encode_wall_seconds": null,
+    "matched_command_encode_peak_rss_bytes": null
+  },
+  {
+    "group": "site_product",
+    "route": "gd",
+    "codec": "avif",
+    "attempts": 2,
+    "ok": 2,
+    "refused": 0,
+    "independent_masters": 2,
+    "bytes": {
+      "median": 18030.0,
+      "min": 10201,
+      "max": 25859
+    },
+    "ssimulacra2_worst": {
+      "median": 85.25380100000001,
+      "min": 85.10091427,
+      "max": 85.40668773
+    },
+    "alpha_max_error": {
+      "median": 0.0,
+      "min": 0,
+      "max": 0
+    },
+    "encode_wall_seconds": {
+      "median": 0.07061707973480225,
+      "min": 0.05651712417602539,
+      "max": 0.0847170352935791
+    },
+    "matched_command_encode_wall_seconds": null,
+    "matched_command_encode_peak_rss_bytes": null
+  },
+  {
+    "group": "site_product",
+    "route": "gd",
+    "codec": "webp",
+    "attempts": 2,
+    "ok": 2,
+    "refused": 0,
+    "independent_masters": 2,
+    "bytes": {
+      "median": 16868.0,
+      "min": 10128,
+      "max": 23608
+    },
+    "ssimulacra2_worst": {
+      "median": 77.971845785,
+      "min": 75.00833196,
+      "max": 80.93535961
+    },
+    "alpha_max_error": {
+      "median": 0.0,
+      "min": 0,
+      "max": 0
+    },
+    "encode_wall_seconds": {
+      "median": 0.023524999618530273,
+      "min": 0.02048802375793457,
+      "max": 0.026561975479125977
+    },
+    "matched_command_encode_wall_seconds": null,
+    "matched_command_encode_peak_rss_bytes": null
+  },
+  {
+    "group": "site_product",
+    "route": "imagick",
+    "codec": "avif",
+    "attempts": 2,
+    "ok": 2,
+    "refused": 0,
+    "independent_masters": 2,
+    "bytes": {
+      "median": 17550.5,
+      "min": 9775,
+      "max": 25326
+    },
+    "ssimulacra2_worst": {
+      "median": 86.63714518,
+      "min": 86.54018563,
+      "max": 86.73410473
+    },
+    "alpha_max_error": {
+      "median": 0.0,
+      "min": 0,
+      "max": 0
+    },
+    "encode_wall_seconds": {
+      "median": 0.07702744007110596,
+      "min": 0.0599370002746582,
+      "max": 0.09411787986755371
+    },
+    "matched_command_encode_wall_seconds": null,
+    "matched_command_encode_peak_rss_bytes": null
+  },
+  {
+    "group": "site_product",
+    "route": "imagick",
+    "codec": "webp",
+    "attempts": 2,
+    "ok": 2,
+    "refused": 0,
+    "independent_masters": 2,
+    "bytes": {
+      "median": 16868.0,
+      "min": 10128,
+      "max": 23608
+    },
+    "ssimulacra2_worst": {
+      "median": 77.971845785,
+      "min": 75.00833196,
+      "max": 80.93535961
+    },
+    "alpha_max_error": {
+      "median": 0.0,
+      "min": 0,
+      "max": 0
+    },
+    "encode_wall_seconds": {
+      "median": 0.02372598648071289,
+      "min": 0.020607948303222656,
+      "max": 0.026844024658203125
+    },
+    "matched_command_encode_wall_seconds": null,
+    "matched_command_encode_peak_rss_bytes": null
+  },
+  {
+    "group": "site_product",
+    "route": "native",
+    "codec": "avif",
+    "attempts": 2,
+    "ok": 2,
+    "refused": 0,
+    "independent_masters": 2,
+    "bytes": {
+      "median": 21825.5,
+      "min": 13198,
+      "max": 30453
+    },
+    "ssimulacra2_worst": {
+      "median": 88.29611881,
+      "min": 87.97792991,
+      "max": 88.61430771
+    },
+    "alpha_max_error": {
+      "median": 0.0,
+      "min": 0,
+      "max": 0
+    },
+    "encode_wall_seconds": {
+      "median": 0.1664806604385376,
+      "min": 0.11189913749694824,
+      "max": 0.22106218338012695
+    },
+    "matched_command_encode_wall_seconds": {
+      "median": 0.07586481250018551,
+      "min": 0.05754775000059453,
+      "max": 0.09418187499977648
+    },
+    "matched_command_encode_peak_rss_bytes": {
+      "median": 29483008.0,
+      "min": 28917760,
+      "max": 30048256
+    }
+  },
+  {
+    "group": "site_product",
+    "route": "native",
+    "codec": "webp",
+    "attempts": 2,
+    "ok": 2,
+    "refused": 0,
+    "independent_masters": 2,
+    "bytes": {
+      "median": 16868.0,
+      "min": 10128,
+      "max": 23608
+    },
+    "ssimulacra2_worst": {
+      "median": 77.971845785,
+      "min": 75.00833196,
+      "max": 80.93535961
+    },
+    "alpha_max_error": {
+      "median": 0.0,
+      "min": 0,
+      "max": 0
+    },
+    "encode_wall_seconds": {
+      "median": 0.10561740398406982,
+      "min": 0.10549092292785645,
+      "max": 0.1057438850402832
+    },
+    "matched_command_encode_wall_seconds": {
+      "median": 0.03052566649967048,
+      "min": 0.026999833000445506,
+      "max": 0.03405149999889545
+    },
+    "matched_command_encode_peak_rss_bytes": {
+      "median": 4489216.0,
+      "min": 4456448,
+      "max": 4521984
+    }
+  }
+]

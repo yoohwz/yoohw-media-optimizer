@@ -1,0 +1,12 @@
+{
+  "status": "PASS",
+  "checks": {
+    "successful_outputs": 484,
+    "icc_exact": 484,
+    "dimensions_correct": 484,
+    "no_exif_xmp": 484,
+    "lossless_png_webp_visible_rgb_and_alpha_exact": 45,
+    "lossless_avif_png_alpha_exact": 45
+  },
+  "scope": "All successful actual-plugin outputs; encoded RGB comparison only for shipping lossless PNG WebP, excludes hidden RGB under alpha zero; AVIF lossless policy checks alpha only."
+}
