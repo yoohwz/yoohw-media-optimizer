@@ -1,5 +1,10 @@
 # Regression checks
 
+For preparation on an explicitly selected staging site, see the
+[rounds 1–3 acceptance guide](STAGING.md) and read-only `staging-preflight.php`.
+The destructive regression entry point below is best run in a disposable clone,
+not concurrently with work on a populated staging library.
+
 The separate [offline quality benchmark](benchmark/README.md) measures candidate
 WebP/AVIF profiles and color handling without changing plugin defaults. It is
 development tooling, not part of the WordPress regression entry point or the
