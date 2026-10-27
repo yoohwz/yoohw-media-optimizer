@@ -129,6 +129,7 @@ try {
 		imagewebp( $image, $dir . '/gd-expected.webp', 71 ); imagedestroy( $image );
 		$assert( hash_file( 'sha256', $path . '.webp' ) === hash_file( 'sha256', $dir . '/gd-expected.webp' ), 'GD used legacy/AVIF quality instead of WebP quality.' );
 	} elseif ( 'editor' === $mode ) {
+		if ( ! class_exists( 'WP_Image_Editor' ) ) { require_once ABSPATH . WPINC . '/class-wp-image-editor.php'; }
 		if ( ! class_exists( 'WP_Image_Editor_GD' ) ) { require_once ABSPATH . WPINC . '/class-wp-image-editor-gd.php'; }
 		class YoOhw_MO_Codec_Quality_Editor extends WP_Image_Editor_GD {
 			public static $qualities = array();
@@ -157,13 +158,15 @@ try {
 		$tools = array( 'cwebp' => $find( 'cwebp' ), 'avifenc' => $find( 'avifenc' ), 'avifdec' => $find( 'avifdec' ) );
 		foreach ( array( 'cwebp', 'avifenc' ) as $tool ) {
 			if ( 'native-fault' !== $mode && ! $tools[$tool] ) { $assert( ! $required, 'Required real profile encoder unavailable: ' . $tool ); echo $tool . " profile: NOT RUN — binary unavailable.\n"; continue; }
-			$wrapper = '#!' . PHP_BINARY . "\n<?php\n" . '$args = array_slice($argv, 1); file_put_contents(__FILE__ . ".args", json_encode($args) . "\\n", FILE_APPEND);' . "\n";
+			$wrapper = "<?php\n" . '$args = array_slice($argv, 1); file_put_contents(substr(__FILE__, 0, -4) . ".args", json_encode($args) . "\\n", FILE_APPEND);' . "\n";
 			if ( 'native-fault' === $mode ) {
 				$wrapper .= '$out = end($args); if (false !== ($i = array_search("-o", $args, true))) { $out = $args[$i + 1]; } file_put_contents($out, "partial output"); exit(1);';
 			} else {
-				$wrapper .= '$p = proc_open(array_merge(array(' . var_export( $tools[$tool], true ) . '), $args), array(0 => array("file", "/dev/null", "r"), 1 => array("file", "/dev/null", "w"), 2 => array("file", "/dev/null", "w")), $pipes); $code = is_resource($p) ? proc_close($p) : 1; if (!$code && is_file(__DIR__ . "/inflate")) { $out = end($args); if (false !== ($i = array_search("-o", $args, true))) { $out = $args[$i + 1]; } $body = file_get_contents($out); $padding = str_repeat("x", 50000); if ("cwebp" === basename(__FILE__)) { $body .= "JUNK" . pack("V", strlen($padding)) . $padding; $body = substr($body, 0, 4) . pack("V", strlen($body) - 8) . substr($body, 8); } else { $body .= pack("N", strlen($padding) + 8) . "free" . $padding; } file_put_contents($out, $body); } exit($code);';
+				$wrapper .= '$p = proc_open(array_merge(array(' . var_export( $tools[$tool], true ) . '), $args), array(0 => array("file", "/dev/null", "r"), 1 => array("file", "/dev/null", "w"), 2 => array("file", "/dev/null", "w")), $pipes); $code = is_resource($p) ? proc_close($p) : 1; if (!$code && is_file(__DIR__ . "/inflate")) { $out = end($args); if (false !== ($i = array_search("-o", $args, true))) { $out = $args[$i + 1]; } $body = file_get_contents($out); $padding = str_repeat("x", 50000); if ("cwebp" === basename(__FILE__, ".php")) { $body .= "JUNK" . pack("V", strlen($padding)) . $padding; $body = substr($body, 0, 4) . pack("V", strlen($body) - 8) . substr($body, 8); } else { $body .= pack("N", strlen($padding) + 8) . "free" . $padding; } file_put_contents($out, $body); } exit($code);';
 			}
-			file_put_contents( $dir . '/' . $tool, $wrapper ); chmod( $dir . '/' . $tool, 0700 );
+			file_put_contents( $dir . '/' . $tool . '.php', $wrapper );
+			file_put_contents( $dir . '/' . $tool, "#!/bin/sh\nexec " . escapeshellarg( PHP_BINARY ) . ' ' . escapeshellarg( $dir . '/' . $tool . '.php' ) . ' "$@"' . "\n" );
+			chmod( $dir . '/' . $tool, 0700 );
 		}
 		putenv( 'PATH=' . $dir );
 		$advanced = array( 'generate_avif_sidecars' => 1, 'webp_png_mode' => 'lossless', 'avif_alpha_mode' => 'lossless', 'use_external_binaries' => 1 );
