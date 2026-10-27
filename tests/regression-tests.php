@@ -406,6 +406,8 @@ try {
 		$color_profile_checks( $optimizer, $invoke, $assert, $test_dir );
 		$profile_quality_checks = require __DIR__ . '/profile-quality-tests.php';
 		$profile_quality_checks( $optimizer, $invoke, $assert, $test_dir );
+		$thumbnail_manager_checks = require __DIR__ . '/thumbnail-manager-tests.php';
+		$thumbnail_manager_checks( $optimizer, $invoke, $assert );
 	}
 
 } catch ( Throwable $error ) {

@@ -452,6 +452,10 @@
 			data.append('limit', String(limit));
 			data.append('run_id', runId);
 			data.append('start', startNew ? '1' : '0');
+			var handoffField = form.querySelector('[name="yotm_job"]');
+			if (handoffField) {
+				data.append('yotm_job', handoffField.value);
+			}
 
 			if (startNew && forceField && forceField.checked) {
 				data.append('force', '1');

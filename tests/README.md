@@ -275,6 +275,23 @@ require separate evidence. The native mutex currently requires POSIX `flock`.
 
 ## GitHub Actions
 
+`thumbnail-manager-tests.php` runs synthetic counterpart fixtures only when the
+real Thumbnail Manager handoff API is absent. It checks read-only source preview,
+auto-hook suppression, active-job exclusion, external token ownership, exact
+sidecar selection with original optimization globally enabled, same-time rebuild
+and running-item retry, unchanged source/metadata, untouched and selected legacy
+tracking provenance, empty evidence, bounded import progress, failed page-write
+retry, invalid queue kind, completed-run scope, owner/site and unavailable-source
+rejection, plus raw full/companion/traversal/symlink vetoes. Fixtures restore
+settings/queue/user and remove their temporary users, attachments and media.
+
+Use a disposable site with Thumbnail Manager skipped for this synthetic suite.
+An active real counterpart prints `NOT RUN` for these fixtures. The companion
+Thumbnail Manager cooperation smoke supplies real completed Repair/Force report
+evidence and cross-plugin runtime checks. Synthetic source APIs do not certify
+the real report authority, AJAX nonce/capability transport, browser UI or
+cross-process TM/MO contention; record those checks separately.
+
 `Media Optimizer CI` runs on pull requests, pushes to `main`, and manual dispatch.
 Draft PRs run one representative regression environment (declared Tested up to /
 PHP 8.4) and emit `Iteration Gate`. Ready PRs, main pushes, and dispatches run
