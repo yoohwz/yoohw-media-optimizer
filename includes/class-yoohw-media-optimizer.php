@@ -1327,6 +1327,8 @@ Header append Vary Accept env=REDIRECT_accept
 		}
 		$options = $this->get_options();
 		$can_run = $handoff ? ( ! empty( $options['generate_webp_sidecars'] ) && $this->webp_generation_supported() ) || ( ! empty( $options['generate_avif_sidecars'] ) && $this->avif_supported() ) : $this->can_run_any_optimization();
+		$complete = $handoff && ! empty( $progress['runId'] ) && ! $progress['hasMore'] && $progress['processedTotal'] >= $progress['found'];
+		$can_run = $can_run && ! $complete;
 		?>
 		<form class="yoohw-mo-batch-form" method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" data-yoohw-mo-batch-form>
 			<input type="hidden" name="action" value="yoohw_mo_optimize_batch">
@@ -1348,7 +1350,7 @@ Header append Vary Accept env=REDIRECT_accept
 				<div class="yoohw-mo-batch-actions">
 					<button type="submit" class="button button-primary button-hero" data-yoohw-mo-start data-yoohw-mo-start-label="<?php echo esc_attr( $handoff ? __( 'Run exact-file optimization', 'yoohw-media-optimizer' ) : __( 'Start optimizing', 'yoohw-media-optimizer' ) ); ?>" <?php disabled( ! $can_run ); ?>>
 						<span class="dashicons dashicons-controls-play" aria-hidden="true"></span>
-						<?php echo esc_html( $progress['hasMore'] ? __( 'Resume optimizing', 'yoohw-media-optimizer' ) : ( $handoff ? __( 'Run exact-file optimization', 'yoohw-media-optimizer' ) : __( 'Start optimizing', 'yoohw-media-optimizer' ) ) ); ?>
+						<?php echo esc_html( $complete ? __( 'Optimization complete', 'yoohw-media-optimizer' ) : ( $progress['hasMore'] ? __( 'Resume optimizing', 'yoohw-media-optimizer' ) : ( $handoff ? __( 'Run exact-file optimization', 'yoohw-media-optimizer' ) : __( 'Start optimizing', 'yoohw-media-optimizer' ) ) ) ); ?>
 					</button>
 					<button type="button" class="button button-hero" data-yoohw-mo-stop hidden>
 						<span class="dashicons dashicons-controls-pause" aria-hidden="true"></span>
@@ -1371,7 +1373,7 @@ Header append Vary Accept env=REDIRECT_accept
 				<div class="yoohw-mo-progress-head">
 					<div class="yoohw-mo-progress-title">
 						<span class="yoohw-mo-progress-pulse" aria-hidden="true"></span>
-						<strong data-yoohw-mo-progress-title><?php esc_html_e( 'Ready to optimize', 'yoohw-media-optimizer' ); ?></strong>
+						<strong data-yoohw-mo-progress-title><?php echo esc_html( $complete ? __( 'Optimization complete', 'yoohw-media-optimizer' ) : __( 'Ready to optimize', 'yoohw-media-optimizer' ) ); ?></strong>
 					</div>
 					<span data-yoohw-mo-progress-percent><?php echo esc_html( $progress['percent'] ); ?>%</span>
 				</div>
@@ -1379,7 +1381,7 @@ Header append Vary Accept env=REDIRECT_accept
 					<span data-yoohw-mo-progress-fill style="width: <?php echo esc_attr( $progress['percent'] ); ?>%"></span>
 				</div>
 				<div class="yoohw-mo-progress-meta">
-					<span data-yoohw-mo-current><?php esc_html_e( 'Waiting to start', 'yoohw-media-optimizer' ); ?></span>
+					<span data-yoohw-mo-current><?php echo esc_html( $complete ? __( 'Optimization complete', 'yoohw-media-optimizer' ) : __( 'Waiting to start', 'yoohw-media-optimizer' ) ); ?></span>
 					<span><?php esc_html_e( 'Elapsed', 'yoohw-media-optimizer' ); ?> <strong data-yoohw-mo-elapsed>0s</strong></span>
 					<span><?php esc_html_e( 'ETA', 'yoohw-media-optimizer' ); ?> <strong data-yoohw-mo-eta>-</strong></span>
 				</div>
