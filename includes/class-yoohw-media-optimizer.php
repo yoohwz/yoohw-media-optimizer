@@ -2776,7 +2776,7 @@ Header append Vary Accept env=REDIRECT_accept
 		}
 		$source = yotm_optimizer_handoff( $token, $page, $attachment_id );
 		if ( is_wp_error( $source ) ) {
-			throw new RuntimeException( $source->get_error_message(), 409 );
+			throw new RuntimeException( esc_html( $source->get_error_message() ), 409 );
 		}
 		if ( ! is_array( $source ) || 1 !== ( $source['schema'] ?? null ) || ! is_string( $source['job_token'] ?? null ) || ! hash_equals( (string) $token, $source['job_token'] ) || ! is_array( $source['items'] ?? null ) || count( $source['items'] ) > 100 || ! is_int( $source['total'] ?? null ) || ! is_int( $source['pages'] ?? null ) || ! is_int( $source['page'] ?? null ) || ! is_string( $source['source_url'] ?? null ) || ! is_string( $source['scope_label'] ?? null ) || $source['total'] < 0 || $source['pages'] < 0 || ( $source['total'] > 0 && $source['pages'] < 1 ) || $source['page'] !== (int) $page || $source['page'] > max( 1, $source['pages'] ) ) {
 			throw new RuntimeException( 'The saved Thumbnail Manager result is invalid or incompatible.', 409 );
@@ -3125,7 +3125,7 @@ Header append Vary Accept env=REDIRECT_accept
 			return;
 		}
 		if ( false !== $active ) {
-			throw new RuntimeException( is_wp_error( $active ) ? $active->get_error_message() : 'Thumbnail Manager has active media maintenance. Finish or recover that job before optimizing media.', 409 );
+			throw new RuntimeException( esc_html( is_wp_error( $active ) ? $active->get_error_message() : 'Thumbnail Manager has active media maintenance. Finish or recover that job before optimizing media.' ), 409 );
 		}
 	}
 
