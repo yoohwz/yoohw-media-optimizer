@@ -3521,7 +3521,7 @@ Header append Vary Accept env=REDIRECT_accept
 	}
 
 	/** Strip privacy metadata in memory before the one save; never inject an ICC. */
-	private function save_color_editor( $editor, $source, $destination, $mime, $options ) {
+	private function save_color_editor( $editor, $source, $destination, $mime, $options, $quality = null ) {
 		$color = YoOhw_Media_Optimizer_Color::inspect( $source );
 		if ( is_wp_error( $color ) ) { return $color; }
 		if ( $editor instanceof YoOhw_Media_Optimizer_Imagick ) {
@@ -3530,7 +3530,19 @@ Header append Vary Accept env=REDIRECT_accept
 		} elseif ( $color['icc'] ) {
 			return new WP_Error( 'yoohw_mo_color_editor', __( 'The active image editor cannot preserve this color profile. The source was left unchanged.', 'yoohw-media-optimizer' ) );
 		}
-		return $editor->save( $destination, $mime );
+		if ( null === $quality ) { return $editor->save( $destination, $mime ); }
+		// WordPress resets quality while resolving a new output MIME during save().
+		$filter = static function ( $default, $output_mime ) use ( $mime, $quality ) {
+			return $mime === $output_mime ? $quality : $default;
+		};
+		add_filter( 'wp_editor_set_quality', $filter, PHP_INT_MAX, 2 );
+		try {
+			$set = $editor->set_quality( $quality );
+			if ( is_wp_error( $set ) ) { return $set; }
+			return $editor->save( $destination, $mime );
+		} finally {
+			remove_filter( 'wp_editor_set_quality', $filter, PHP_INT_MAX );
+		}
 	}
 
 	/** Normalize pixels through the existing editor instead of dropping the orientation tag. */
@@ -3543,8 +3555,7 @@ Header append Vary Accept env=REDIRECT_accept
 		if ( is_wp_error( $rotated ) || true !== $rotated ) {
 			return is_wp_error( $rotated ) ? $rotated : new WP_Error( 'yoohw_mo_exif_rotation', __( 'The image editor could not normalize JPEG display orientation.', 'yoohw-media-optimizer' ) );
 		}
-		$editor->set_quality( $quality );
-		$saved = $this->save_color_editor( $editor, $source, $destination, $mime, $this->get_options() );
+		$saved = $this->save_color_editor( $editor, $source, $destination, $mime, $this->get_options(), $quality );
 		if ( ! is_wp_error( $saved ) ) {
 			$saved['engine'] = get_class( $editor );
 		}
@@ -3606,11 +3617,7 @@ Header append Vary Accept env=REDIRECT_accept
 			return $editor;
 		}
 
-		if ( method_exists( $editor, 'set_quality' ) ) {
-			$editor->set_quality( $quality );
-		}
-
-		$saved = $this->save_color_editor( $editor, $source_path, $destination, 'image/webp', $this->get_options() );
+		$saved = $this->save_color_editor( $editor, $source_path, $destination, 'image/webp', $this->get_options(), $quality );
 
 		if ( is_wp_error( $saved ) ) {
 			return $saved;
@@ -3718,11 +3725,7 @@ Header append Vary Accept env=REDIRECT_accept
 			return $editor;
 		}
 
-		if ( method_exists( $editor, 'set_quality' ) ) {
-			$editor->set_quality( $quality );
-		}
-
-		$saved = $this->save_color_editor( $editor, $source_path, $destination, 'image/avif', $this->get_options() );
+		$saved = $this->save_color_editor( $editor, $source_path, $destination, 'image/avif', $this->get_options(), $quality );
 
 		if ( is_wp_error( $saved ) ) {
 			return $saved;

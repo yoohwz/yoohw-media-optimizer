@@ -64,7 +64,7 @@ $failure_case = static function( $name, $bytes, $changes ) use ( $attach, $run, 
 	$backup = $invoke( 'backup_file', array( $path ) );
 	$assert( ! is_wp_error( $backup ), 'Cannot seed profile recovery data.' ); $backups[] = $backup['path']; $backup_hash = hash_file( 'sha256', $backup['path'] );
 	file_put_contents( $path . '.webp', 'old webp' ); file_put_contents( $path . '.avif', 'old avif' );
-	$result = $run( $id, $changes ); $file = $result['files'][0];
+	$result = $run( $id, $changes ); $check_hooks(); $file = $result['files'][0];
 	$assert( 'failed' === $file['status'] && in_array( $file['avif_status'], array( 'failed', 'unsupported' ), true ), 'Advanced unavailable/failing profile silently fell back: ' . wp_json_encode( $result ) );
 	$assert( 0 === $result['summary']['created'] && 0 === $result['summary']['updated'] && 0 === $result['summary']['avif_created'] && 0 === $result['summary']['avif_updated'], 'Failed profiles reported sidecar success.' );
 	$assert( $bytes === file_get_contents( $path ) && 'old webp' === file_get_contents( $path . '.webp' ) && 'old avif' === file_get_contents( $path . '.avif' ), 'Failed profile changed source or historical sidecars.' );
@@ -155,6 +155,13 @@ try {
 				return $output;
 			}
 		}
+		// Existing site callbacks must survive every save and cannot override explicit codec quality.
+		$filter( 'wp_editor_set_quality', static function() { return 64; } );
+		$quality_hooks = $GLOBALS['wp_filter']['wp_editor_set_quality']->callbacks;
+		$check_hooks = static function() use ( $assert, $quality_hooks ) {
+			$assert( $quality_hooks === $GLOBALS['wp_filter']['wp_editor_set_quality']->callbacks, 'Save leaked or removed a quality callback.' );
+			$assert( 64 === apply_filters( 'wp_editor_set_quality', 11, 'image/jpeg' ), 'Save changed an unrelated MIME/site quality filter.' );
+		};
 		$engines = array( 'gd' );
 		if ( class_exists( 'Imagick' ) ) {
 			require_once ABSPATH . WPINC . '/class-wp-image-editor-imagick.php';
@@ -193,7 +200,7 @@ try {
 					$hashes = array();
 					foreach ( array( 23, 89 ) as $quality ) {
 						$changes = array( 'generate_webp_sidecars' => 'webp' === $format ? 1 : 0, 'generate_avif_sidecars' => 'avif' === $format ? 1 : 0, 'webp_quality' => 'webp' === $format ? $quality : 47, 'avif_quality' => 'avif' === $format ? $quality : 47 );
-						$result = $run( $id, $changes ); $file = $result['files'][0];
+						$result = $run( $id, $changes ); $check_hooks(); $file = $result['files'][0];
 						$status = 'webp' === $format ? 'status' : 'avif_status'; $engine_key = 'webp' === $format ? 'webp_engine' : 'avif_engine';
 						$assert( in_array( $file[$status], array( 'created', 'updated' ), true ), 'Real editor quality save failed: ' . wp_json_encode( $result ) );
 						$assert( ( 'imagick' === $engine ? 'YoOhw_Media_Optimizer_Imagick' : 'WP_Image_Editor_GD' ) === $file[$engine_key], 'Quality test silently selected another encoder.' );
@@ -221,6 +228,37 @@ try {
 					$assert( $hashes[0] !== $hashes[1], 'Different qualities produced identical real editor output: ' . $engine . '/' . $format . '/' . $case );
 				}
 			}
+		}
+		// Exercise the scope boundary even when no image is written or save throws.
+		class YoOhw_MO_Quality_Failure_Editor {
+			public $failure;
+			public $seen = array();
+			public $setter_calls = 0;
+			public function set_quality( $quality = null ) {
+				++$this->setter_calls;
+				return 'setter' === $this->failure ? new WP_Error( 'quality_fixture', 'Setter refused quality.' ) : true;
+			}
+			public function save( $path, $mime ) {
+				$this->seen = array( apply_filters( 'wp_editor_set_quality', 11, $mime ), apply_filters( 'wp_editor_set_quality', 11, 'image/jpeg' ) );
+				if ( 'throw' === $this->failure ) { throw new RuntimeException( 'Quality save fixture.' ); }
+				return 'save' === $this->failure ? new WP_Error( 'quality_fixture', 'Save refused quality.' ) : array( 'path' => $path );
+			}
+		}
+		list( $id, $path ) = $attach( 'quality-scope.jpg', $jpeg() );
+		foreach ( array( 'success', 'setter', 'save', 'throw', 'original' ) as $failure ) {
+			$editor = new YoOhw_MO_Quality_Failure_Editor(); $editor->failure = $failure;
+			try {
+				$args = array( $editor, $path, $dir . '/scope.webp', 'image/webp', $options );
+				if ( 'original' !== $failure ) { $args[] = 71; }
+				$result = $invoke( 'save_color_editor', $args );
+				$assert( 'throw' !== $failure, 'Save exception was swallowed.' );
+				$assert( in_array( $failure, array( 'setter', 'save' ), true ) === is_wp_error( $result ), 'Quality/save error was not propagated.' );
+			} catch ( RuntimeException $error ) {
+				$assert( 'throw' === $failure && 'Quality save fixture.' === $error->getMessage(), 'Unexpected scope exception: ' . $error->getMessage() );
+			}
+			$check_hooks();
+			$assert( 'setter' === $failure ? array() === $editor->seen : array( 'original' === $failure ? 64 : 71, 64 ) === $editor->seen, 'Quality callback escaped target MIME or setter failure still saved.' );
+			$assert( ( 'original' === $failure ? 0 : 1 ) === $editor->setter_calls, 'Optional sidecar quality changed original/editor setter behavior.' );
 		}
 	} elseif ( 'native-missing' === $mode ) {
 		$changes = array( 'generate_avif_sidecars' => 1, 'webp_png_mode' => 'lossless', 'avif_alpha_mode' => 'lossless', 'use_external_binaries' => 0 );
@@ -258,7 +296,7 @@ try {
 				$changes = array_merge( $advanced, array( 'generate_webp_sidecars' => 'webp' === $format ? 1 : 0, 'generate_avif_sidecars' => 'avif' === $format ? 1 : 0 ) );
 				$status = 'webp' === $format ? 'status' : 'avif_status'; $engine = $format . '_engine';
 				list( $id, $path ) = $attach( 'real-' . $format . '.png', $png() ); $source = file_get_contents( $path );
-				$result = $run( $id, $changes ); $file = $result['files'][0];
+				$result = $run( $id, $changes ); $check_hooks(); $file = $result['files'][0];
 				$assert( 'created' === $file[$status] && $tool === $file[$engine], 'Advanced real encoder failed/fell back: ' . wp_json_encode( $result ) );
 				$assert( $source === file_get_contents( $path ), 'Advanced profile changed source bytes.' );
 				$args = json_decode( trim( file_get_contents( $dir . '/' . $tool . '.args' ) ), true );
