@@ -14,7 +14,7 @@
   "icc_exact_all": true,
   "webp_lossless_meaningful_rgba_exact_all": true,
   "avif_lossless_alpha_exact_all": true,
-  "measurement_csv_sha256": "aa6e9ee657c3a811e66149ef801b50deb01d83bd14f2da9a8616f28041616f4b",
+  "measurement_csv_sha256": "572e97477d327636b936ca06d499812480148edf2fd2e368650393c9896d4346",
   "runner_sha256": "a8c7ca0b918eed19bb36dc047dc4379da18e83109209acef74692c0e3e795312",
   "limitations": [
     "Existing round1 corpus, not independent holdout",
@@ -267,5 +267,7 @@
     "icc_sha256": "1ff304c6f87126ca3a339ac3122e322d0449620511d73ba4737f2845ee97a955",
     "icc_source": "corpus/images/astronaut-2.png source ICC copied unchanged; no CMS transform",
     "generator": "run_profiles.py: NumPy checkerboard RGB0/1 by x/y div8, blue=(x+y)%256, alpha=x%256; opaque rectangle and built-in Pillow42 text"
-  }
+  },
+  "raw_measurement_csv_sha256": "aa6e9ee657c3a811e66149ef801b50deb01d83bd14f2da9a8616f28041616f4b",
+  "csv_storage_note": "Committed CSV normalizes CRLF to LF; raw receipt remains preserved. Row values are identical."
 }
