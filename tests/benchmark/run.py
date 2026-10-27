@@ -32,7 +32,8 @@ PROFILES = (
     "webp_lossless_srgb", "avif_baseline82", "avif_444_82_srgb",
     "avif_420_82_srgb", "avif_444_70_srgb",
 )
-OPTIONAL_PROFILES = ("webp_icc82",)
+OPTIONAL_PROFILES = ("webp_icc82", "webp_current82", "avif_current82",
+                     "webp_png_lossless_current", "avif_alpha_lossless82_current")
 
 
 def digest(path):
@@ -186,6 +187,14 @@ def metric_score(metric, reference, candidate, directory, timeout):
 
 
 def encode_args(profile, tools, source, normalized, preserved, target):
+    if profile == "webp_current82":
+        return [tools["cwebp"], "-quiet", "-metadata", "icc", "-q", "82", source, "-o", target]
+    if profile == "avif_current82":
+        return [tools["avifenc"], "--ignore-exif", "--ignore-xmp", "-q", "82", source, target]
+    if profile == "webp_png_lossless_current":
+        return [tools["cwebp"], "-quiet", "-metadata", "icc", "-lossless", "-q", "75", "-m", "4", source, "-o", target]
+    if profile == "avif_alpha_lossless82_current":
+        return [tools["avifenc"], "--ignore-exif", "--ignore-xmp", "--minalpha", "0", "--maxalpha", "0", "--jobs", "1", "-q", "82", source, target]
     if profile == "webp_baseline82":
         return [tools["cwebp"], "-quiet", "-q", "82", source, "-o", target]
     if profile == "avif_baseline82":
@@ -277,8 +286,10 @@ def save_reports(output, report):
     write_gallery(output, report["rows"])
 
 
-def benchmark(manifest, output, profiles, timeout, tools, plugin_baseline=None):
+def benchmark(manifest, output, profiles, timeout, tools, plugin_baseline=None, expected_refusals=()):
     images = read_manifest(manifest)
+    if expected_refusals and not plugin_baseline:
+        raise ValueError("expected refusals require a plugin baseline")
     plugin_data, plugin_rows = None, {}
     if plugin_baseline:
         plugin_data = json.loads(plugin_baseline.read_text())
@@ -291,6 +302,8 @@ def benchmark(manifest, output, profiles, timeout, tools, plugin_baseline=None):
             key = (row.get("id"), row.get("codec"))
             if row.get("codec") not in ("webp", "avif") or row.get("id") not in source_hashes or row.get("source_sha256") != source_hashes[row["id"]]:
                 raise ValueError("plugin baseline source hash mismatch or invalid row identity")
+            if "quality" in row and row["quality"] != 82:
+                raise ValueError("baseline82 import requires recorded quality 82")
             if key in plugin_rows:
                 raise ValueError("duplicate plugin baseline row")
             plugin_rows[key] = row
@@ -303,7 +316,7 @@ def benchmark(manifest, output, profiles, timeout, tools, plugin_baseline=None):
               "python": sys.version, "platform": sys.platform, "pillow": pillow_version,
               "lcms": ImageCms.core.littlecms_version, "profiles": profiles, "timeout_seconds": timeout,
               "baseline_label": "actual plugin seam outputs; see plugin_baseline provenance" if plugin_data else "command-equivalent external baseline; not a PHP/WordPress engine run",
-              "plugin_baseline": plugin_data,
+              "plugin_baseline": plugin_data, "expected_refusal_codes": list(expected_refusals),
               "decode_measurement": "fresh Python process: Pillow decode + EXIF orientation + ICC to sRGB + PNG write + process startup",
               "rss_measurement": "os.wait4 per-child ru_maxrss, converted to bytes; includes child workers",
               "score_policy": "ICC transform to sRGB; explicit manifest assume_srgb for untagged RGB; black/white opaque composites, worst SSIMULACRA2 and separate alpha error",
@@ -339,9 +352,14 @@ def benchmark(manifest, output, profiles, timeout, tools, plugin_baseline=None):
             for profile in profiles:
                 row = {"id": entry["id"], "group": entry["group"], "profile": profile, "source_bytes": source.stat().st_size,
                        "source_sha256_before": digest(source), "status": "error", "reference": str(normalized.relative_to(output)),
-                       "source_orientation": orientation}
-                unhandled_orientation = not plugin_data and "baseline" in profile and orientation in range(2, 9)
+                       "source_orientation": orientation, "independent_master_id": entry.get("independent_master_id", entry["id"]),
+                       "width": reference.width, "height": reference.height}
+                raw_source_profile = "baseline" in profile or profile in ("webp_icc82", "webp_current82", "avif_current82", "webp_png_lossless_current", "avif_alpha_lossless82_current")
+                unhandled_orientation = not (plugin_data and "baseline" in profile) and raw_source_profile and orientation in range(2, 9)
                 report["rows"].append(row)
+                if profile in ("webp_png_lossless_current", "avif_alpha_lossless82_current") and source.suffix.lower() != ".png":
+                    row.update(status="not_applicable", error="current advanced profile applies only to PNG")
+                    continue
                 if profile == "webp_icc82" and orientation in range(2, 9):
                     row.update(status="not_applicable", error="metadata-only control bounded to neutral orientation")
                     continue
@@ -358,8 +376,14 @@ def benchmark(manifest, output, profiles, timeout, tools, plugin_baseline=None):
                 try:
                     if plugin_data and "baseline" in profile:
                         baseline = plugin_rows.get((entry["id"], profile.split("_")[0]))
-                        if not baseline or baseline.get("error"):
-                            raise ValueError("missing or failed plugin baseline: " + str(baseline))
+                        if not baseline:
+                            raise ValueError("missing plugin baseline row")
+                        if baseline.get("error"):
+                            code = baseline["error"].split(":", 1)[0]
+                            if code in expected_refusals:
+                                row.update(status="expected_refusal", error=baseline["error"], engine=baseline.get("engine"))
+                                continue
+                            raise ValueError("failed plugin baseline: " + str(baseline))
                         original_output = (plugin_baseline.parent / baseline["path"]).resolve(strict=True)
                         if not original_output.is_relative_to(plugin_baseline.parent.resolve()) or not original_output.is_file():
                             raise ValueError("plugin baseline path escapes its directory")
@@ -424,6 +448,7 @@ def main(argv=None):
     parser.add_argument("output", type=Path)
     parser.add_argument("--profiles", nargs="+", choices=PROFILES + OPTIONAL_PROFILES, default=list(PROFILES))
     parser.add_argument("--timeout", type=float, default=120)
+    parser.add_argument("--expected-refusal", action="append", default=[], help="allow this exact recorded plugin error code; no score is invented")
     parser.add_argument("--plugin-baseline", type=Path, help="score actual plugin outputs from plugin-baseline.php JSON; replaces baseline profile encode step")
     for tool in ("cwebp", "avifenc", "ssimulacra2"):
         parser.add_argument("--" + tool, default=tool)
@@ -437,7 +462,7 @@ def main(argv=None):
             parser.error("missing executable: " + name)
         tools[name] = str(Path(tool).resolve())
     return benchmark(args.manifest.resolve(), args.output.absolute(), args.profiles, args.timeout, tools,
-                     args.plugin_baseline.resolve() if args.plugin_baseline else None)
+                     args.plugin_baseline.resolve() if args.plugin_baseline else None, args.expected_refusal)
 
 
 if __name__ == "__main__":

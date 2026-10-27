@@ -230,6 +230,44 @@ class HarnessTests(unittest.TestCase):
         self.assertEqual([arg for arg in control if arg not in ("-metadata", "icc")], baseline)
         self.assertNotIn("webp_icc82", RUN.PROFILES)
 
+    def test_current_native_profiles_are_bounded_to_exact_shipping_arguments(self):
+        tools = {"cwebp": "cwebp", "avifenc": "avifenc"}
+        expected = {
+            "webp_current82": ["cwebp", "-quiet", "-metadata", "icc", "-q", "82", "source", "-o", "target"],
+            "avif_current82": ["avifenc", "--ignore-exif", "--ignore-xmp", "-q", "82", "source", "target"],
+            "webp_png_lossless_current": ["cwebp", "-quiet", "-metadata", "icc", "-lossless", "-q", "75", "-m", "4", "source", "-o", "target"],
+            "avif_alpha_lossless82_current": ["avifenc", "--ignore-exif", "--ignore-xmp", "--minalpha", "0", "--maxalpha", "0", "--jobs", "1", "-q", "82", "source", "target"],
+        }
+        for profile, args in expected.items():
+            self.assertEqual(RUN.encode_args(profile, tools, "source", "normalized", "preserved", "target"), args)
+            self.assertNotIn(profile, RUN.PROFILES)
+
+    def test_plugin_refusals_require_explicit_exact_error_code_and_never_score(self):
+        tool = self.executable("version-only", "print('test version')")
+        bridge = self.directory / "refusal.json"
+        bridge.write_text(json.dumps({"manifest_sha256": RUN.digest(self.manifest), "source_hashes_unchanged": True,
+            "images": [{"id": "alpha", "codec": "webp", "source_sha256": self.entry["sha256"],
+                        "error": "yoohw_mo_color_editor: cannot retain ICC"}]}))
+        tools = dict.fromkeys(("cwebp", "avifenc", "ssimulacra2"), tool)
+        for index, codes in enumerate(((), ("yoohw_mo_color",), ("yoohw_mo_color_editor",))):
+            output = self.directory / ("refusal-%s" % index)
+            expected = 0 if index == 2 else 1
+            self.assertEqual(RUN.benchmark(self.manifest, output, ["webp_baseline82"], 5, tools, bridge, codes), expected)
+            report = json.loads((output / "results.json").read_text())
+            self.assertEqual(report["summary"], [])
+            self.assertNotIn("ssimulacra2_worst", report["rows"][0])
+            self.assertEqual(report["rows"][0]["source_sha256_after"], self.entry["sha256"])
+            self.assertEqual(report["rows"][0]["status"], "expected_refusal" if index == 2 else "error")
+        with self.assertRaisesRegex(ValueError, "require a plugin"):
+            RUN.benchmark(self.manifest, self.directory / "unbound", ["webp_baseline82"], 5, tools, None, ("x",))
+
+    def test_import_does_not_mislabel_non82_quality(self):
+        bridge = self.directory / "quality23.json"
+        bridge.write_text(json.dumps({"manifest_sha256": RUN.digest(self.manifest), "source_hashes_unchanged": True,
+            "images": [{"id": "alpha", "codec": "webp", "quality": 23, "source_sha256": self.entry["sha256"]}]}))
+        with self.assertRaisesRegex(ValueError, "requires recorded quality 82"):
+            RUN.benchmark(self.manifest, self.directory / "bad-quality", ["webp_baseline82"], 5, {}, bridge)
+
 
 if __name__ == "__main__":
     unittest.main()
