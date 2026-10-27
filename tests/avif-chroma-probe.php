@@ -8,10 +8,10 @@ if ( 0 === strpos( $mode, 'avif-chroma-post-' ) ) {
 	$admins = get_users( array( 'role' => 'administrator', 'number' => 1, 'fields' => 'ID' ) );
 	$assert( ! empty( $admins ), 'Settings probe needs the disposable site administrator.' );
 	wp_set_current_user( 'capability' === $case ? 0 : $admins[0] );
-	$stored = array_merge( $options, array( 'avif_imagick_chroma' => '444' ) );
+	$stored = array_merge( $options, array( 'avif_imagick_chroma' => 'enable' === $case ? 'default' : '444' ) );
 	update_option( YoOhw_Media_Optimizer::OPTION_KEY, $stored );
 	$_POST = array( '_wpnonce' => 'nonce' === $case ? 'invalid' : wp_create_nonce( 'yoohw_mo_save_settings' ) );
-	if ( 'missing' !== $case ) { $_POST['avif_imagick_chroma'] = 'invalid' === $case ? array( '444' ) : 'default'; }
+	if ( 'missing' !== $case ) { $_POST['avif_imagick_chroma'] = 'invalid' === $case ? array( '444' ) : ( 'enable' === $case ? '444' : 'default' ); }
 	$_REQUEST = $_POST;
 	// Invoke the real guards and handler; intercept termination only inside this child.
 	$filter( 'wp_die_handler', static function() { return static function() { throw new RuntimeException( 'fixture wp_die' ); }; } );
@@ -24,7 +24,7 @@ if ( 0 === strpos( $mode, 'avif-chroma-post-' ) ) {
 	} finally { ob_end_clean(); }
 	$actual = get_option( YoOhw_Media_Optimizer::OPTION_KEY );
 	if ( $denied ) { $assert( $stored === $actual, 'Rejected settings request changed options.' ); }
-	else { $assert( ( 'missing' === $case ? '444' : 'default' ) === $actual['avif_imagick_chroma'], 'Settings POST did not normalize/preserve chroma.' ); }
+	else { $assert( ( in_array( $case, array( 'missing', 'enable' ), true ) ? '444' : 'default' ) === $actual['avif_imagick_chroma'], 'Settings POST did not normalize/preserve chroma.' ); }
 	return;
 }
 require_once ABSPATH . WPINC . '/class-wp-image-editor.php';
