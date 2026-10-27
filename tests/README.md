@@ -296,6 +296,20 @@ identity, capability, native ownership, media/tracking retention, standalone
 queue reuse, normal-queue protection and late discarded requests. The native
 admin-post discard nonce/authorization transport requires separate HTTP evidence.
 
+`prune-cleanup-tests.php` adds synthetic completed-Prune evidence and cleanup
+reference guards to the same regression entry point when the real counterpart
+is inactive. Actual GD sidecar publication supplies ownership proof. Fixtures
+exercise legacy non-ownership, a sealed preview and separate approval, eight-file
+batches, changed bytes, recreated sources, generated aliases, replaced inodes,
+symlinks, owner/site/capability/hash/expiry rejection, duplicate raw postmeta,
+dirty reference evidence, failed persistence after unlink and replacement-safe
+replay. Sidecar-only revision stability, conservative no-change restore markers
+and refused pre-marker publication are checked. All synthetic APIs are confined
+to these test fixtures; they do not certify the real TM journal or source fence.
+Actual both-active Prune and cross-process metadata contention run in the
+companion Thumbnail Manager cooperation smoke. Browser authentication, nonce
+transport and rendered flow evidence must be recorded separately.
+
 Use a disposable site with Thumbnail Manager skipped for this synthetic suite.
 An active real counterpart prints `NOT RUN` for these fixtures. The companion
 Thumbnail Manager cooperation smoke supplies real completed Repair/Force report

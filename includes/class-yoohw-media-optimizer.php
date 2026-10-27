@@ -10,11 +10,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 }
 
 require_once __DIR__ . '/class-yoohw-media-optimizer-color.php';
+require_once __DIR__ . '/trait-yoohw-media-optimizer-prune-cleanup.php';
 
 /**
  * Generates modern sidecar files for WordPress media.
  */
 class YoOhw_Media_Optimizer {
+	use YoOhw_Media_Optimizer_Prune_Cleanup;
 	const MENU_SLUG              = 'yoohw-media-optimizer';
 	const CAPABILITY             = 'manage_options';
 	const OPTION_KEY             = 'yoohw_media_optimizer_options';
@@ -29,6 +31,10 @@ class YoOhw_Media_Optimizer {
 	const DELIVERY_GENERATE_ONLY = 'generate_only';
 	const DELIVERY_HTML          = 'html';
 	const THUMBNAIL_MANAGER_API  = 1;
+	const THUMBNAIL_MANAGER_CLEANUP_API = 1;
+	const PRUNE_CLEANUP_OPTION = 'yoohw_media_optimizer_prune_cleanup';
+	const SOURCE_REVISION_OPTION = 'yoohw_media_optimizer_source_revision';
+	const SOURCE_REVISION_META = '_yoohw_media_optimizer_source_revision';
 
 	/**
 	 * Singleton instance.
@@ -143,6 +149,9 @@ class YoOhw_Media_Optimizer {
 		add_action( 'admin_post_yoohw_mo_build_queue', array( $this, 'handle_build_queue' ) );
 		add_action( 'admin_post_yoohw_mo_process_queue', array( $this, 'handle_process_queue' ) );
 		add_action( 'admin_post_yoohw_mo_discard_thumbnail_manager', array( $this, 'handle_discard_thumbnail_manager' ) );
+		foreach ( array( 'prepare', 'approve', 'process', 'discard' ) as $cleanup_action ) {
+			add_action( 'admin_post_yoohw_mo_prune_' . $cleanup_action, array( $this, 'handle_prune_cleanup' ) );
+		}
 		add_action( 'wp_ajax_yoohw_mo_optimize_batch', array( $this, 'handle_ajax_optimize_batch' ) );
 		add_action( 'wp_ajax_yoohw_mo_test_delivery', array( $this, 'handle_ajax_test_delivery' ) );
 
@@ -530,11 +539,16 @@ class YoOhw_Media_Optimizer {
 		if ( ! current_user_can( self::CAPABILITY ) ) {
 			wp_die( esc_html__( 'You do not have permission to manage media optimization.', 'yoohw-media-optimizer' ) );
 		}
+		if ( $this->get_query_arg( 'yotm_prune' ) || $this->get_query_arg( 'yotm_cleanup_run' ) ) {
+			$this->render_prune_cleanup();
+			return;
+		}
 		if ( $this->get_query_arg( 'yotm_job' ) ) {
 			$this->render_thumbnail_manager_handoff();
 			return;
 		}
 
+		$this->render_saved_prune_cleanup_notice();
 		$options = $this->get_options();
 		$summary = $this->scan_library( 2000, 0 );
 		$savings = $this->savings_report();
@@ -2920,7 +2934,7 @@ Header append Vary Accept env=REDIRECT_accept
 			$files = $this->thumbnail_manager_files( $attachment_id, $source['items'][0]['files'] );
 			$options = $this->get_options();
 			$options['optimize_originals'] = 0;
-			$previous = get_post_meta( $attachment_id, self::META_KEY, true );
+			$previous = $this->raw_optimizer_tracking( $attachment_id, true );
 			if ( ! empty( $previous ) && ( ! is_array( $previous ) || ! is_array( $previous['files'] ?? null ) ) ) {
 				throw new RuntimeException( 'Existing optimizer tracking is invalid; recovery history was preserved.' );
 			}
@@ -2938,7 +2952,7 @@ Header append Vary Accept env=REDIRECT_accept
 					throw new RuntimeException( 'The generated source changed before encoding.' );
 				}
 				$key = $this->relative_upload_path_for_storage( $file['path'] );
-				$row = $this->optimize_file( $file, true, $options );
+				$row = $this->optimize_file( $file, true, $options, $tracked[ $key ] ?? array() );
 				$result['files'][] = $row;
 				foreach ( array( 'status' => '', 'avif_status' => 'avif_' ) as $field => $prefix ) {
 					$status = $prefix . $row[ $field ];
@@ -3279,6 +3293,15 @@ Header append Vary Accept env=REDIRECT_accept
 	}
 
 	private function restore_attachment_owned( $attachment_id ) {
+		$this->rotate_source_revision( $attachment_id, true );
+		try {
+			return $this->restore_attachment_work( $attachment_id );
+		} finally {
+			$this->rotate_source_revision( $attachment_id, false );
+		}
+	}
+
+	private function restore_attachment_work( $attachment_id ) {
 		$attachment_id = absint( $attachment_id );
 		$candidates    = $this->restore_candidates( $attachment_id );
 		$result        = array(
@@ -3479,6 +3502,21 @@ Header append Vary Accept env=REDIRECT_accept
 
 	private function optimize_attachment_owned( $attachment_id, $force = false, $metadata = null, $override_options = array() ) {
 		$options = wp_parse_args( is_array( $override_options ) ? $override_options : array(), $this->get_options() );
+		$publishing = ! empty( $options['optimize_originals'] ) && $this->is_supported_attachment( $attachment_id );
+		if ( $publishing ) {
+			$this->rotate_source_revision( $attachment_id, true );
+		}
+		try {
+			return $this->optimize_attachment_work( $attachment_id, $force, $metadata, $override_options );
+		} finally {
+			if ( $publishing ) {
+				$this->rotate_source_revision( $attachment_id, false );
+			}
+		}
+	}
+
+	private function optimize_attachment_work( $attachment_id, $force = false, $metadata = null, $override_options = array() ) {
+		$options = wp_parse_args( is_array( $override_options ) ? $override_options : array(), $this->get_options() );
 		$result = array(
 			'attachment_id' => absint( $attachment_id ),
 			'schema'        => self::META_SCHEMA,
@@ -3523,7 +3561,7 @@ Header append Vary Accept env=REDIRECT_accept
 		}
 
 		$files = $this->collect_attachment_files( $attachment_id, $metadata );
-		$previous_tracking = get_post_meta( $attachment_id, self::META_KEY, true );
+		$previous_tracking = $this->raw_optimizer_tracking( $attachment_id, true );
 		$previous_files    = array();
 
 		if ( is_array( $previous_tracking ) && ! empty( $previous_tracking['files'] ) && is_array( $previous_tracking['files'] ) ) {
@@ -3645,6 +3683,7 @@ Header append Vary Accept env=REDIRECT_accept
 	 */
 	private function optimize_file( $file, $force, $options, $previous = array() ) {
 		$path   = $file['path'] ?? '';
+		$published = array();
 		$result = array(
 			'label'            => $file['label'] ?? '',
 			'source'           => $this->relative_upload_path( $path ),
@@ -3740,6 +3779,7 @@ Header append Vary Accept env=REDIRECT_accept
 				$result['webp_size']    = $result['sidecar_size'];
 			} else {
 				$generated = $this->generate_webp_sidecar( $path, $sidecar );
+				$published['webp'] = $generated['ownership'] ?? null;
 
 				$result['status']       = $generated['status'];
 				$result['message']      = $generated['message'];
@@ -3758,6 +3798,7 @@ Header append Vary Accept env=REDIRECT_accept
 				$result['avif_size']   = (int) filesize( $avif );
 			} else {
 				$generated = $this->generate_avif_sidecar( $path, $avif );
+				$published['avif'] = $generated['ownership'] ?? null;
 
 				$result['avif_status']  = $generated['status'];
 				$result['avif_message'] = $generated['message'];
@@ -3766,6 +3807,7 @@ Header append Vary Accept env=REDIRECT_accept
 			}
 		}
 
+		$result['sidecar_ownership'] = $this->sidecar_ownership_for_result( $path, $previous, $published );
 		return $result;
 	}
 
@@ -3797,6 +3839,7 @@ Header append Vary Accept env=REDIRECT_accept
 			);
 		}
 
+		$source_hash = $this->file_hash( $source_path );
 		$existed = file_exists( $sidecar_path );
 		$tmp     = $sidecar_path . '.tmp-' . wp_generate_password( 8, false, false ) . '.webp';
 		$saved   = $this->save_webp_file( $source_path, $tmp, $options['webp_quality'] );
@@ -3836,6 +3879,7 @@ Header append Vary Accept env=REDIRECT_accept
 
 		wp_mkdir_p( dirname( $sidecar_path ) );
 
+		$published_hash = $this->file_hash( $saved_path );
 		if ( ! $this->move_file( $saved_path, $sidecar_path ) ) {
 			wp_delete_file( $saved_path );
 
@@ -3846,7 +3890,9 @@ Header append Vary Accept env=REDIRECT_accept
 			);
 		}
 
+		$ownership = $this->published_sidecar_proof( $source_path, $sidecar_path, $source_hash, $published_hash );
 		return array(
+			'ownership' => $ownership,
 			'status'  => $existed ? 'updated' : 'created',
 			'message' => '',
 			'engine'  => $engine,
@@ -3871,6 +3917,7 @@ Header append Vary Accept env=REDIRECT_accept
 			);
 		}
 
+		$source_hash = $this->file_hash( $source_path );
 		$existed = file_exists( $sidecar_path );
 		$tmp     = $sidecar_path . '.tmp-' . wp_generate_password( 8, false, false ) . '.avif';
 		$saved   = $this->save_avif_file( $source_path, $tmp, $options['avif_quality'] );
@@ -3910,6 +3957,7 @@ Header append Vary Accept env=REDIRECT_accept
 
 		wp_mkdir_p( dirname( $sidecar_path ) );
 
+		$published_hash = $this->file_hash( $saved_path );
 		if ( ! $this->move_file( $saved_path, $sidecar_path ) ) {
 			wp_delete_file( $saved_path );
 
@@ -3920,7 +3968,9 @@ Header append Vary Accept env=REDIRECT_accept
 			);
 		}
 
+		$ownership = $this->published_sidecar_proof( $source_path, $sidecar_path, $source_hash, $published_hash );
 		return array(
+			'ownership' => $ownership,
 			'status'  => $existed ? 'updated' : 'created',
 			'message' => '',
 			'engine'  => $engine,
