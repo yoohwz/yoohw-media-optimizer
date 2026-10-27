@@ -66,7 +66,7 @@ $fixture = static function( $kind, $profile, $orientation = 1, $pixel_colors = n
 	imagealphablending( $image, false );
 	imagesavealpha( $image, true );
 	foreach ( null === $pixel_colors ? $colors : $pixel_colors as $index => $color ) {
-		$alpha = 'jpeg' === $kind ? 0 : ( 2 === $index ? 127 : ( 3 === $index && ! $palette ? 64 : 0 ) );
+		$alpha = in_array( $kind, array( 'jpeg', 'rgb' ), true ) ? 0 : ( 2 === $index ? 127 : ( 3 === $index && ! $palette ? 64 : 0 ) );
 		$c = imagecolorallocatealpha( $image, $color[0], $color[1], $color[2], $alpha );
 		imagefilledrectangle( $image, ( $index % 2 ) * 48, (int) ( $index / 2 ) * 32, ( $index % 2 ) * 48 + 47, (int) ( $index / 2 ) * 32 + 31, $c );
 	}
@@ -143,12 +143,12 @@ try {
 	$editor = in_array( $mode, array( 'gd', 'tool-flags', 'native-strip' ), true ) ? 'WP_Image_Editor_GD' : 'WP_Image_Editor_Imagick';
 	$filter( 'wp_image_editors', static function() use ( $editor ) { return array( $editor ); } );
 	if ( 'native' !== $mode ) { putenv( 'PATH=' . $dir ); }
-	if ( in_array( $mode, array( 'imagick', 'native' ), true ) && ! class_exists( 'Imagick' ) ) {
+	if ( in_array( $mode, array( 'imagick', 'native', 'thumbnail' ), true ) && ! class_exists( 'Imagick' ) ) {
 		$assert( ! $required, 'Required ICC Imagick verifier unavailable.' );
 		echo 'Color profile ' . $mode . ": NOT RUN — Imagick unavailable.\n";
 		return;
 	}
-	if ( in_array( $mode, array( 'imagick', 'native' ), true ) ) {
+	if ( in_array( $mode, array( 'imagick', 'native', 'thumbnail' ), true ) ) {
 		// profileImage() may silently leave pixels unchanged when LCMS was not compiled in.
 		$delegates = implode( ' ', Imagick::getConfigureOptions( 'DELEGATES' ) );
 		if ( ! preg_match( '/\blcms(?:2)?\b/i', $delegates ) ) {
@@ -173,6 +173,43 @@ try {
 		file_put_contents( $path . '.webp', 'legacy untagged webp' ); touch( $path . '.webp', time() + 5 );
 		$result = $run( $id, array(), false );
 		$assert( 'existing' === $result['files'][0]['status'] && 'legacy untagged webp' === file_get_contents( $path . '.webp' ), 'Fresh legacy sidecar automatically regenerated.' );
+	} elseif ( 'thumbnail' === $mode ) {
+		require_once ABSPATH . 'wp-admin/includes/image.php';
+		update_option( YoOhw_Media_Optimizer::OPTION_KEY, array_merge( $options, array( 'auto_optimize_uploads' => 0 ) ) );
+		$filter( 'intermediate_image_sizes_advanced', static function() { return array( 'color-soft' => array( 'width' => 48, 'height' => 32, 'crop' => false ), 'color-crop' => array( 'width' => 32, 'height' => 32, 'crop' => true ) ); } );
+		$filter( 'big_image_size_threshold', static function() { return false; } );
+		foreach ( $profiles as $name => $profile ) {
+			foreach ( array( 'rgb', 'rgba', 'palette' ) as $kind ) {
+				list( $id, $path ) = $attach( 'thumbnail-' . $name . '-' . $kind . '.png', $fixture( $kind, $profile ) );
+				$hash = hash_file( 'sha256', $path );
+				$metadata = wp_generate_attachment_metadata( $id, $path );
+				wp_update_attachment_metadata( $id, $metadata );
+				$assert( 2 === count( $metadata['sizes'] ), 'Core did not generate both color thumbnails.' );
+				foreach ( $metadata['sizes'] as $size ) {
+					$output = dirname( $path ) . '/' . $size['file'];
+					$check( $output, $name, 1, $size['width'], $size['height'], 'rgb' === $kind ? false : $kind, 1 );
+					$privacy( $output );
+					$color = YoOhw_Media_Optimizer_Color::inspect( $output );
+					$assert( ! is_wp_error( $color ) && ! $color['private'], 'Core thumbnail contains private/duplicate profile text.' );
+				}
+				$assert( $hash === hash_file( 'sha256', $path ), 'Core thumbnails changed the upload master.' );
+				$assert( '' === get_post_meta( $id, YoOhw_Media_Optimizer::META_KEY, true ), 'Auto-off thumbnail generation ran the optimizer.' );
+				$result = $run( $id );
+				$assert( 3 === count( $result['files'] ) && 3 === $result['summary']['created'], 'Tagged core thumbnail sidecars did not succeed.' );
+				foreach ( $result['files'] as $file ) {
+					$assert( 'YoOhw_Media_Optimizer_Imagick' === $file['webp_engine'], 'Own optimizer used the core-thumbnail adapter.' );
+					$source = trailingslashit( wp_get_upload_dir()['basedir'] ) . $file['source'];
+					$dims = wp_getimagesize( $source );
+					$check( $source . '.webp', $name, 1, $dims[0], $dims[1], 'rgb' === $kind ? false : $kind );
+				}
+				$assert( $hash === hash_file( 'sha256', $path ), 'Sidecars changed the upload master.' );
+				// Regeneration starts from the still-tagged master, never retags an old derivative.
+				$old_hashes = array();
+				foreach ( $metadata['sizes'] as $size ) { $old_hashes[$size['file']] = hash_file( 'sha256', dirname( $path ) . '/' . $size['file'] ); }
+				$again = wp_generate_attachment_metadata( $id, $path );
+				foreach ( $again['sizes'] as $size ) { $assert( $old_hashes[$size['file']] === hash_file( 'sha256', dirname( $path ) . '/' . $size['file'] ), 'Deterministic regeneration changed color thumbnail bytes.' ); }
+			}
+		}
 	} elseif ( 'imagick' === $mode ) {
 		// Negative control: independently CMS-converted sRGB pixels carry the wrong P3 ICC.
 		$control = $dir . '/wrong-p3.png';

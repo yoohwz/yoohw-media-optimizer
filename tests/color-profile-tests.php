@@ -7,7 +7,7 @@
 
 return static function( $optimizer, $invoke, $assert, $test_dir ) {
 	$assert( function_exists( 'proc_open' ), 'Color-profile child processes require proc_open.' );
-	foreach ( array( 'gd', 'imagick', 'native', 'fault', 'native-strip', 'tool-flags' ) as $mode ) {
+	foreach ( array( 'gd', 'imagick', 'thumbnail', 'native', 'fault', 'native-strip', 'tool-flags' ) as $mode ) {
 		$command = array( PHP_BINARY );
 		$command = array_merge( $command, array( __DIR__ . '/color-profile-probe.php', ABSPATH, $mode ) );
 		$process = proc_open( $command, array( 0 => array( 'pipe', 'r' ), 1 => array( 'pipe', 'w' ), 2 => array( 'pipe', 'w' ) ), $pipes );
