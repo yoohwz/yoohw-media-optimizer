@@ -22,19 +22,26 @@ The default workflow is conservative: sidecars are generated without replacing o
 
 * Generate WebP sidecars for original uploads and WordPress image sizes.
 * Generate AVIF sidecars when the active image editor or `avifenc` supports AVIF.
+* Set WebP and AVIF quality independently, with optional engine-dependent PNG and Imagick AVIF profiles.
 * Optionally deliver AVIF first, WebP second, and retain JPEG/PNG as the fallback.
 * Use Delivery Assistant to test direct sidecar access and server or CDN rewrite behavior.
 * Review coverage, storage impact, estimated savings, and failed processing from the dashboard and Media Library.
-* Process larger libraries through queues and WP-CLI commands.
+* Process larger libraries through resumable browser queues and WP-CLI commands.
 
 = Optional original optimization =
 
 * Resize oversized uploads with configurable maximum dimensions.
 * Choose lossless, balanced, aggressive, or custom JPEG quality settings.
-* Remove or preserve supported image metadata.
+* Remove or preserve supported private metadata while retaining supported source color profiles; engine and format limitations apply.
 * Require a local backup before replacing an original JPEG or PNG file.
-* Restore individual or multiple backed-up originals.
+* Restore individual or multiple backed-up originals, including the **Restore optimized originals** action in the Media Library list-view bulk menu.
 * Clean generated sidecars without deleting original uploads.
+
+= Optional Thumbnail Manager companion =
+
+Use the **Thumbnail Manager** tab to review the free companion and its installation or compatibility state. Thumbnail Manager manages which thumbnail sizes WordPress generates, checks and repairs selected thumbnails, and offers review-first Prune cleanup. The introduction links to native WordPress install or plugin-management screens; it starts no processing.
+
+With compatible versions active, open a completed Thumbnail Manager Repair or Force regeneration result to preview its exact successful generated files in Media Optimizer. Start the WebP/AVIF step explicitly. After Prune, a separate preview and approval can clean up eligible sidecars with recorded Optimizer ownership. Original files and unrelated sizes stay outside these handoffs. Both plugins retain their standalone workflows.
 
 = Local processing and server tools =
 
@@ -47,9 +54,10 @@ Media Optimizer does not automatically edit `.htaccess`, CDN settings, or server
 1. Install the plugin through the WordPress Plugins screen, or upload it to `/wp-content/plugins/yoohw-media-optimizer/`.
 2. Activate Media Optimizer.
 3. Go to **Media > Media Optimizer**.
-4. Review available image engines and generate sidecars for test media.
+4. Review available image engines and generate sidecars for test media. Test optional codec profiles before processing a larger selection.
 5. Run Delivery Assistant before enabling HTML delivery.
 6. Keep original-file optimization disabled unless you have reviewed its backup and restore workflow.
+7. Optionally open the **Thumbnail Manager** tab to add the companion and review the coordinated workflow.
 
 == Frequently Asked Questions ==
 
@@ -204,6 +212,23 @@ Media Optimizer does not collect personal data, create tracking cookies, or send
 Delivery Assistant makes HTTP HEAD requests to URLs on the same WordPress site to check whether generated AVIF or WebP files are reachable.
 
 == Changelog ==
+
+= Unreleased =
+
+Changes merged since 1.0.1; the next version and release date have not been assigned.
+
+* Preserved original-optimization fingerprints, backup references and savings when processing only sidecars, preventing unintended repeated lossy compression.
+* Hardened backup isolation, verified restore copies and safe file publication; retained tracking and sidecars when restore cannot complete safely.
+* Serialized media mutations across browser, automatic and WP-CLI workers with process-held filesystem locks, and added resumable browser queues with cumulative results.
+* Tightened same-site delivery URL resolution, source fallbacks and Delivery Assistant diagnostics for unsafe paths, redirects and transport failures.
+* Kept lossless JPEG sources unchanged when a safe smaller lossless output is unavailable, and preserved EXIF display orientation across supported encoding and resize paths.
+* Preserved supported RGB ICC profiles and color encoding during verified optimization and sidecar generation; retained source profiles in standard WordPress Imagick PNG thumbnails and scaled images.
+* Preserved independent codec quality settings through supported WordPress image-editor format conversion.
+* Added separate WebP and AVIF quality settings, optional native lossless WebP and lossless AVIF alpha profiles for supported PNG sources, and an opt-in Imagick AVIF 4:4:4 chroma request.
+* Added optional Thumbnail Manager coordination: preview exact successful Repair or Force-generated files and explicitly create only their WebP/AVIF sidecars, with separate results and a link back to the source report.
+* Added separately previewed and approved cleanup after Thumbnail Manager Prune for unchanged sidecars with verifiable Optimizer ownership; preserved legacy, referenced and unverifiable files.
+* Added conservative source-freshness markers for Thumbnail Manager reports after original optimization or restore attempts, without automatic thumbnail regeneration.
+* Added the Thumbnail Manager introduction tab, improved phone and tablet navigation, and shortened the Media Library bulk action to “Restore optimized originals”.
 
 = 1.0.1 =
 
