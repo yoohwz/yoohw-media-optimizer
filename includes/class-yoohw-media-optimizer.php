@@ -548,6 +548,11 @@ class YoOhw_Media_Optimizer {
 			return;
 		}
 
+		if ( 'thumbnail-manager' === $this->current_admin_tab() ) {
+			$this->render_thumbnail_manager_introduction();
+			return;
+		}
+
 		$this->render_saved_prune_cleanup_notice();
 		$options = $this->get_options();
 		$summary = $this->scan_library( 2000, 0 );
@@ -655,12 +660,107 @@ class YoOhw_Media_Optimizer {
 	 */
 	private function admin_tabs() {
 		return array(
-			'overview'    => __( 'Overview', 'yoohw-media-optimizer' ),
-			'optimize'    => __( 'Optimize', 'yoohw-media-optimizer' ),
-			'delivery'    => __( 'Delivery', 'yoohw-media-optimizer' ),
-			'settings'    => __( 'Settings', 'yoohw-media-optimizer' ),
-			'maintenance' => __( 'Maintenance', 'yoohw-media-optimizer' ),
+			'overview'             => __( 'Overview', 'yoohw-media-optimizer' ),
+			'optimize'             => __( 'Optimize', 'yoohw-media-optimizer' ),
+			'delivery'             => __( 'Delivery', 'yoohw-media-optimizer' ),
+			'settings'             => __( 'Settings', 'yoohw-media-optimizer' ),
+			'maintenance'          => __( 'Maintenance', 'yoohw-media-optimizer' ),
+			'thumbnail-manager' => __( 'Thumbnail Manager', 'yoohw-media-optimizer' ),
 		);
+	}
+
+	/**
+	 * Read the optional companion state without running a job or changing plugins.
+	 *
+	 * @return array
+	 */
+	private function thumbnail_manager_introduction() {
+		require_once ABSPATH . 'wp-admin/includes/plugin.php';
+		$plugin = 'thumbnail-manager/thumbnail-manager.php';
+		$installed = file_exists( WP_PLUGIN_DIR . '/' . $plugin );
+		$active = function_exists( 'yotm_manage_thumbnails_page' ) || ( $installed && is_plugin_active( $plugin ) );
+		$ready = $active && function_exists( 'yotm_optimizer_handoff' ) && function_exists( 'yotm_optimizer_active_job' );
+		$state = $ready ? 'ready' : ( $active ? 'update' : ( $installed ? 'inactive' : 'missing' ) );
+		$action = array(
+			'url' => 'https://wordpress.org/plugins/thumbnail-manager/',
+			'label' => __( 'View on WordPress.org', 'yoohw-media-optimizer' ),
+		);
+		if ( $ready ) {
+			$action = array(
+				'url' => admin_url( 'tools.php?page=yo-manage-thumbnails' ),
+				'label' => __( 'Open Thumbnail Manager', 'yoohw-media-optimizer' ),
+			);
+		} elseif ( $active && current_user_can( 'activate_plugins' ) ) {
+			$action = array( 'url' => self_admin_url( 'plugins.php' ), 'label' => __( 'Manage plugin updates', 'yoohw-media-optimizer' ) );
+		} elseif ( $installed && current_user_can( 'activate_plugin', $plugin ) ) {
+			$action = array( 'url' => self_admin_url( 'plugins.php' ), 'label' => __( 'Review and activate in Plugins', 'yoohw-media-optimizer' ) );
+		} elseif ( ! $installed && current_user_can( 'install_plugins' ) ) {
+			$action = array(
+				'url' => add_query_arg( array( 'tab' => 'plugin-information', 'plugin' => 'thumbnail-manager' ), is_multisite() ? network_admin_url( 'plugin-install.php' ) : admin_url( 'plugin-install.php' ) ),
+				'label' => __( 'View plugin and install', 'yoohw-media-optimizer' ),
+			);
+		}
+		$labels = array(
+			'ready' => __( 'Active · Ready to work together', 'yoohw-media-optimizer' ),
+			'update' => __( 'Active · Compatibility update needed', 'yoohw-media-optimizer' ),
+			'inactive' => __( 'Installed · Not active', 'yoohw-media-optimizer' ),
+			'missing' => __( 'Not installed', 'yoohw-media-optimizer' ),
+		);
+		return array(
+			'state' => $state,
+			'status' => $labels[ $state ],
+			'action' => $action,
+			'can_manage' => current_user_can( 'install_plugins' ) || current_user_can( 'activate_plugin', $plugin ),
+			'cleanup' => $ready && function_exists( 'yotm_optimizer_prune_handoff' ) && function_exists( 'yotm_optimizer_with_cleanup_guard' ),
+		);
+	}
+
+	/** Render the read-only companion tab without scanning the media library. */
+	private function render_thumbnail_manager_introduction() {
+		$companion = $this->thumbnail_manager_introduction();
+		?>
+		<div class="wrap yoohw-mo-wrap">
+			<h1><?php esc_html_e( 'Media Optimizer', 'yoohw-media-optimizer' ); ?></h1>
+			<?php $this->render_page_tabs( 'thumbnail-manager' ); ?>
+			<div class="yoohw-mo-tab-panel yoohw-mo-companion">
+				<div class="yoohw-mo-companion-overview">
+					<div>
+						<p class="yoohw-mo-kicker"><?php esc_html_e( 'Free companion plugin', 'yoohw-media-optimizer' ); ?></p>
+						<h2><?php esc_html_e( 'Keep the thumbnail sizes your site needs.', 'yoohw-media-optimizer' ); ?></h2>
+						<p class="yoohw-mo-lead"><?php esc_html_e( 'Media Optimizer creates modern image copies and optimizes image files. Thumbnail Manager helps you choose which thumbnail sizes to generate, repair missing files, and review old thumbnails before cleanup.', 'yoohw-media-optimizer' ); ?></p>
+						<div class="yoohw-mo-companion-actions">
+							<a class="button button-primary" href="<?php echo esc_url( $companion['action']['url'] ); ?>"><?php echo esc_html( $companion['action']['label'] ); ?></a>
+							<a href="https://docs.yoohw.com/category/thumbnail-manager/" target="_blank" rel="noopener noreferrer"><?php esc_html_e( 'Read the guide', 'yoohw-media-optimizer' ); ?><span class="screen-reader-text"> <?php esc_html_e( '(opens in a new tab)', 'yoohw-media-optimizer' ); ?></span></a>
+						</div>
+						<p class="yoohw-mo-companion-status"><span class="dashicons <?php echo 'ready' === $companion['state'] ? 'dashicons-yes-alt' : 'dashicons-info-outline'; ?>" aria-hidden="true"></span><strong><?php echo esc_html( $companion['status'] ); ?></strong></p>
+						<?php if ( 'ready' !== $companion['state'] ) : ?>
+							<p class="description"><?php esc_html_e( 'Coordinated jobs require compatible versions of both plugins. Update older builds before using the handoff workflow.', 'yoohw-media-optimizer' ); ?></p>
+						<?php endif; ?>
+						<?php if ( ! $companion['can_manage'] && 'ready' !== $companion['state'] ) : ?>
+							<p class="description"><?php esc_html_e( 'Ask your site or network administrator to install, activate or update the plugin.', 'yoohw-media-optimizer' ); ?></p>
+						<?php endif; ?>
+					</div>
+					<ul class="yoohw-mo-companion-benefits">
+						<li><h3><?php esc_html_e( 'Choose useful sizes', 'yoohw-media-optimizer' ); ?></h3><p><?php esc_html_e( 'Review Recommendations and their evidence, then control which registered sizes WordPress generates for future uploads.', 'yoohw-media-optimizer' ); ?></p></li>
+						<li><h3><?php esc_html_e( 'Repair or regenerate selected thumbnails', 'yoohw-media-optimizer' ); ?></h3><p><?php esc_html_e( 'Choose images and sizes for each run, inspect results, and retry items that need attention.', 'yoohw-media-optimizer' ); ?></p></li>
+						<li><h3><?php esc_html_e( 'Review before cleaning up', 'yoohw-media-optimizer' ); ?></h3><p><?php esc_html_e( 'Inspect a Prune preview and explicitly approve generated files for deletion. Original uploads remain protected.', 'yoohw-media-optimizer' ); ?></p></li>
+					</ul>
+				</div>
+				<div class="yoohw-mo-companion-workflow">
+					<h3><?php esc_html_e( 'How the two plugins work together', 'yoohw-media-optimizer' ); ?></h3>
+					<ol>
+						<li><strong><?php esc_html_e( 'Choose and repair in Thumbnail Manager', 'yoohw-media-optimizer' ); ?></strong><p><?php esc_html_e( 'Check your selected images and sizes, then repair or regenerate the thumbnails you need.', 'yoohw-media-optimizer' ); ?></p></li>
+						<li><strong><?php esc_html_e( 'Open the successful result', 'yoohw-media-optimizer' ); ?></strong><p><?php esc_html_e( 'From the saved Repair or Force regeneration result, follow the Media Optimizer link to preview the exact generated files.', 'yoohw-media-optimizer' ); ?></p></li>
+						<li><strong><?php esc_html_e( 'Review and create modern copies', 'yoohw-media-optimizer' ); ?></strong><p><?php esc_html_e( 'Start the WebP/AVIF step explicitly in Media Optimizer. The handoff excludes originals and other sizes, and each job keeps its own results.', 'yoohw-media-optimizer' ); ?></p></li>
+					</ol>
+					<?php if ( $companion['cleanup'] ) : ?>
+						<p class="description"><?php esc_html_e( 'After Prune, its saved result also offers a separate preview and approval for leftover sidecars whose Optimizer ownership can be verified.', 'yoohw-media-optimizer' ); ?></p>
+					<?php endif; ?>
+					<p class="description"><?php esc_html_e( 'Both plugins work independently. Opening this tab starts no installation, activation or media processing.', 'yoohw-media-optimizer' ); ?></p>
+				</div>
+			</div>
+		</div>
+		<?php
 	}
 
 	/**
