@@ -1021,7 +1021,7 @@ class YoOhw_Media_Optimizer {
 			return $actions;
 		}
 
-		$actions['yoohw_mo_restore'] = __( 'Restore YoOhw optimized originals', 'yoohw-media-optimizer' );
+		$actions['yoohw_mo_restore'] = __( 'Restore optimized originals', 'yoohw-media-optimizer' );
 
 		return $actions;
 	}
