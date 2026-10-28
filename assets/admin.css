@@ -1054,17 +1054,38 @@
 	}
 
 	.yoohw-mo-tabs.nav-tab-wrapper {
-		display: flex;
-		overflow-x: auto;
-		padding-bottom: 0;
-		white-space: nowrap;
+		border-bottom: 0;
+		display: grid;
+		gap: 6px;
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+		padding-bottom: 10px;
+		white-space: normal;
 	}
 
 	.yoohw-mo-tabs .nav-tab {
-		flex: 0 0 auto;
+		align-items: center;
+		border-radius: 4px;
+		display: flex;
+		float: none;
+		justify-content: center;
+		margin: 0;
+		min-width: 0;
+		overflow-wrap: anywhere;
+		padding: 9px 8px;
+		text-align: center;
+		white-space: normal;
+	}
+
+	.yoohw-mo-tabs .nav-tab-active,
+	.yoohw-mo-tabs .nav-tab-active:hover,
+	.yoohw-mo-tabs .nav-tab-active:focus {
+		background: var(--yoohw-mo-accent-surface, #f0f6fc);
+		border-color: var(--yoohw-mo-accent);
+		color: var(--yoohw-mo-accent-dark);
 	}
 
 	.yoohw-mo-tab-panel {
+		border-top: 1px solid #c3c4c7;
 		padding: 14px;
 	}
 
@@ -1106,5 +1127,75 @@
 	.yoohw-mo-progress-meta,
 	.yoohw-mo-progress-stats {
 		grid-template-columns: 1fr;
+	}
+}
+
+/* Read-only companion introduction. */
+.yoohw-mo-companion-overview {
+	display: grid;
+	gap: 40px;
+	grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+	padding: 12px 4px 28px;
+}
+
+.yoohw-mo-companion h2 {
+	font-size: 26px;
+	line-height: 1.3;
+	margin: 8px 0 16px;
+}
+
+.yoohw-mo-companion-actions,
+.yoohw-mo-companion-status {
+	align-items: center;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 12px;
+}
+
+.yoohw-mo-companion-actions {
+	margin: 22px 0 18px;
+}
+
+.yoohw-mo-companion-status {
+	gap: 8px;
+}
+
+.yoohw-mo-companion-status .dashicons {
+	flex: 0 0 20px;
+}
+
+.yoohw-mo-companion-benefits {
+	margin: 0;
+}
+
+.yoohw-mo-companion-benefits li + li {
+	border-top: 1px solid #dcdcde;
+	margin-top: 18px;
+	padding-top: 8px;
+}
+
+.yoohw-mo-companion-workflow {
+	border-top: 1px solid #dcdcde;
+	padding: 12px 4px 0;
+}
+
+.yoohw-mo-companion-workflow ol {
+	display: grid;
+	gap: 28px;
+	grid-template-columns: repeat(3, minmax(0, 1fr));
+	margin-left: 20px;
+}
+
+@media (max-width: 782px) {
+	.yoohw-mo-companion-overview,
+	.yoohw-mo-companion-workflow ol {
+		gap: 20px;
+		grid-template-columns: minmax(0, 1fr);
+	}
+}
+
+@media (max-width: 480px) {
+	.yoohw-mo-tabs.nav-tab-wrapper {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
 	}
 }
