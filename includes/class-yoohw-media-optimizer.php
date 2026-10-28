@@ -773,7 +773,7 @@ class YoOhw_Media_Optimizer {
 		?>
 		<nav class="nav-tab-wrapper woo-nav-tab-wrapper yoohw-mo-tabs" aria-label="<?php esc_attr_e( 'Media Optimizer sections', 'yoohw-media-optimizer' ); ?>">
 			<?php foreach ( $this->admin_tabs() as $tab => $label ) : ?>
-				<a class="nav-tab <?php echo $tab === $active_tab ? 'nav-tab-active' : ''; ?>" href="<?php echo esc_url( add_query_arg( 'tab', $tab, $this->admin_page_url() ) ); ?>">
+				<a class="nav-tab <?php echo $tab === $active_tab ? 'nav-tab-active' : ''; ?>" <?php echo $tab === $active_tab ? 'aria-current="page"' : ''; ?> href="<?php echo esc_url( add_query_arg( 'tab', $tab, $this->admin_page_url() ) ); ?>">
 					<?php echo esc_html( $label ); ?>
 				</a>
 			<?php endforeach; ?>
