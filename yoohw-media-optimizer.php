@@ -3,7 +3,7 @@
  * Plugin Name: YoOhw Media Optimizer
  * Plugin URI: https://yoohw.com/product/media-optimizer/
  * Description: Optimizes WordPress media with modern sidecars, optional backed-up original compression, resize controls, and restore tools.
- * Version: 1.0.1
+ * Version: 1.1.0
  * Author: YoOhw Studio
  * Author URI: https://yoohw.com/
  * Text Domain: yoohw-media-optimizer
@@ -19,7 +19,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'YOOHW_MEDIA_OPTIMIZER_VERSION', '1.0.1' );
+define( 'YOOHW_MEDIA_OPTIMIZER_VERSION', '1.1.0' );
 define( 'YOOHW_MEDIA_OPTIMIZER_FILE', __FILE__ );
 define( 'YOOHW_MEDIA_OPTIMIZER_PATH', plugin_dir_path( __FILE__ ) );
 define( 'YOOHW_MEDIA_OPTIMIZER_URL', plugin_dir_url( __FILE__ ) );

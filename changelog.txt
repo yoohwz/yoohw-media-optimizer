@@ -1,6 +1,4 @@
-= Unreleased =
-
-Changes merged since 1.0.1; the next version and release date have not been assigned.
+= 1.1.0 (Oct 28, 2026) =
 
 * Preserved original-optimization fingerprints, backup references and savings when processing only sidecars, preventing unintended repeated lossy compression.
 * Hardened backup isolation, verified restore copies and safe file publication; retained tracking and sidecars when restore cannot complete safely.

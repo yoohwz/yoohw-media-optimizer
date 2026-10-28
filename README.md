@@ -4,7 +4,7 @@ Tags: webp, avif, image optimization, media library, performance
 Requires at least: 6.4
 Tested up to: 7.0
 Requires PHP: 7.4
-Stable tag: 1.0.1
+Stable tag: 1.1.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -211,11 +211,15 @@ Media Optimizer does not collect personal data, create tracking cookies, or send
 
 Delivery Assistant makes HTTP HEAD requests to URLs on the same WordPress site to check whether generated AVIF or WebP files are reachable.
 
+== Upgrade Notice ==
+
+= 1.1.0 =
+
+Improves image quality, color handling, backup/restore and resumable processing; adds optional Thumbnail Manager coordination. Stop active media workers before updating and review optional codec profiles on test images.
+
 == Changelog ==
 
-= Unreleased =
-
-Changes merged since 1.0.1; the next version and release date have not been assigned.
+= 1.1.0 (Oct 28, 2026) =
 
 * Preserved original-optimization fingerprints, backup references and savings when processing only sidecars, preventing unintended repeated lossy compression.
 * Hardened backup isolation, verified restore copies and safe file publication; retained tracking and sidecars when restore cannot complete safely.
